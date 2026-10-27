@@ -41,6 +41,6 @@ npm run test:fixtures  # regenerate tests/fixtures/clip.mp4 and tone.wav
 
 The smoke test (`tests/smoke.spec.ts`) runs the whole flow in Chromium: import, sync, mute and volume, play/pause, range, and export. It then decodes the exported file to check its duration, where the audio starts, and the audio's pitch and level.
 
-Pushing to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`): it lints, builds, then publishes `dist`. The build uses relative paths, so it works at `https://<user>.github.io/<repo>/` under any repo name.
+Pushing to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`): it lints, builds and runs the smoke test, then publishes `dist` only if they all pass. The build uses relative paths, so it works at `https://<user>.github.io/<repo>/` under any repo name.
 
 Dependencies are pinned to exact versions. `.npmrc` keeps it that way (`save-exact`) and only installs releases that are at least 3 days old (`min-release-age=3`).
