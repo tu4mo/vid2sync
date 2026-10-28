@@ -7,7 +7,7 @@ Line up a video with separately recorded audio, then export them together as one
 1. **Import.** Use each track's **Import…** button, or drop files anywhere on the window. Video goes on the Video track and audio on the Audio track. Drop a single file onto a track to put it there, for example a video onto Audio to use only its sound. You can drag videos straight from macOS Photos. If the drop doesn't contain a file, try Safari, or drag the video to the Desktop first.
 2. **Sync.** Drag clips along the timeline and use the waveforms to line them up. For precise work, select a clip and type its start in milliseconds in the inspector, or use the nudge buttons or the arrow keys. The inspector shows how far the audio is ahead of or behind the video.
 3. **Mix.** Each track has a mute button (**M**) and a volume slider from 0 to 200%. Double-click the slider to reset it to 100%.
-4. **Pick a range** (optional). Set the export start and end with **In** and **Out**, or the **I** and **O** keys, then drag the handles on the ruler to adjust them. With no range set, the whole video is exported.
+4. **Pick a range** (optional). The handles on the ruler mark what gets exported, the whole video to start with. Drag them to trim; they snap to the playhead and clip edges (hold **Shift** to not snap). Or press **I** and **O** to set the start and end at the playhead. Double-click a handle to put it back at the video's edge, or the range to reset both (or press **X**).
 5. **Export MP4.** The video frames are copied as they are, with no re-encoding and no quality loss, and cuts are frame-exact. The audio is your mix, encoded as AAC (or Opus if the browser can't encode AAC) and aligned to the sample.
 
 ## How it works

@@ -8,6 +8,9 @@ const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).p
 const blur = (page: Page) =>
   page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
 
+// The timeline opens at 50 px per second.
+const clockToPx = (seconds: number) => seconds * 50
+
 const clockSeconds = async (page: Page) => {
   const [m, s] = (await page.getByTestId('clock').innerText()).split(' ')[0].split(':')
   return Number(m) * 60 + Number(s)
@@ -74,13 +77,52 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.waitForTimeout(200)
   expect(await clockSeconds(page)).toBe(paused)
 
-  // Export range 1–2 s.
+  // Export range 1–2 s: the end with the keyboard, the start by dragging its handle onto the playhead.
+  const range = page.getByTestId('range')
+  const startHandle = page.getByTestId('range-start')
+  await expect(range).toContainText('Whole video')
+  await page.keyboard.press('Home')
+  await page.keyboard.press('Shift+ArrowRight')
+  await page.keyboard.press('Shift+ArrowRight')
+  await page.keyboard.press('o')
+  await expect(range).toContainText('0:00.000 – 0:02.000')
+  await page.keyboard.press('Shift+ArrowLeft')
+  const handle = (await startHandle.boundingBox())!
+  const playhead = handle.x + clockToPx(await clockSeconds(page))
+  await page.mouse.move(handle.x + 2, handle.y + handle.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(playhead + 3, handle.y + handle.height / 2, { steps: 5 }) // close enough to snap
+  await page.mouse.up()
+  await expect(range).toContainText('0:01.000 – 0:02.000')
+  expect(await clockSeconds(page)).toBe(1) // dragging a handle doesn't scrub
+
+  // Double-click puts a handle back at the video's edge.
+  await page.getByTestId('range-end').dblclick()
+  await expect(range).toContainText(/0:01\.000 – 0:03\.\d{3}/)
+  await page.keyboard.press('Shift+ArrowRight')
+  await page.keyboard.press('o')
+  await expect(range).toContainText('0:01.000 – 0:02.000')
+
+  // Shift turns snapping off.
+  await page.keyboard.press('Shift+ArrowLeft')
+  const start = (await startHandle.boundingBox())!
+  await page.mouse.move(start.x + 2, start.y + start.height / 2)
+  await page.mouse.down()
+  await page.keyboard.down('Shift')
+  await page.mouse.move(start.x + 2 + 3, start.y + start.height / 2, { steps: 5 })
+  await page.keyboard.up('Shift')
+  await page.mouse.up()
+  await expect(range).toContainText('0:01.060 – 0:02.000')
+
+  // Double-clicking the range itself resets both ends.
+  await page.mouse.dblclick(start.x + clockToPx(0.5), start.y + start.height / 2)
+  await expect(range).toContainText('Whole video')
   await page.keyboard.press('Home')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('i')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('o')
-  await expect(page.getByTestId('range')).toContainText('0:01.000 – 0:02.000')
+  await expect(range).toContainText('0:01.000 – 0:02.000')
 
   // Export and check the file itself.
   const downloading = page.waitForEvent('download')

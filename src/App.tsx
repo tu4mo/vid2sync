@@ -95,11 +95,12 @@ export default function App() {
     })
   }, [])
 
+  const wholeVideo = clips.video
+    ? { start: clips.video.offset, end: clips.video.offset + clips.video.duration }
+    : null
+
   const setRangePoint = (which: keyof TimeRange, t: number) => {
-    const video = clips.video
-    const whole = video
-      ? { start: video.offset, end: video.offset + video.duration }
-      : { start: 0, end }
+    const whole = wholeVideo ?? { start: 0, end }
     setRange((prev) => {
       const next = { ...(prev ?? whole), [which]: roundMs(Math.max(0, t)) }
       // Like most editors: an in point after the out point (or vice versa) resets the other one.
@@ -107,8 +108,15 @@ export default function App() {
         if (which === 'start') next.end = Math.max(whole.end, next.start + MIN_RANGE)
         else next.start = Math.max(0, Math.min(whole.start, next.end - MIN_RANGE))
       }
-      return next.end - next.start < MIN_RANGE ? prev : next
+      if (next.end - next.start < MIN_RANGE) return prev
+      // Back to the whole video: clear it, so the range keeps following the video if it moves.
+      return next.start === whole.start && next.end === whole.end ? null : next
     })
+  }
+
+  const resetRange = (which?: keyof TimeRange) => {
+    if (which && wholeVideo) setRangePoint(which, wholeVideo[which])
+    else setRange(null)
   }
 
   const removeClip = (kind: TrackKind) => {
@@ -308,34 +316,18 @@ export default function App() {
         <span className="font-mono tabular-nums" data-testid="clock">
           {formatTime(time)} <span className="text-dim">/ {formatTime(end)}</span>
         </span>
-        <div className="ml-3 flex items-center gap-1.5 text-xs">
-          <button
-            onClick={() => setRangePoint('start', time)}
-            title="Set export start at playhead (I)"
-          >
-            In
-          </button>
-          <button onClick={() => setRangePoint('end', time)} title="Set export end at playhead (O)">
-            Out
-          </button>
+        <span className="ml-auto font-mono text-xs whitespace-nowrap" data-testid="range">
           {range ? (
-            <span className="font-mono whitespace-nowrap" data-testid="range">
+            <>
               {formatTime(range.start)} – {formatTime(range.end)}{' '}
               <span className="text-dim">({(range.end - range.start).toFixed(2)} s)</span>
-              <button
-                className="ml-0.5 px-1.5 py-0"
-                onClick={() => setRange(null)}
-                title="Clear in/out (X)"
-              >
-                ×
-              </button>
-            </span>
+            </>
           ) : (
             <span className="text-dim">Whole video</span>
           )}
-        </div>
+        </span>
         <button
-          className="ml-auto tabular-nums"
+          className="tabular-nums"
           onClick={() => void exportVideo()}
           disabled={!clips.video || exportProgress !== null}
           title="Save the video with the synced audio as MP4"
@@ -371,8 +363,9 @@ export default function App() {
         onSelect={setSelected}
         onOffsetChange={setOffset}
         onSeek={seek}
-        range={range}
+        range={range ?? wholeVideo}
         onRangeChange={setRangePoint}
+        onRangeReset={resetRange}
         onToggleMute={(kind) => setMuted((m) => ({ ...m, [kind]: !m[kind] }))}
         onImport={(file, kind) => void importFile(file, kind)}
         onRemove={removeClip}

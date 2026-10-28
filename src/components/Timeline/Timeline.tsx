@@ -28,8 +28,10 @@ interface Props {
   onSelect: (kind: TrackKind | null) => void
   onOffsetChange: (kind: TrackKind, offset: number) => void
   onSeek: (t: number) => void
+  /** The export range, or null when there's no video. */
   range: TimeRange | null
   onRangeChange: (which: keyof TimeRange, t: number) => void
+  onRangeReset: (which?: keyof TimeRange) => void
   onToggleMute: (kind: TrackKind) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onImport: (file: File, kind: TrackKind) => void
@@ -100,6 +102,13 @@ export function Timeline(props: Props) {
 
   const visibleSeconds = Math.max(end + TAIL_SECONDS, viewport / pps)
   const width = visibleSeconds * pps
+  const snapTimes = [
+    time,
+    ...TRACK_KINDS.flatMap((k) => {
+      const clip = clips[k]
+      return clip ? [clip.offset, clip.offset + clip.duration] : []
+    }),
+  ]
 
   return (
     <div className="grid grid-cols-[170px_minmax(0,1fr)] border-t border-line bg-panel">
@@ -151,7 +160,14 @@ export function Timeline(props: Props) {
           onPointerUp={() => (scrubbing.current = false)}
           onPointerCancel={() => (scrubbing.current = false)}
         >
-          <Ruler pps={pps} seconds={visibleSeconds} />
+          <Ruler
+            pps={pps}
+            seconds={visibleSeconds}
+            range={range}
+            snapTimes={snapTimes}
+            onRangeChange={props.onRangeChange}
+            onRangeReset={props.onRangeReset}
+          />
 
           {TRACK_KINDS.map((kind) => {
             const clip = clips[kind]
@@ -192,32 +208,17 @@ export function Timeline(props: Props) {
             )
           })}
 
+          {/* Dim what won't be exported. */}
           {range && (
             <>
               <div
-                className="pointer-events-none absolute inset-y-0 border-x border-accent bg-accent/10"
-                style={{ left: range.start * pps, width: (range.end - range.start) * pps }}
+                className="pointer-events-none absolute top-7 bottom-0 left-0 bg-bg/60"
+                style={{ width: range.start * pps }}
               />
-              {(['start', 'end'] as const).map((which) => (
-                <div
-                  key={which}
-                  className={`absolute top-0 z-1 h-7 w-3 cursor-ew-resize touch-none bg-accent ${
-                    which === 'start' ? '-translate-x-3 rounded-l' : 'rounded-r'
-                  }`}
-                  style={{ left: range[which] * pps }}
-                  title={which === 'start' ? 'Export start' : 'Export end'}
-                  onPointerDown={(e) => {
-                    if (e.button !== 0) return
-                    e.stopPropagation()
-                    e.currentTarget.setPointerCapture(e.pointerId)
-                  }}
-                  onPointerMove={(e) => {
-                    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-                      props.onRangeChange(which, timeAt(e.clientX))
-                    }
-                  }}
-                />
-              ))}
+              <div
+                className="pointer-events-none absolute top-7 right-0 bottom-0 bg-bg/60"
+                style={{ left: range.end * pps }}
+              />
             </>
           )}
 
