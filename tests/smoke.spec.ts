@@ -33,14 +33,23 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.mouse.down()
   await page.mouse.move(box.x + 120, box.y + box.height / 2, { steps: 5 })
   await page.mouse.up()
-  const start = page.getByLabel('Start (ms)')
-  expect(Number(await start.inputValue())).toBeGreaterThan(0)
-  await start.fill('1400')
-  await blur(page)
+  const sync = page.getByTestId('sync')
+  await expect(sync).toContainText(/^\+[1-9]\d* ms$/)
+  await sync.click()
+  const offset = page.getByLabel('Audio offset (ms)')
+  await offset.fill('1400')
+  await offset.press('Enter')
   await page.keyboard.press('Shift+ArrowRight')
-  await expect(start).toHaveValue('1500')
-  await expect(page.getByTestId('sync')).toContainText('+1500 ms')
+  await expect(sync).toContainText('+1500 ms')
+  await expect(audioClip).toContainText('@ 0:01.500')
   await expect(videoClip).toContainText('@ 0:00.000')
+
+  // ↑ steps live; Escape puts it back.
+  await sync.click()
+  await offset.press('ArrowUp')
+  await expect(audioClip).toContainText('@ 0:01.501')
+  await offset.press('Escape')
+  await expect(sync).toContainText('+1500 ms')
 
   // Mute the video's own sound and halve the audio track.
   const mute = videoHead.getByRole('button', { name: 'Mute' })
@@ -92,6 +101,11 @@ test('import, sync, play, set range and export', async ({ page }) => {
   expect(Math.abs(result.frequency - 880)).toBeLessThan(10)
   // The WAV is at 0.5, the track volume at 50%.
   expect(Math.abs(result.peak - 0.25)).toBeLessThan(0.03)
+
+  // Remove the audio from its track head.
+  await audioHead.getByRole('button', { name: 'Remove clip' }).click()
+  await expect(audioClip).toHaveCount(0)
+  await expect(page.getByTestId('sync')).toHaveCount(0)
 })
 
 /** Runs in the page: decodes the exported MP4 with Mediabunny and measures it. */

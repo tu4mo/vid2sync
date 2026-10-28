@@ -1,21 +1,18 @@
-import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { ClipView } from './ClipView'
 import { SyncLane, SYNC_LANE_HEIGHT } from './SyncLane'
-import { Waveform } from './Waveform'
-import { TRACK_KINDS, formatTime, type Clip, type Clips, type TimeRange, type TrackKind } from '../../media'
+import { TRACK_KINDS, type Clip, type Clips, type TimeRange, type TrackKind } from '../../media'
 
 export const MIN_PPS = 5
 export const MAX_PPS = 2000
 
 const LANE_HEIGHT = 72
-const WAVE_HEIGHT = 48
 const TAIL_SECONDS = 10
 const TICK_STEPS = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
 
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
-const WAVE_COLORS: Record<TrackKind, string> = { video: '#9cc4ff', audio: '#8ef0b8' }
 // Full class names, so Tailwind finds them in the source.
 const HEAD_BORDERS: Record<TrackKind, string> = { video: 'border-l-video', audio: 'border-l-audio' }
-const CLIP_BACKGROUNDS: Record<TrackKind, string> = { video: 'bg-video/45', audio: 'bg-audio/45' }
 
 interface Props {
   clips: Clips
@@ -35,6 +32,7 @@ interface Props {
   onToggleMute: (kind: TrackKind) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onImport: (file: File, kind: TrackKind) => void
+  onRemove: (kind: TrackKind) => void
   onZoom: (pps: number) => void
 }
 
@@ -134,6 +132,7 @@ export function Timeline(props: Props) {
               onToggleMute={() => props.onToggleMute(kind)}
               onVolumeChange={(v) => props.onVolumeChange(kind, v)}
               onImport={(file) => props.onImport(file, kind)}
+              onRemove={() => props.onRemove(kind)}
             />
             {kind === 'video' && (
               <div
@@ -196,6 +195,7 @@ export function Timeline(props: Props) {
                     audio={clips.audio}
                     pps={pps}
                     view={{ start: scrollLeft, width: viewport }}
+                    onOffsetChange={props.onOffsetChange}
                   />
                 )}
               </Fragment>
@@ -258,10 +258,11 @@ interface TrackHeadProps {
   onToggleMute: () => void
   onVolumeChange: (volume: number) => void
   onImport: (file: File) => void
+  onRemove: () => void
 }
 
 function TrackHead(props: TrackHeadProps) {
-  const { kind, clip, muted, volume, loading, onToggleMute, onVolumeChange, onImport } = props
+  const { kind, clip, muted, volume, loading, onToggleMute, onVolumeChange, onImport, onRemove } = props
   return (
     <div
       className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}
@@ -269,9 +270,7 @@ function TrackHead(props: TrackHeadProps) {
       data-testid={`head-${kind}`} style={{ height: LANE_HEIGHT }}>
       <div className="flex items-center justify-between gap-1.5">
         <span className="font-semibold">{LABELS[kind]}</span>
-        <span className="min-w-0 flex-1 truncate text-xs text-dim" title={clip?.file.name}>
-          {loading ? 'Loading…' : (clip?.file.name ?? 'No file')}
-        </span>
+        <span className="min-w-0 flex-1 truncate text-xs text-dim">{loading && 'Loading…'}</span>
         <button
           className="px-1.5 py-0 text-2xs font-bold aria-pressed:border-danger aria-pressed:bg-danger aria-pressed:text-white"
           aria-label="Mute"
@@ -281,6 +280,16 @@ function TrackHead(props: TrackHeadProps) {
         >
           M
         </button>
+        {clip && (
+          <button
+            className="px-1.5 py-0 text-2xs font-bold enabled:hover:border-danger enabled:hover:text-danger"
+            aria-label="Remove clip"
+            onClick={onRemove}
+            title="Remove clip (Delete)"
+          >
+            ×
+          </button>
+        )}
       </div>
       <div className="flex items-center gap-1.5">
         <input
@@ -313,62 +322,3 @@ function TrackHead(props: TrackHeadProps) {
     </div>
   )
 }
-
-interface ClipViewProps {
-  kind: TrackKind
-  clip: Clip
-  pps: number
-  selected: boolean
-  muted: boolean
-  onSelect: (kind: TrackKind) => void
-  onOffsetChange: (kind: TrackKind, offset: number) => void
-}
-
-const ClipView = memo(function ClipView(props: ClipViewProps) {
-  const { kind, clip, pps, selected, muted, onSelect, onOffsetChange } = props
-  const drag = useRef<{ lastX: number; offset: number } | null>(null)
-  const width = clip.duration * pps
-
-  return (
-    <div
-      className={`absolute inset-y-1 cursor-grab touch-none overflow-hidden rounded-md border active:cursor-grabbing ${
-        CLIP_BACKGROUNDS[kind]
-      } ${selected ? 'border-accent ring-1 ring-accent' : 'border-transparent'} ${muted ? 'opacity-45' : ''}`}
-      data-testid={`clip-${kind}`}
-      style={{ left: clip.offset * pps, width }}
-      onPointerDown={(e) => {
-        if (e.button !== 0) return
-        e.stopPropagation()
-        e.currentTarget.setPointerCapture(e.pointerId)
-        onSelect(kind)
-        drag.current = { lastX: e.clientX, offset: clip.offset }
-      }}
-      onPointerMove={(e) => {
-        const d = drag.current
-        if (!d) return
-        // Shift slows the drag down 10× for fine alignment.
-        const dx = (e.clientX - d.lastX) * (e.shiftKey ? 0.1 : 1)
-        d.lastX = e.clientX
-        d.offset = Math.max(0, d.offset + dx / pps)
-        onOffsetChange(kind, d.offset)
-      }}
-      onPointerUp={() => (drag.current = null)}
-      onPointerCancel={() => (drag.current = null)}
-    >
-      <div className="pointer-events-none sticky left-0 inline-block px-1.5 py-0.5 text-2xs whitespace-nowrap">
-        {clip.file.name} <span className="text-white/60 tabular-nums">@ {formatTime(clip.offset)}</span>
-      </div>
-      {clip.peaks ? (
-        <Waveform
-          peaks={clip.peaks}
-          duration={clip.duration}
-          width={width}
-          height={WAVE_HEIGHT}
-          color={WAVE_COLORS[kind]}
-        />
-      ) : (
-        <div className="px-1.5 py-1 text-2xs text-white/50">no audio track</div>
-      )}
-    </div>
-  )
-})

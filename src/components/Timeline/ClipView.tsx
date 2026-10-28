@@ -1,0 +1,67 @@
+import { memo, useRef } from 'react'
+import { Waveform } from './Waveform'
+import { formatTime, type Clip, type TrackKind } from '../../media'
+
+const WAVE_HEIGHT = 48
+const WAVE_COLORS: Record<TrackKind, string> = { video: '#9cc4ff', audio: '#8ef0b8' }
+// Full class names, so Tailwind finds them in the source.
+const CLIP_BACKGROUNDS: Record<TrackKind, string> = { video: 'bg-video/45', audio: 'bg-audio/45' }
+
+interface ClipViewProps {
+  kind: TrackKind
+  clip: Clip
+  pps: number
+  selected: boolean
+  muted: boolean
+  onSelect: (kind: TrackKind) => void
+  onOffsetChange: (kind: TrackKind, offset: number) => void
+}
+
+export const ClipView = memo(function ClipView(props: ClipViewProps) {
+  const { kind, clip, pps, selected, muted, onSelect, onOffsetChange } = props
+  const drag = useRef<{ lastX: number; offset: number } | null>(null)
+  const width = clip.duration * pps
+
+  return (
+    <div
+      className={`absolute inset-y-1 cursor-grab touch-none overflow-hidden rounded-md border active:cursor-grabbing ${
+        CLIP_BACKGROUNDS[kind]
+      } ${selected ? 'border-accent ring-1 ring-accent' : 'border-transparent'} ${muted ? 'opacity-45' : ''}`}
+      data-testid={`clip-${kind}`}
+      style={{ left: clip.offset * pps, width }}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return
+        e.stopPropagation()
+        e.currentTarget.setPointerCapture(e.pointerId)
+        onSelect(kind)
+        drag.current = { lastX: e.clientX, offset: clip.offset }
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current
+        if (!d) return
+        // Shift slows the drag down 10× for fine alignment.
+        const dx = (e.clientX - d.lastX) * (e.shiftKey ? 0.1 : 1)
+        d.lastX = e.clientX
+        d.offset = Math.max(0, d.offset + dx / pps)
+        onOffsetChange(kind, d.offset)
+      }}
+      onPointerUp={() => (drag.current = null)}
+      onPointerCancel={() => (drag.current = null)}
+    >
+      <div className="pointer-events-none sticky left-0 inline-block px-1.5 py-0.5 text-2xs whitespace-nowrap">
+        {clip.file.name} <span className="text-white/60 tabular-nums">@ {formatTime(clip.offset)}</span>
+      </div>
+      {clip.peaks ? (
+        <Waveform
+          peaks={clip.peaks}
+          duration={clip.duration}
+          width={width}
+          height={WAVE_HEIGHT}
+          color={WAVE_COLORS[kind]}
+        />
+      ) : (
+        <div className="px-1.5 py-1 text-2xs text-white/50">no audio track</div>
+      )}
+    </div>
+  )
+})

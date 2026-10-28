@@ -293,29 +293,8 @@ export default function App() {
               <Heading>{selected === 'video' ? 'Video clip' : 'Audio clip'}</Heading>
               <p className="mb-2 truncate" title={selectedClip.file.name}>{selectedClip.file.name}</p>
               <p className="text-dim">Length {formatTime(selectedClip.duration)}</p>
-              <label className="mt-3 mb-2 flex items-center justify-between gap-2">
-                Start (ms)
-                <input
-                  type="number"
-                  step={1}
-                  min={0}
-                  className="w-[110px] rounded-md border border-line bg-bg px-1.5 py-1 tabular-nums"
-                  value={Math.round(selectedClip.offset * 1000)}
-                  onChange={(e) => setOffset(selected, Number(e.target.value) / 1000)}
-                />
-              </label>
-              <div className="grid grid-cols-6 gap-1">
-                {[-100, -10, -1, 1, 10, 100].map((ms) => (
-                  <button key={ms} className="px-0 text-xs tabular-nums" onClick={() => setOffset(selected, selectedClip.offset + ms / 1000)}>
-                    {ms > 0 ? '+' : ''}{ms}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-2.5 flex gap-1.5">
+              <div className="mt-3 flex gap-1.5">
                 <button onClick={() => setOffset(selected, time)}>Start at playhead</button>
-                <button className="text-danger" onClick={() => removeClip(selected)}>
-                  Remove
-                </button>
               </div>
             </section>
           ) : (
@@ -396,6 +375,7 @@ export default function App() {
         onRangeChange={setRangePoint}
         onToggleMute={(kind) => setMuted((m) => ({ ...m, [kind]: !m[kind] }))}
         onImport={(file, kind) => void importFile(file, kind)}
+        onRemove={removeClip}
         onZoom={setPps}
       />
     </div>
