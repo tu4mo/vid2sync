@@ -1,7 +1,8 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { TRACK_KINDS, type Clip, type Clips, type TimeRange, type TrackKind } from '../../media'
 import { ClipView } from './ClipView'
+import { Ruler } from './Ruler'
 import { SyncLane, SYNC_LANE_HEIGHT } from './SyncLane'
 
 export const MIN_PPS = 5
@@ -9,7 +10,6 @@ export const MAX_PPS = 2000
 
 const LANE_HEIGHT = 72
 const TAIL_SECONDS = 10
-const TICK_STEPS = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
 
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 // Full class names, so Tailwind finds them in the source.
@@ -100,27 +100,6 @@ export function Timeline(props: Props) {
 
   const visibleSeconds = Math.max(end + TAIL_SECONDS, viewport / pps)
   const width = visibleSeconds * pps
-  // Memoized so the ruler isn't rebuilt on every playback frame.
-  const ruler = useMemo(() => {
-    const step = TICK_STEPS.find((s) => s * pps >= 80) ?? TICK_STEPS[TICK_STEPS.length - 1]
-    const ticks: number[] = []
-    for (let t = 0; t <= visibleSeconds; t += step) ticks.push(t)
-    return (
-      <div className="relative h-7 border-b border-line bg-panel-2">
-        {ticks.map((t) => (
-          <div
-            key={t}
-            className="absolute top-3.5 bottom-0 border-l border-line-strong"
-            style={{ left: t * pps }}
-          >
-            <span className="absolute -top-[13px] left-1 text-2xs whitespace-nowrap text-dim tabular-nums">
-              {formatTick(t, step)}
-            </span>
-          </div>
-        ))}
-      </div>
-    )
-  }, [pps, visibleSeconds])
 
   return (
     <div className="grid grid-cols-[170px_minmax(0,1fr)] border-t border-line bg-panel">
@@ -172,7 +151,7 @@ export function Timeline(props: Props) {
           onPointerUp={() => (scrubbing.current = false)}
           onPointerCancel={() => (scrubbing.current = false)}
         >
-          {ruler}
+          <Ruler pps={pps} seconds={visibleSeconds} />
 
           {TRACK_KINDS.map((kind) => {
             const clip = clips[kind]
@@ -250,15 +229,6 @@ export function Timeline(props: Props) {
       </div>
     </div>
   )
-}
-
-function formatTick(t: number, step: number): string {
-  if (step >= 1) {
-    const m = Math.floor(t / 60)
-    const s = Math.round(t - m * 60)
-    return `${m}:${String(s).padStart(2, '0')}`
-  }
-  return `${t.toFixed(step < 0.1 ? 2 : 1)}s`
 }
 
 interface TrackHeadProps {
