@@ -1,10 +1,12 @@
-import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+
+import { expect, test, type Page } from '@playwright/test'
 
 const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname
 
 // Shortcuts are ignored while an input has focus, so drop focus before pressing keys.
-const blur = (page: Page) => page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+const blur = (page: Page) =>
+  page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
 
 const clockSeconds = async (page: Page) => {
   const [m, s] = (await page.getByTestId('clock').innerText()).split(' ')[0].split(':')
@@ -12,7 +14,7 @@ const clockSeconds = async (page: Page) => {
 }
 
 test('import, sync, play, set range and export', async ({ page }) => {
-  await page.goto("/")
+  await page.goto('/')
 
   // Import both tracks.
   const videoHead = page.getByTestId('head-video')

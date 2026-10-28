@@ -11,6 +11,7 @@ import {
   getFirstEncodableAudioCodec,
   type AudioCodec,
 } from 'mediabunny'
+
 import { scheduleClips, type Clips, type TimeRange, type TrackKind } from './media'
 
 const SAMPLE_RATE = 48000
@@ -132,10 +133,7 @@ export async function exportSynced(
     output.addAudioTrack(audioSource)
     await output.start()
 
-    await Promise.all([
-      conversion.execute(),
-      audioSource.add(mix).then(() => audioSource.close()),
-    ])
+    await Promise.all([conversion.execute(), audioSource.add(mix).then(() => audioSource.close())])
 
     await output.finalize()
     onProgress(1)

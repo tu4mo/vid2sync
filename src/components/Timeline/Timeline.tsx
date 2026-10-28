@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+
+import { TRACK_KINDS, type Clip, type Clips, type TimeRange, type TrackKind } from '../../media'
 import { ClipView } from './ClipView'
 import { SyncLane, SYNC_LANE_HEIGHT } from './SyncLane'
-import { TRACK_KINDS, type Clip, type Clips, type TimeRange, type TrackKind } from '../../media'
 
 export const MIN_PPS = 5
 export const MAX_PPS = 2000
@@ -107,7 +108,11 @@ export function Timeline(props: Props) {
     return (
       <div className="relative h-7 border-b border-line bg-panel-2">
         {ticks.map((t) => (
-          <div key={t} className="absolute top-3.5 bottom-0 border-l border-line-strong" style={{ left: t * pps }}>
+          <div
+            key={t}
+            className="absolute top-3.5 bottom-0 border-l border-line-strong"
+            style={{ left: t * pps }}
+          >
             <span className="absolute -top-[13px] left-1 text-2xs whitespace-nowrap text-dim tabular-nums">
               {formatTick(t, step)}
             </span>
@@ -173,7 +178,12 @@ export function Timeline(props: Props) {
             const clip = clips[kind]
             return (
               <Fragment key={kind}>
-                <div className="relative border-b border-line" data-track={kind} data-testid={`lane-${kind}`} style={{ height: LANE_HEIGHT }}>
+                <div
+                  className="relative border-b border-line"
+                  data-track={kind}
+                  data-testid={`lane-${kind}`}
+                  style={{ height: LANE_HEIGHT }}
+                >
                   {clip ? (
                     <ClipView
                       kind={kind}
@@ -234,7 +244,8 @@ export function Timeline(props: Props) {
 
           <div
             className="pointer-events-none absolute inset-y-0 w-0 -translate-x-px border-l-2 border-accent before:absolute before:top-0 before:-left-[7px] before:border-6 before:border-t-8 before:border-transparent before:border-t-accent"
-            style={{ left: time * pps }} />
+            style={{ left: time * pps }}
+          />
         </div>
       </div>
     </div>
@@ -263,12 +274,15 @@ interface TrackHeadProps {
 }
 
 function TrackHead(props: TrackHeadProps) {
-  const { kind, clip, muted, volume, loading, onToggleMute, onVolumeChange, onImport, onRemove } = props
+  const { kind, clip, muted, volume, loading, onToggleMute, onVolumeChange, onImport, onRemove } =
+    props
   return (
     <div
       className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}
       data-track={kind}
-      data-testid={`head-${kind}`} style={{ height: LANE_HEIGHT }}>
+      data-testid={`head-${kind}`}
+      style={{ height: LANE_HEIGHT }}
+    >
       <div className="flex items-center justify-between gap-1.5">
         <span className="font-semibold">{LABELS[kind]}</span>
         <span className="min-w-0 flex-1 truncate text-xs text-dim">{loading && 'Loading…'}</span>
@@ -305,7 +319,9 @@ function TrackHead(props: TrackHeadProps) {
           onDoubleClick={() => onVolumeChange(1)}
           title={`Volume ${Math.round(volume * 100)}% (double-click to reset)`}
         />
-        <span className="w-[34px] text-right text-2xs text-dim tabular-nums">{Math.round(volume * 100)}%</span>
+        <span className="w-[34px] text-right text-2xs text-dim tabular-nums">
+          {Math.round(volume * 100)}%
+        </span>
       </div>
       <label className="cursor-pointer self-start text-xs text-accent">
         {clip ? 'Replace…' : 'Import…'}

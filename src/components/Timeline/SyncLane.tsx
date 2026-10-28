@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+
 import type { Clip, TrackKind } from '../../media'
 
 export const SYNC_LANE_HEIGHT = 26
@@ -44,7 +45,10 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
   // Moves the audio; if that would put it before 0:00, the video moves the other way instead.
   // Clamped to where the clips still overlap, which also keeps a typo from stretching the timeline to days.
   const setDelta = (ms: number) => {
-    const clamped = Math.min(Math.max(ms, -Math.floor(audio.duration * 1000)), Math.floor(video.duration * 1000))
+    const clamped = Math.min(
+      Math.max(ms, -Math.floor(audio.duration * 1000)),
+      Math.floor(video.duration * 1000),
+    )
     const target = video.offset + clamped / 1000
     if (target >= 0) {
       onOffsetChange('audio', target)
@@ -67,7 +71,8 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
       // Step live, so you can hear the change.
       e.preventDefault()
       const current = Number(editing.draft)
-      const next = (Number.isFinite(current) ? Math.round(current) : delta) +
+      const next =
+        (Number.isFinite(current) ? Math.round(current) : delta) +
         (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)
       setEditing({ ...editing, draft: String(setDelta(next)) })
     }
@@ -87,7 +92,10 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
   )
 
   return (
-    <div className="pointer-events-none relative border-b border-line" style={{ height: SYNC_LANE_HEIGHT }}>
+    <div
+      className="pointer-events-none relative border-b border-line"
+      style={{ height: SYNC_LANE_HEIGHT }}
+    >
       {/* Each half is a box whose two borders draw one corner; +1 px so the far border lands on the clip's start. */}
       <div
         className={`absolute top-0 h-1/2 border-fg/60 ${down}`}
@@ -107,7 +115,7 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
         {editing ? (
           <>
             <input
-              className="h-5 min-w-[4ch] rounded border border-accent bg-bg px-1 text-right outline-none field-sizing-content not-supports-[field-sizing:content]:w-16"
+              className="field-sizing-content h-5 min-w-[4ch] rounded border border-accent bg-bg px-1 text-right outline-none not-supports-[field-sizing:content]:w-16"
               aria-label="Audio offset (ms)"
               inputMode="numeric"
               autoFocus
@@ -117,7 +125,8 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
               onKeyDown={onKeyDown}
               onBlur={() => {
                 const ms = Number(editing.draft)
-                if (!cancelled.current && editing.draft.trim() !== '' && Number.isFinite(ms)) setDelta(Math.round(ms))
+                if (!cancelled.current && editing.draft.trim() !== '' && Number.isFinite(ms))
+                  setDelta(Math.round(ms))
                 cancelled.current = false
                 setEditing(null)
               }}

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
-import { Engine } from './engine'
+
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { Timeline, MAX_PPS, MIN_PPS } from './components/Timeline/Timeline'
+import { Engine } from './engine'
 import {
   TRACK_KINDS,
   formatTime,
@@ -55,7 +56,10 @@ export default function App() {
   const [range, setRange] = useState<TimeRange | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const end = Math.max(0, ...TRACK_KINDS.map((k) => (clips[k] ? clips[k].offset + clips[k].duration : 0)))
+  const end = Math.max(
+    0,
+    ...TRACK_KINDS.map((k) => (clips[k] ? clips[k].offset + clips[k].duration : 0)),
+  )
 
   const gains = useMemo(
     () => ({
@@ -93,7 +97,9 @@ export default function App() {
 
   const setRangePoint = (which: keyof TimeRange, t: number) => {
     const video = clips.video
-    const whole = video ? { start: video.offset, end: video.offset + video.duration } : { start: 0, end }
+    const whole = video
+      ? { start: video.offset, end: video.offset + video.duration }
+      : { start: 0, end }
     setRange((prev) => {
       const next = { ...(prev ?? whole), [which]: roundMs(Math.max(0, t)) }
       // Like most editors: an in point after the out point (or vice versa) resets the other one.
@@ -225,7 +231,8 @@ export default function App() {
   }, [])
 
   const videoClip = clips.video
-  const videoVisible = !!videoClip && time >= videoClip.offset && time < videoClip.offset + videoClip.duration
+  const videoVisible =
+    !!videoClip && time >= videoClip.offset && time < videoClip.offset + videoClip.duration
 
   return (
     <div
@@ -253,13 +260,19 @@ export default function App() {
         const target = (e.target as Element).closest<HTMLElement>('[data-track]')?.dataset.track
         for (const file of files) {
           const kind =
-            files.length === 1 && (target === 'video' || target === 'audio') ? target : kindForFile(file)
+            files.length === 1 && (target === 'video' || target === 'audio')
+              ? target
+              : kindForFile(file)
           if (kind) void importFile(file, kind)
           else setError(`“${file.name}” doesn’t look like a video or audio file.`)
         }
       }}
     >
-      {dragging && <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-xl border-2 border-dashed border-accent bg-bg/70 text-lg font-semibold text-accent">Drop video or audio to import</div>}
+      {dragging && (
+        <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-xl border-2 border-dashed border-accent bg-bg/70 text-lg font-semibold text-accent">
+          Drop video or audio to import
+        </div>
+      )}
       <header className="flex items-center gap-4 border-b border-line px-4 py-2.5">
         <h1 className="flex items-center gap-2 text-lg font-bold tracking-[0.02em]">
           <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="" className="size-7" />
@@ -284,15 +297,22 @@ export default function App() {
       <div className="flex items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
         <button
           className="min-w-[70px] border-accent bg-accent font-semibold text-[#1a1206]"
-          onClick={playing ? pause : play} disabled={end === 0}>
+          onClick={playing ? pause : play}
+          disabled={end === 0}
+        >
           {playing ? 'Pause' : 'Play'}
         </button>
-        <button onClick={() => seek(0)} title="Go to start">⏮</button>
+        <button onClick={() => seek(0)} title="Go to start">
+          ⏮
+        </button>
         <span className="font-mono tabular-nums" data-testid="clock">
           {formatTime(time)} <span className="text-dim">/ {formatTime(end)}</span>
         </span>
         <div className="ml-3 flex items-center gap-1.5 text-xs">
-          <button onClick={() => setRangePoint('start', time)} title="Set export start at playhead (I)">
+          <button
+            onClick={() => setRangePoint('start', time)}
+            title="Set export start at playhead (I)"
+          >
             In
           </button>
           <button onClick={() => setRangePoint('end', time)} title="Set export end at playhead (O)">
@@ -302,7 +322,11 @@ export default function App() {
             <span className="font-mono whitespace-nowrap" data-testid="range">
               {formatTime(range.start)} – {formatTime(range.end)}{' '}
               <span className="text-dim">({(range.end - range.start).toFixed(2)} s)</span>
-              <button className="ml-0.5 px-1.5 py-0" onClick={() => setRange(null)} title="Clear in/out (X)">
+              <button
+                className="ml-0.5 px-1.5 py-0"
+                onClick={() => setRange(null)}
+                title="Clear in/out (X)"
+              >
                 ×
               </button>
             </span>
@@ -316,7 +340,9 @@ export default function App() {
           disabled={!clips.video || exportProgress !== null}
           title="Save the video with the synced audio as MP4"
         >
-          {exportProgress === null ? 'Export MP4' : `Exporting… ${Math.round(exportProgress * 100)}%`}
+          {exportProgress === null
+            ? 'Export MP4'
+            : `Exporting… ${Math.round(exportProgress * 100)}%`}
         </button>
         <label className="ml-3 flex items-center gap-2 text-dim">
           Zoom

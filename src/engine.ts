@@ -39,7 +39,13 @@ export class Engine {
     this.anchorCtx = this.ctx.currentTime + LEAD
     this.anchorTime = from
     this.playing = true
-    this.sources = scheduleClips(this.ctx, this.clips, from, this.anchorCtx, (kind) => this.gains[kind])
+    this.sources = scheduleClips(
+      this.ctx,
+      this.clips,
+      from,
+      this.anchorCtx,
+      (kind) => this.gains[kind],
+    )
   }
 
   pause() {

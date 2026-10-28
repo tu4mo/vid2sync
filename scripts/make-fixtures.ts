@@ -1,9 +1,10 @@
+import { readFile, writeFile } from 'node:fs/promises'
+
 // Generates the smoke test's media in tests/fixtures. Run with `npm run test:fixtures`.
 //   clip.mp4  3 s, 320×180 @ 30 fps H.264 (keyframe every 2 s) + AAC 440 Hz tone at 0.5
 //   tone.wav  2 s, 48 kHz stereo 16-bit PCM, 880 Hz tone at 0.5
 // Encoding needs WebCodecs, so it runs in Playwright's Chromium.
 import { chromium } from '@playwright/test'
-import { readFile, writeFile } from 'node:fs/promises'
 
 const ORIGIN = 'https://fixtures.test' // served by page.route below; https gives a secure context
 const BUNDLE = new URL('../node_modules/mediabunny/dist/bundles/mediabunny.mjs', import.meta.url)
@@ -53,7 +54,11 @@ try {
     })
     const canvas = new OffscreenCanvas(320, 180)
     const g = canvas.getContext('2d')!
-    const frames = new mb.CanvasSource(canvas, { codec: 'avc', bitrate: 500_000, keyFrameInterval: 2 })
+    const frames = new mb.CanvasSource(canvas, {
+      codec: 'avc',
+      bitrate: 500_000,
+      keyFrameInterval: 2,
+    })
     const sound = new mb.AudioBufferSource({ codec: 'aac', bitrate: 128_000 })
     mp4.addVideoTrack(frames, { frameRate: FPS })
     mp4.addAudioTrack(sound)

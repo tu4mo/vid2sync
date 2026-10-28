@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [".claude/"],
+  "printWidth": 100,
+  "quoteProps": "consistent",
+  "semi": false,
+  "singleQuote": true,
+  "sortImports": true,
+  "sortTailwindcss": { "stylesheet": "./src/index.css" }
+}

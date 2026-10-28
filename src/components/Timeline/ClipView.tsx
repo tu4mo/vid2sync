@@ -1,6 +1,7 @@
 import { memo, useRef } from 'react'
-import { Waveform } from './Waveform'
+
 import { formatTime, type Clip, type TrackKind } from '../../media'
+import { Waveform } from './Waveform'
 
 const WAVE_HEIGHT = 48
 const WAVE_COLORS: Record<TrackKind, string> = { video: '#9cc4ff', audio: '#8ef0b8' }
@@ -49,7 +50,8 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
       onPointerCancel={() => (drag.current = null)}
     >
       <div className="pointer-events-none sticky left-0 inline-block px-1.5 py-0.5 text-2xs whitespace-nowrap">
-        {clip.file.name} <span className="text-white/60 tabular-nums">@ {formatTime(clip.offset)}</span>
+        {clip.file.name}{' '}
+        <span className="text-white/60 tabular-nums">@ {formatTime(clip.offset)}</span>
       </div>
       {clip.peaks ? (
         <Waveform

@@ -1,7 +1,7 @@
 {
   "name": "vid2sync",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test:fixtures": "node scripts/make-fixtures.ts"
+    "test:fixtures": "node scripts/make-fixtures.ts",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
   },
   "dependencies": {
     "mediabunny": "1.62.1",
@@ -26,6 +28,7 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "babel-plugin-react-compiler": "1.0.0",
+    "oxfmt": "0.74.0",
     "oxlint": "1.90.0",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
