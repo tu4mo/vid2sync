@@ -48,5 +48,5 @@ export const Waveform = memo(function Waveform({ peaks, duration, width, height,
     }
   }, [peaks, duration, width, height, color])
 
-  return <canvas ref={ref} className="waveform" style={{ width, height }} />
+  return <canvas ref={ref} className="pointer-events-none absolute bottom-0.5 left-0 block" style={{ width, height }} />
 })

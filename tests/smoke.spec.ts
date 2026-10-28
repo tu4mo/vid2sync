@@ -7,7 +7,7 @@ const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).p
 const blur = (page: Page) => page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
 
 const clockSeconds = async (page: Page) => {
-  const [m, s] = (await page.locator('.clock').innerText()).split(' ')[0].split(':')
+  const [m, s] = (await page.getByTestId('clock').innerText()).split(' ')[0].split(':')
   return Number(m) * 60 + Number(s)
 }
 
@@ -15,15 +15,17 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.goto("/")
 
   // Import both tracks.
-  await page.locator('.head[data-track=video] input[type=file]').setInputFiles(fixture('clip.mp4'))
-  await page.locator('.head[data-track=audio] input[type=file]').setInputFiles(fixture('tone.wav'))
-  const videoClip = page.locator('.lane[data-track=video] .clip')
-  const audioClip = page.locator('.lane[data-track=audio] .clip')
+  const videoHead = page.getByTestId('head-video')
+  const audioHead = page.getByTestId('head-audio')
+  await videoHead.locator('input[type=file]').setInputFiles(fixture('clip.mp4'))
+  await audioHead.locator('input[type=file]').setInputFiles(fixture('tone.wav'))
+  const videoClip = page.getByTestId('clip-video')
+  const audioClip = page.getByTestId('clip-audio')
   await expect(videoClip).toContainText('clip.mp4')
   await expect(audioClip).toContainText('tone.wav')
-  await expect(videoClip.locator('canvas.waveform')).toBeVisible()
-  await expect(audioClip.locator('canvas.waveform')).toBeVisible()
-  await expect(page.locator('.clock')).toContainText(/\/ 0:03\.\d{3}/) // AAC padding makes the file slightly longer than 3 s
+  await expect(videoClip.locator('canvas')).toBeVisible()
+  await expect(audioClip.locator('canvas')).toBeVisible()
+  await expect(page.getByTestId('clock')).toContainText(/\/ 0:03\.\d{3}/) // AAC padding makes the file slightly longer than 3 s
 
   // Sync: drag the audio clip, then set it exactly and nudge with the keyboard.
   const box = (await audioClip.boundingBox())!
@@ -37,21 +39,21 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await blur(page)
   await page.keyboard.press('Shift+ArrowRight')
   await expect(start).toHaveValue('1500')
-  await expect(page.locator('.sync')).toContainText('+1500 ms')
+  await expect(page.getByTestId('sync')).toContainText('+1500 ms')
   await expect(videoClip).toContainText('@ 0:00.000')
 
   // Mute the video's own sound and halve the audio track.
-  const mute = page.locator('.head[data-track=video] .mute')
+  const mute = videoHead.getByRole('button', { name: 'Mute' })
   await mute.click()
-  await expect(mute).toHaveClass(/\bon\b/)
-  await page.locator('.head[data-track=audio] .volume').fill('0.5')
-  await expect(page.locator('.head[data-track=audio] .volume-value')).toHaveText('50%')
+  await expect(mute).toHaveAttribute('aria-pressed', 'true')
+  await audioHead.getByRole('slider').fill('0.5')
+  await expect(audioHead).toContainText('50%')
 
   // Play, let the clock run, pause.
   await blur(page)
   await page.keyboard.press('Escape')
   await page.keyboard.press('Home')
-  const play = page.locator('.transport .play')
+  const play = page.getByRole('button', { name: /^(Play|Pause)$/ })
   await page.keyboard.press('Space')
   await expect(play).toHaveText('Pause')
   await expect.poll(() => clockSeconds(page)).toBeGreaterThan(0.3)
@@ -67,7 +69,7 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.keyboard.press('i')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('o')
-  await expect(page.locator('.range-label')).toContainText('0:01.000 – 0:02.000')
+  await expect(page.getByTestId('range')).toContainText('0:01.000 – 0:02.000')
 
   // Export and check the file itself.
   const downloading = page.waitForEvent('download')

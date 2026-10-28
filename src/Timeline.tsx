@@ -12,6 +12,9 @@ const TICK_STEPS = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600
 
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 const WAVE_COLORS: Record<TrackKind, string> = { video: '#9cc4ff', audio: '#8ef0b8' }
+// Full class names, so Tailwind finds them in the source.
+const HEAD_BORDERS: Record<TrackKind, string> = { video: 'border-l-video', audio: 'border-l-audio' }
+const CLIP_BACKGROUNDS: Record<TrackKind, string> = { video: 'bg-video/45', audio: 'bg-audio/45' }
 
 interface Props {
   clips: Clips
@@ -102,10 +105,12 @@ export function Timeline(props: Props) {
     const ticks: number[] = []
     for (let t = 0; t <= visibleSeconds; t += step) ticks.push(t)
     return (
-      <div className="ruler">
+      <div className="relative h-7 border-b border-line bg-panel-2">
         {ticks.map((t) => (
-          <div key={t} className="tick" style={{ left: t * pps }}>
-            <span>{formatTick(t, step)}</span>
+          <div key={t} className="absolute top-3.5 bottom-0 border-l border-line-strong" style={{ left: t * pps }}>
+            <span className="absolute -top-[13px] left-1 text-2xs whitespace-nowrap text-dim tabular-nums">
+              {formatTick(t, step)}
+            </span>
           </div>
         ))}
       </div>
@@ -113,9 +118,9 @@ export function Timeline(props: Props) {
   }, [pps, visibleSeconds])
 
   return (
-    <div className="timeline">
-      <div className="heads">
-        <div className="ruler-head" />
+    <div className="grid grid-cols-[170px_minmax(0,1fr)] border-t border-line bg-panel">
+      <div className="border-r border-line">
+        <div className="h-7 border-b border-line" />
         {TRACK_KINDS.map((kind) => (
           <TrackHead
             key={kind}
@@ -131,9 +136,9 @@ export function Timeline(props: Props) {
         ))}
       </div>
 
-      <div className="scroll" ref={scrollRef}>
+      <div className="overflow-x-auto overflow-y-hidden" ref={scrollRef}>
         <div
-          className="content"
+          className="relative min-w-full cursor-text"
           ref={contentRef}
           style={{ width }}
           onPointerDown={(e) => {
@@ -152,7 +157,7 @@ export function Timeline(props: Props) {
           {TRACK_KINDS.map((kind) => {
             const clip = clips[kind]
             return (
-              <div key={kind} className="lane" data-track={kind} style={{ height: LANE_HEIGHT }}>
+              <div key={kind} className="relative border-b border-line" data-track={kind} data-testid={`lane-${kind}`} style={{ height: LANE_HEIGHT }}>
                 {clip ? (
                   <ClipView
                     kind={kind}
@@ -164,7 +169,7 @@ export function Timeline(props: Props) {
                     onOffsetChange={props.onOffsetChange}
                   />
                 ) : (
-                  <div className="lane-hint">
+                  <div className="sticky left-0 inline-block px-4 py-[26px] text-xs text-dim">
                     Import or drop {kind === 'video' ? 'a video' : 'an audio'} file
                   </div>
                 )}
@@ -175,13 +180,15 @@ export function Timeline(props: Props) {
           {range && (
             <>
               <div
-                className="range"
+                className="pointer-events-none absolute inset-y-0 border-x border-accent bg-accent/10"
                 style={{ left: range.start * pps, width: (range.end - range.start) * pps }}
               />
               {(['start', 'end'] as const).map((which) => (
                 <div
                   key={which}
-                  className={`range-handle range-${which}`}
+                  className={`absolute top-0 z-1 h-7 w-3 cursor-ew-resize touch-none bg-accent ${
+                    which === 'start' ? '-translate-x-3 rounded-l' : 'rounded-r'
+                  }`}
                   style={{ left: range[which] * pps }}
                   title={which === 'start' ? 'Export start' : 'Export end'}
                   onPointerDown={(e) => {
@@ -199,7 +206,9 @@ export function Timeline(props: Props) {
             </>
           )}
 
-          <div className="playhead" style={{ left: time * pps }} />
+          <div
+            className="pointer-events-none absolute inset-y-0 w-0 -translate-x-px border-l-2 border-accent before:absolute before:top-0 before:-left-[7px] before:border-6 before:border-t-8 before:border-transparent before:border-t-accent"
+            style={{ left: time * pps }} />
         </div>
       </div>
     </div>
@@ -229,23 +238,28 @@ interface TrackHeadProps {
 function TrackHead(props: TrackHeadProps) {
   const { kind, clip, muted, volume, loading, onToggleMute, onVolumeChange, onImport } = props
   return (
-    <div className={`head head-${kind}`} data-track={kind} style={{ height: LANE_HEIGHT }}>
-      <div className="head-title">
-        <span className="head-label">{LABELS[kind]}</span>
-        <span className="head-file" title={clip?.file.name}>
+    <div
+      className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}
+      data-track={kind}
+      data-testid={`head-${kind}`} style={{ height: LANE_HEIGHT }}>
+      <div className="flex items-center justify-between gap-1.5">
+        <span className="font-semibold">{LABELS[kind]}</span>
+        <span className="min-w-0 flex-1 truncate text-xs text-dim" title={clip?.file.name}>
           {loading ? 'Loading…' : (clip?.file.name ?? 'No file')}
         </span>
         <button
-          className={`mute ${muted ? 'on' : ''}`}
+          className="px-1.5 py-0 text-2xs font-bold aria-pressed:border-danger aria-pressed:bg-danger aria-pressed:text-white"
+          aria-label="Mute"
+          aria-pressed={muted}
           onClick={onToggleMute}
           title={muted ? 'Unmute' : 'Mute'}
         >
           M
         </button>
       </div>
-      <div className="head-volume">
+      <div className="flex items-center gap-1.5">
         <input
-          className="volume"
+          className="h-3.5 min-w-0 flex-1 accent-accent"
           type="range"
           min={0}
           max={2}
@@ -256,11 +270,12 @@ function TrackHead(props: TrackHeadProps) {
           onDoubleClick={() => onVolumeChange(1)}
           title={`Volume ${Math.round(volume * 100)}% (double-click to reset)`}
         />
-        <span className="volume-value">{Math.round(volume * 100)}%</span>
+        <span className="w-[34px] text-right text-2xs text-dim tabular-nums">{Math.round(volume * 100)}%</span>
       </div>
-      <label className="import">
+      <label className="cursor-pointer self-start text-xs text-accent">
         {clip ? 'Replace…' : 'Import…'}
         <input
+          className="hidden"
           type="file"
           accept={`${kind}/*`}
           onChange={(e) => {
@@ -291,7 +306,10 @@ const ClipView = memo(function ClipView(props: ClipViewProps) {
 
   return (
     <div
-      className={`clip clip-${kind} ${selected ? 'selected' : ''} ${muted ? 'muted' : ''}`}
+      className={`absolute inset-y-1 cursor-grab touch-none overflow-hidden rounded-md border active:cursor-grabbing ${
+        CLIP_BACKGROUNDS[kind]
+      } ${selected ? 'border-accent ring-1 ring-accent' : 'border-transparent'} ${muted ? 'opacity-45' : ''}`}
+      data-testid={`clip-${kind}`}
       style={{ left: clip.offset * pps, width }}
       onPointerDown={(e) => {
         if (e.button !== 0) return
@@ -312,8 +330,8 @@ const ClipView = memo(function ClipView(props: ClipViewProps) {
       onPointerUp={() => (drag.current = null)}
       onPointerCancel={() => (drag.current = null)}
     >
-      <div className="clip-name">
-        {clip.file.name} <span className="clip-offset">@ {formatTime(clip.offset)}</span>
+      <div className="pointer-events-none sticky left-0 inline-block px-1.5 py-0.5 text-2xs whitespace-nowrap">
+        {clip.file.name} <span className="text-white/60 tabular-nums">@ {formatTime(clip.offset)}</span>
       </div>
       {clip.peaks ? (
         <Waveform
@@ -324,7 +342,7 @@ const ClipView = memo(function ClipView(props: ClipViewProps) {
           color={WAVE_COLORS[kind]}
         />
       ) : (
-        <div className="no-audio">no audio track</div>
+        <div className="px-1.5 py-1 text-2xs text-white/50">no audio track</div>
       )}
     </div>
   )

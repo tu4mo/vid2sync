@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Engine } from './engine'
 import { Timeline, MAX_PPS, MIN_PPS } from './Timeline'
 import {
@@ -11,7 +11,6 @@ import {
   type TimeRange,
   type TrackKind,
 } from './media'
-import './App.css'
 
 const engine = new Engine()
 
@@ -232,7 +231,7 @@ export default function App() {
 
   return (
     <div
-      className={`app ${dragging ? 'dragging' : ''}`}
+      className="relative grid h-full grid-rows-[auto_minmax(0,1fr)_auto_auto] select-none"
       onDragOver={(e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'
@@ -262,38 +261,42 @@ export default function App() {
         }
       }}
     >
-      {dragging && <div className="drop-overlay">Drop video or audio to import</div>}
-      <header className="topbar">
-        <h1>vid2sync</h1>
-        <span className="hints">
+      {dragging && <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-xl border-2 border-dashed border-accent bg-bg/70 text-lg font-semibold text-accent">Drop video or audio to import</div>}
+      <header className="flex items-center gap-4 border-b border-line px-4 py-2.5">
+        <h1 className="flex items-center gap-2 text-lg font-bold tracking-[0.02em]">
+          <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="" className="size-7" />
+          vid2sync
+        </h1>
+        <span className="text-xs text-dim">
           Drop files anywhere · <kbd>Space</kbd> play · drag clips to move · <kbd>Shift</kbd>-drag
           for fine moves · <kbd>←</kbd>/<kbd>→</kbd> nudge 10 ms (<kbd>Shift</kbd> 100 ms) ·{' '}
           <kbd>I</kbd>/<kbd>O</kbd> set export in/out (<kbd>X</kbd> clear) · <kbd>Ctrl</kbd>/<kbd>⌘</kbd>-scroll to zoom
         </span>
       </header>
 
-      <main className="stage">
-        <div className="preview">
+      <main className="grid min-h-0 grid-cols-[minmax(0,1fr)_280px]">
+        <div className="relative flex min-h-0 items-center justify-center bg-black">
           {videoClip && (
             <video
               ref={videoRef}
               src={videoClip.url}
+              className="max-h-full max-w-full"
               playsInline
               preload="auto"
               style={{ visibility: videoVisible ? 'visible' : 'hidden' }}
             />
           )}
-          {!videoClip && <div className="preview-empty">Import a video to preview it here</div>}
+          {!videoClip && <div className="text-dim">Import a video to preview it here</div>}
         </div>
 
-        <aside className="inspector">
+        <aside className="flex flex-col gap-5 overflow-y-auto border-l border-line bg-panel px-4 py-3 select-text">
           <section>
-            <h2>Sync</h2>
+            <Heading>Sync</Heading>
             {syncDelta === null ? (
-              <p className="muted-text">Import both a video and an audio file.</p>
+              <p className="text-dim">Import both a video and an audio file.</p>
             ) : (
-              <p className="sync">
-                Audio is <strong>{syncDelta >= 0 ? '+' : ''}{syncDelta} ms</strong>{' '}
+              <p data-testid="sync">
+                Audio is <strong className="text-accent tabular-nums">{syncDelta >= 0 ? '+' : ''}{syncDelta} ms</strong>{' '}
                 {syncDelta >= 0 ? 'after' : 'before'} the video
               </p>
             )}
@@ -301,52 +304,55 @@ export default function App() {
 
           {selected && selectedClip ? (
             <section>
-              <h2>{selected === 'video' ? 'Video clip' : 'Audio clip'}</h2>
-              <p className="file-name" title={selectedClip.file.name}>{selectedClip.file.name}</p>
-              <p className="muted-text">Length {formatTime(selectedClip.duration)}</p>
-              <label className="field">
+              <Heading>{selected === 'video' ? 'Video clip' : 'Audio clip'}</Heading>
+              <p className="mb-2 truncate" title={selectedClip.file.name}>{selectedClip.file.name}</p>
+              <p className="text-dim">Length {formatTime(selectedClip.duration)}</p>
+              <label className="mt-3 mb-2 flex items-center justify-between gap-2">
                 Start (ms)
                 <input
                   type="number"
                   step={1}
                   min={0}
+                  className="w-[110px] rounded-md border border-line bg-bg px-1.5 py-1 tabular-nums"
                   value={Math.round(selectedClip.offset * 1000)}
                   onChange={(e) => setOffset(selected, Number(e.target.value) / 1000)}
                 />
               </label>
-              <div className="nudges">
+              <div className="grid grid-cols-6 gap-1">
                 {[-100, -10, -1, 1, 10, 100].map((ms) => (
-                  <button key={ms} onClick={() => setOffset(selected, selectedClip.offset + ms / 1000)}>
+                  <button key={ms} className="px-0 text-xs tabular-nums" onClick={() => setOffset(selected, selectedClip.offset + ms / 1000)}>
                     {ms > 0 ? '+' : ''}{ms}
                   </button>
                 ))}
               </div>
-              <div className="actions">
+              <div className="mt-2.5 flex gap-1.5">
                 <button onClick={() => setOffset(selected, time)}>Start at playhead</button>
-                <button className="danger" onClick={() => removeClip(selected)}>
+                <button className="text-danger" onClick={() => removeClip(selected)}>
                   Remove
                 </button>
               </div>
             </section>
           ) : (
             <section>
-              <p className="muted-text">Select a clip on the timeline to adjust it precisely.</p>
+              <p className="text-dim">Select a clip on the timeline to adjust it precisely.</p>
             </section>
           )}
 
-          {error && <p className="error">{error}</p>}
+          {error && <p className="text-danger">{error}</p>}
         </aside>
       </main>
 
-      <div className="transport">
-        <button className="play" onClick={playing ? pause : play} disabled={end === 0}>
+      <div className="flex items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
+        <button
+          className="min-w-[70px] border-accent bg-accent font-semibold text-[#1a1206]"
+          onClick={playing ? pause : play} disabled={end === 0}>
           {playing ? 'Pause' : 'Play'}
         </button>
         <button onClick={() => seek(0)} title="Go to start">⏮</button>
-        <span className="clock">
-          {formatTime(time)} <span className="muted-text">/ {formatTime(end)}</span>
+        <span className="font-mono tabular-nums" data-testid="clock">
+          {formatTime(time)} <span className="text-dim">/ {formatTime(end)}</span>
         </span>
-        <div className="range-controls">
+        <div className="ml-3 flex items-center gap-1.5 text-xs">
           <button onClick={() => setRangePoint('start', time)} title="Set export start at playhead (I)">
             In
           </button>
@@ -354,26 +360,26 @@ export default function App() {
             Out
           </button>
           {range ? (
-            <span className="range-label">
+            <span className="font-mono whitespace-nowrap" data-testid="range">
               {formatTime(range.start)} – {formatTime(range.end)}{' '}
-              <span className="muted-text">({(range.end - range.start).toFixed(2)} s)</span>
-              <button className="clear" onClick={() => setRange(null)} title="Clear in/out (X)">
+              <span className="text-dim">({(range.end - range.start).toFixed(2)} s)</span>
+              <button className="ml-0.5 px-1.5 py-0" onClick={() => setRange(null)} title="Clear in/out (X)">
                 ×
               </button>
             </span>
           ) : (
-            <span className="muted-text">Whole video</span>
+            <span className="text-dim">Whole video</span>
           )}
         </div>
         <button
-          className="export"
+          className="ml-auto tabular-nums"
           onClick={() => void exportVideo()}
           disabled={!clips.video || exportProgress !== null}
           title="Save the video with the synced audio as MP4"
         >
           {exportProgress === null ? 'Export MP4' : `Exporting… ${Math.round(exportProgress * 100)}%`}
         </button>
-        <label className="zoom">
+        <label className="ml-3 flex items-center gap-2 text-dim">
           Zoom
           <input
             type="range"
@@ -408,4 +414,8 @@ export default function App() {
       />
     </div>
   )
+}
+
+function Heading({ children }: { children: ReactNode }) {
+  return <h2 className="mb-2 text-2xs font-bold tracking-[0.08em] text-dim uppercase">{children}</h2>
 }

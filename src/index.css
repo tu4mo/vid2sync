@@ -1,62 +1,42 @@
-:root {
-  --bg: #121418;
-  --panel: #1a1d23;
-  --panel-2: #22262e;
-  --border: #2e333d;
-  --text: #e6e8ec;
-  --text-dim: #8b919c;
-  --accent: #ffb547;
-  --video: #3d6fd1;
-  --audio: #2f9e66;
-  --danger: #e5534b;
+@import 'tailwindcss';
 
-  color-scheme: dark;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: 14px;
-  color: var(--text);
-  background: var(--bg);
+@theme {
+  --color-bg: #121418;
+  --color-panel: #1a1d23;
+  --color-panel-2: #22262e;
+  --color-line: #2e333d;
+  --color-line-strong: #4a5160;
+  --color-fg: #e6e8ec;
+  --color-dim: #8b919c;
+  --color-accent: #ffb547;
+  --color-video: #3d6fd1;
+  --color-audio: #2f9e66;
+  --color-danger: #e5534b;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-2xs: 11px;
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
 
-html,
-body,
-#root {
-  margin: 0;
-  height: 100%;
-}
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
 
-button {
-  font: inherit;
-  color: inherit;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-}
+  body {
+    @apply bg-bg font-sans text-sm text-fg;
+  }
 
-button:hover:not(:disabled) {
-  border-color: #4a5160;
-}
+  button {
+    @apply cursor-pointer rounded-md border border-line bg-panel-2 px-2.5 py-1 enabled:hover:border-line-strong disabled:cursor-default disabled:opacity-40;
+  }
 
-button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-input {
-  font: inherit;
-}
-
-kbd {
-  font-family: inherit;
-  font-size: 11px;
-  padding: 1px 5px;
-  border: 1px solid var(--border);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  background: var(--panel-2);
+  kbd {
+    @apply rounded border border-b-2 border-line bg-panel-2 px-[5px] py-px font-sans text-2xs;
+  }
 }
