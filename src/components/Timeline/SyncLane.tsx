@@ -126,7 +126,7 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
           </>
         ) : (
           <button
-            className="rounded-sm border-0 bg-transparent px-0.5 py-0 whitespace-nowrap hover:underline"
+            className="rounded-sm border-0 bg-transparent px-0.5 py-1 whitespace-nowrap [text-box:trim-both_cap_alphabetic] hover:underline"
             data-testid="sync"
             title={`Audio is ${Math.abs(delta)} ms ${delta >= 0 ? 'after' : 'before'} the video (click to edit)`}
             onClick={() => setEditing({ draft: String(delta), original: delta })}

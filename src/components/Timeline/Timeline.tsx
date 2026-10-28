@@ -139,7 +139,8 @@ export function Timeline(props: Props) {
                 className="flex items-center border-b border-line px-3 text-2xs font-bold tracking-[0.08em] text-dim uppercase"
                 style={{ height: SYNC_LANE_HEIGHT }}
               >
-                Sync
+                {/* Trim to cap height so the caps, not the line box, are centred. */}
+                <span className="[text-box:trim-both_cap_alphabetic]">Sync</span>
               </div>
             )}
           </Fragment>
