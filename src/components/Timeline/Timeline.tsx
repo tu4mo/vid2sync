@@ -1,6 +1,7 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { SyncLane, SYNC_LANE_HEIGHT } from './SyncLane'
 import { Waveform } from './Waveform'
-import { TRACK_KINDS, formatTime, type Clip, type Clips, type TimeRange, type TrackKind } from './media'
+import { TRACK_KINDS, formatTime, type Clip, type Clips, type TimeRange, type TrackKind } from '../../media'
 
 export const MIN_PPS = 5
 export const MAX_PPS = 2000
@@ -45,6 +46,7 @@ export function Timeline(props: Props) {
   const zoomAnchor = useRef<{ t: number; x: number } | null>(null)
   const ppsRef = useRef(pps)
   const [viewport, setViewport] = useState(800)
+  const [scrollLeft, setScrollLeft] = useState(0)
 
   useEffect(() => {
     ppsRef.current = pps
@@ -122,21 +124,34 @@ export function Timeline(props: Props) {
       <div className="border-r border-line">
         <div className="h-7 border-b border-line" />
         {TRACK_KINDS.map((kind) => (
-          <TrackHead
-            key={kind}
-            kind={kind}
-            clip={clips[kind]}
-            muted={props.muted[kind]}
-            volume={props.volume[kind]}
-            loading={props.loading === kind}
-            onToggleMute={() => props.onToggleMute(kind)}
-            onVolumeChange={(v) => props.onVolumeChange(kind, v)}
-            onImport={(file) => props.onImport(file, kind)}
-          />
+          <Fragment key={kind}>
+            <TrackHead
+              kind={kind}
+              clip={clips[kind]}
+              muted={props.muted[kind]}
+              volume={props.volume[kind]}
+              loading={props.loading === kind}
+              onToggleMute={() => props.onToggleMute(kind)}
+              onVolumeChange={(v) => props.onVolumeChange(kind, v)}
+              onImport={(file) => props.onImport(file, kind)}
+            />
+            {kind === 'video' && (
+              <div
+                className="flex items-center border-b border-line px-3 text-2xs font-bold tracking-[0.08em] text-dim uppercase"
+                style={{ height: SYNC_LANE_HEIGHT }}
+              >
+                Sync
+              </div>
+            )}
+          </Fragment>
         ))}
       </div>
 
-      <div className="overflow-x-auto overflow-y-hidden" ref={scrollRef}>
+      <div
+        className="overflow-x-auto overflow-y-hidden"
+        ref={scrollRef}
+        onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
+      >
         <div
           className="relative min-w-full cursor-text"
           ref={contentRef}
@@ -157,23 +172,33 @@ export function Timeline(props: Props) {
           {TRACK_KINDS.map((kind) => {
             const clip = clips[kind]
             return (
-              <div key={kind} className="relative border-b border-line" data-track={kind} data-testid={`lane-${kind}`} style={{ height: LANE_HEIGHT }}>
-                {clip ? (
-                  <ClipView
-                    kind={kind}
-                    clip={clip}
+              <Fragment key={kind}>
+                <div className="relative border-b border-line" data-track={kind} data-testid={`lane-${kind}`} style={{ height: LANE_HEIGHT }}>
+                  {clip ? (
+                    <ClipView
+                      kind={kind}
+                      clip={clip}
+                      pps={pps}
+                      selected={props.selected === kind}
+                      muted={props.muted[kind]}
+                      onSelect={onSelect}
+                      onOffsetChange={props.onOffsetChange}
+                    />
+                  ) : (
+                    <div className="sticky left-0 inline-block px-4 py-[26px] text-xs text-dim">
+                      Import or drop {kind === 'video' ? 'a video' : 'an audio'} file
+                    </div>
+                  )}
+                </div>
+                {kind === 'video' && (
+                  <SyncLane
+                    video={clips.video}
+                    audio={clips.audio}
                     pps={pps}
-                    selected={props.selected === kind}
-                    muted={props.muted[kind]}
-                    onSelect={onSelect}
-                    onOffsetChange={props.onOffsetChange}
+                    view={{ start: scrollLeft, width: viewport }}
                   />
-                ) : (
-                  <div className="sticky left-0 inline-block px-4 py-[26px] text-xs text-dim">
-                    Import or drop {kind === 'video' ? 'a video' : 'an audio'} file
-                  </div>
                 )}
-              </div>
+              </Fragment>
             )
           })}
 

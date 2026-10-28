@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Engine } from './engine'
-import { Timeline, MAX_PPS, MIN_PPS } from './Timeline'
+import { Timeline, MAX_PPS, MIN_PPS } from './components/Timeline/Timeline'
 import {
   TRACK_KINDS,
   formatTime,
@@ -226,8 +226,6 @@ export default function App() {
   const videoClip = clips.video
   const videoVisible = !!videoClip && time >= videoClip.offset && time < videoClip.offset + videoClip.duration
   const selectedClip = selected ? clips[selected] : null
-  const syncDelta =
-    clips.video && clips.audio ? Math.round((clips.audio.offset - clips.video.offset) * 1000) : null
 
   return (
     <div
@@ -290,18 +288,6 @@ export default function App() {
         </div>
 
         <aside className="flex flex-col gap-5 overflow-y-auto border-l border-line bg-panel px-4 py-3 select-text">
-          <section>
-            <Heading>Sync</Heading>
-            {syncDelta === null ? (
-              <p className="text-dim">Import both a video and an audio file.</p>
-            ) : (
-              <p data-testid="sync">
-                Audio is <strong className="text-accent tabular-nums">{syncDelta >= 0 ? '+' : ''}{syncDelta} ms</strong>{' '}
-                {syncDelta >= 0 ? 'after' : 'before'} the video
-              </p>
-            )}
-          </section>
-
           {selected && selectedClip ? (
             <section>
               <Heading>{selected === 'video' ? 'Video clip' : 'Audio clip'}</Heading>
