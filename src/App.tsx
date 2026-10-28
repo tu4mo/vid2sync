@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { Engine } from './engine'
+import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { Timeline, MAX_PPS, MIN_PPS } from './components/Timeline/Timeline'
 import {
   TRACK_KINDS,
@@ -191,8 +192,8 @@ export default function App() {
   }, [muted.video, volume.video, clips.video])
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
-    // Leave text fields and browser/OS shortcuts alone.
-    if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey) return
+    // Leave text fields, browser/OS shortcuts and the error dialog alone.
+    if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || error) return
     if (e.key === ' ') {
       e.preventDefault()
       if (playing) pause()
@@ -225,7 +226,6 @@ export default function App() {
 
   const videoClip = clips.video
   const videoVisible = !!videoClip && time >= videoClip.offset && time < videoClip.offset + videoClip.duration
-  const selectedClip = selected ? clips[selected] : null
 
   return (
     <div
@@ -272,39 +272,18 @@ export default function App() {
         </span>
       </header>
 
-      <main className="grid min-h-0 grid-cols-[minmax(0,1fr)_280px]">
-        <div className="relative flex min-h-0 items-center justify-center bg-black">
-          {videoClip && (
-            <video
-              ref={videoRef}
-              src={videoClip.url}
-              className="max-h-full max-w-full"
-              playsInline
-              preload="auto"
-              style={{ visibility: videoVisible ? 'visible' : 'hidden' }}
-            />
-          )}
-          {!videoClip && <div className="text-dim">Import a video to preview it here</div>}
-        </div>
-
-        <aside className="flex flex-col gap-5 overflow-y-auto border-l border-line bg-panel px-4 py-3 select-text">
-          {selected && selectedClip ? (
-            <section>
-              <Heading>{selected === 'video' ? 'Video clip' : 'Audio clip'}</Heading>
-              <p className="mb-2 truncate" title={selectedClip.file.name}>{selectedClip.file.name}</p>
-              <p className="text-dim">Length {formatTime(selectedClip.duration)}</p>
-              <div className="mt-3 flex gap-1.5">
-                <button onClick={() => setOffset(selected, time)}>Start at playhead</button>
-              </div>
-            </section>
-          ) : (
-            <section>
-              <p className="text-dim">Select a clip on the timeline to adjust it precisely.</p>
-            </section>
-          )}
-
-          {error && <p className="text-danger">{error}</p>}
-        </aside>
+      <main className="relative flex min-h-0 items-center justify-center bg-black">
+        {videoClip && (
+          <video
+            ref={videoRef}
+            src={videoClip.url}
+            className="max-h-full max-w-full"
+            playsInline
+            preload="auto"
+            style={{ visibility: videoVisible ? 'visible' : 'hidden' }}
+          />
+        )}
+        {!videoClip && <div className="text-dim">Import a video to preview it here</div>}
       </main>
 
       <div className="flex items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
@@ -378,10 +357,8 @@ export default function App() {
         onRemove={removeClip}
         onZoom={setPps}
       />
+
+      <ErrorDialog message={error} onClose={() => setError(null)} />
     </div>
   )
-}
-
-function Heading({ children }: { children: ReactNode }) {
-  return <h2 className="mb-2 text-2xs font-bold tracking-[0.08em] text-dim uppercase">{children}</h2>
 }

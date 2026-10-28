@@ -106,6 +106,18 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await audioHead.getByRole('button', { name: 'Remove clip' }).click()
   await expect(audioClip).toHaveCount(0)
   await expect(page.getByTestId('sync')).toHaveCount(0)
+
+  // A file that isn't media shows the error dialog; OK and Esc both close it.
+  const notMedia = { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not a video') }
+  const dialog = page.getByRole('dialog')
+  await audioHead.locator('input[type=file]').setInputFiles(notMedia)
+  await expect(dialog).toContainText('Could not read “notes.txt”')
+  await dialog.getByRole('button', { name: 'OK' }).click()
+  await expect(dialog).toBeHidden()
+  await audioHead.locator('input[type=file]').setInputFiles(notMedia)
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
 })
 
 /** Runs in the page: decodes the exported MP4 with Mediabunny and measures it. */
