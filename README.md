@@ -10,19 +10,6 @@ Line up a video with separately recorded audio, then export them together as one
 4. **Pick a range** (optional). Set the export start and end with **In** and **Out**, or the **I** and **O** keys, then drag the handles on the ruler to adjust them. With no range set, the whole video is exported.
 5. **Export MP4.** The video frames are copied as they are, with no re-encoding and no quality loss, and cuts are frame-exact. The audio is your mix, encoded as AAC (or Opus if the browser can't encode AAC) and aligned to the sample.
 
-### Shortcuts
-
-| Key | Action |
-| --- | --- |
-| <kbd>Space</kbd> | Play / pause |
-| <kbd>←</kbd> <kbd>→</kbd> | Nudge the selected clip 10 ms (<kbd>Shift</kbd>: 100 ms), or move the playhead 1/30 s (<kbd>Shift</kbd>: 1 s) |
-| <kbd>Shift</kbd>-drag | Move a clip with fine precision |
-| <kbd>I</kbd> / <kbd>O</kbd> / <kbd>X</kbd> | Set export start / set export end / clear the range |
-| <kbd>Home</kbd> | Go to start |
-| <kbd>Esc</kbd> | Deselect |
-| <kbd>Delete</kbd> / <kbd>Backspace</kbd> | Remove the selected clip |
-| <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + scroll | Zoom around the cursor |
-
 ## How it works
 
 - **Playback.** Both tracks' audio plays through Web Audio, on a single shared clock. The video element is muted and follows that clock, so what you hear stays in sync even when the video stutters.

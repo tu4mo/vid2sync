@@ -35,8 +35,4 @@
   button {
     @apply cursor-pointer rounded-md border border-line bg-panel-2 px-2.5 py-1 enabled:hover:border-line-strong disabled:cursor-default disabled:opacity-40;
   }
-
-  kbd {
-    @apply rounded border border-b-2 border-line bg-panel-2 px-[5px] py-px font-sans text-2xs;
-  }
 }

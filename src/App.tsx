@@ -265,11 +265,6 @@ export default function App() {
           <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="" className="size-7" />
           vid2sync
         </h1>
-        <span className="text-xs text-dim">
-          Drop files anywhere · <kbd>Space</kbd> play · drag clips to move · <kbd>Shift</kbd>-drag
-          for fine moves · <kbd>←</kbd>/<kbd>→</kbd> nudge 10 ms (<kbd>Shift</kbd> 100 ms) ·{' '}
-          <kbd>I</kbd>/<kbd>O</kbd> set export in/out (<kbd>X</kbd> clear) · <kbd>Ctrl</kbd>/<kbd>⌘</kbd>-scroll to zoom
-        </span>
       </header>
 
       <main className="relative flex min-h-0 items-center justify-center bg-black">
