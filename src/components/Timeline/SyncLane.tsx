@@ -1,8 +1,7 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 import type { Clip, TrackKind } from '../../media'
-
-export const SYNC_LANE_HEIGHT = 26
+import { SYNC_LANE_HEIGHT } from './layout'
 
 const EDGE_GAP = 4
 
