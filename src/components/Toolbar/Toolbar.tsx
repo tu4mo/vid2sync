@@ -44,7 +44,7 @@ export function Toolbar(props: Props) {
   return (
     // Three columns, so the transport buttons stay centred whatever sits either side.
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
-      <h1 className="flex items-center gap-2 text-base font-bold tracking-[0.02em]">
+      <h1 className="flex items-center gap-2 font-logo text-base text-dim tracking-[0.02em]">
         <img
           src={`${import.meta.env.BASE_URL}favicon.png`}
           alt=""

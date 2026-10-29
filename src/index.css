@@ -14,6 +14,7 @@
   --color-danger: #e5534b;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-logo: 'Bruno Ace SC', var(--font-sans);
   --text-2xs: 11px;
 }
 
