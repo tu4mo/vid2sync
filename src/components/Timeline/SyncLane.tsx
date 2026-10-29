@@ -24,12 +24,22 @@ interface Props {
  * A rounded-md elbow from the video clip's start down to the audio clip's start, labelled with the gap between them.
  * Clicking the label lets you type the gap.
  */
-export function SyncLane({ video, audio, pixelsPerSecond, view, onOffsetChange }: Props) {
+export function SyncLane({
+  video,
+  audio,
+  pixelsPerSecond,
+  view,
+  onOffsetChange,
+}: Props) {
   const labelRef = useRef<HTMLDivElement>(null)
   const [labelWidth, setLabelWidth] = useState(0)
-  const [editing, setEditing] = useState<{ draft: string; original: number } | null>(null)
+  const [editing, setEditing] = useState<{
+    draft: string
+    original: number
+  } | null>(null)
   const cancelled = useRef(false)
-  const delta = video && audio ? Math.round((audio.offset - video.offset) * 1000) : null
+  const delta =
+    video && audio ? Math.round((audio.offset - video.offset) * 1000) : null
   // The field grows with its contents, so re-measure as you type.
   const draft = editing?.draft
 
@@ -39,7 +49,12 @@ export function SyncLane({ video, audio, pixelsPerSecond, view, onOffsetChange }
   }, [delta, draft])
 
   if (!video || !audio || delta === null) {
-    return <div className="border-b border-line" style={{ height: SYNC_LANE_HEIGHT }} />
+    return (
+      <div
+        className="border-b border-line"
+        style={{ height: SYNC_LANE_HEIGHT }}
+      />
+    )
   }
 
   // Moves the audio; if that would put it before 0:00, the video moves the other way instead.
@@ -84,7 +99,10 @@ export function SyncLane({ video, audio, pixelsPerSecond, view, onOffsetChange }
   const width = Math.abs(to - from)
   const [down, up] = ELBOW_CLASSES[to >= from ? 'right' : 'left']
   // Centre the label on the line when it fits, otherwise park it just past the elbow.
-  const preferred = width >= labelWidth + 20 ? mid - labelWidth / 2 : Math.max(from, to) + EDGE_GAP
+  const preferred =
+    width >= labelWidth + 20
+      ? mid - labelWidth / 2
+      : Math.max(from, to) + EDGE_GAP
   // Keep it on screen when the line is scrolled out of view.
   const labelLeft = Math.max(
     view.start + EDGE_GAP,
@@ -121,11 +139,17 @@ export function SyncLane({ video, audio, pixelsPerSecond, view, onOffsetChange }
               autoFocus
               value={editing.draft}
               onFocus={(e) => e.currentTarget.select()}
-              onChange={(e) => setEditing({ ...editing, draft: e.target.value })}
+              onChange={(e) =>
+                setEditing({ ...editing, draft: e.target.value })
+              }
               onKeyDown={onKeyDown}
               onBlur={() => {
                 const ms = Number(editing.draft)
-                if (!cancelled.current && editing.draft.trim() !== '' && Number.isFinite(ms))
+                if (
+                  !cancelled.current &&
+                  editing.draft.trim() !== '' &&
+                  Number.isFinite(ms)
+                )
                   setDelta(Math.round(ms))
                 cancelled.current = false
                 setEditing(null)
@@ -139,7 +163,9 @@ export function SyncLane({ video, audio, pixelsPerSecond, view, onOffsetChange }
             className="cursor-pointer rounded-md px-0.5 py-1 whitespace-nowrap [text-box:trim-both_cap_alphabetic] hover:underline"
             data-testid="sync"
             title={`Audio is ${Math.abs(delta)} ms ${delta >= 0 ? 'after' : 'before'} the video (click to edit)`}
-            onClick={() => setEditing({ draft: String(delta), original: delta })}
+            onClick={() =>
+              setEditing({ draft: String(delta), original: delta })
+            }
           >
             {delta >= 0 ? '+' : ''}
             {delta} ms

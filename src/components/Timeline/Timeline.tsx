@@ -1,6 +1,11 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
-import { TRACK_KINDS, type Clips, type TimeRange, type TrackKind } from '../../media'
+import {
+  TRACK_KINDS,
+  type Clips,
+  type TimeRange,
+  type TrackKind,
+} from '../../media'
 import { ClipView } from './ClipView'
 import { LANE_HEIGHT, SYNC_LANE_HEIGHT } from './layout'
 import { Playhead } from './Playhead'
@@ -105,7 +110,8 @@ export function Timeline(props: Props) {
     const el = scrollRef.current
     if (!el || !playing) return
     const x = time * pixelsPerSecond
-    if (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft) el.scrollLeft = x - 40
+    if (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft)
+      el.scrollLeft = x - 40
   }, [time, pixelsPerSecond, playing])
 
   const timeAt = (clientX: number) => {
@@ -114,7 +120,10 @@ export function Timeline(props: Props) {
   }
   const seekToPointer = (clientX: number) => onSeek(timeAt(clientX))
 
-  const visibleSeconds = Math.max(end + TAIL_SECONDS, viewport / pixelsPerSecond)
+  const visibleSeconds = Math.max(
+    end + TAIL_SECONDS,
+    viewport / pixelsPerSecond,
+  )
 
   // Playing past the clips runs into empty timeline; stop at the end of it.
   useEffect(() => {
@@ -152,7 +161,9 @@ export function Timeline(props: Props) {
                 style={{ height: SYNC_LANE_HEIGHT }}
               >
                 {/* Trim to cap height so the caps, not the line box, are centred. */}
-                <span className="[text-box:trim-both_cap_alphabetic]">Sync</span>
+                <span className="[text-box:trim-both_cap_alphabetic]">
+                  Sync
+                </span>
               </div>
             )}
           </Fragment>
@@ -267,7 +278,10 @@ export function Timeline(props: Props) {
               // Bring a typed time into view.
               const el = scrollRef.current
               const x = t * pixelsPerSecond
-              if (el && (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft))
+              if (
+                el &&
+                (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft)
+              )
                 el.scrollLeft = x - 40
             }}
           />

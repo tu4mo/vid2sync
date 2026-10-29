@@ -2,7 +2,9 @@ import { useRef, useState } from 'react'
 
 import { formatTime, type TimeRange } from '../../media'
 
-const TICK_STEPS = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
+const TICK_STEPS = [
+  0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600,
+]
 const SNAP_PX = 6
 
 // Full class names, so Tailwind finds them in the source.
@@ -36,7 +38,8 @@ export function Ruler({
   // Where on the handle it was grabbed, so it doesn't jump under the pointer.
   const grabOffset = useRef(0)
   const step =
-    TICK_STEPS.find((s) => s * pixelsPerSecond >= 80) ?? TICK_STEPS[TICK_STEPS.length - 1]
+    TICK_STEPS.find((s) => s * pixelsPerSecond >= 80) ??
+    TICK_STEPS[TICK_STEPS.length - 1]
   const ticks: number[] = []
   for (let t = 0; t <= seconds; t += step) ticks.push(t)
 
@@ -119,7 +122,9 @@ export function Ruler({
           style={{ left: range[dragging] * pixelsPerSecond }}
         >
           {formatTime(range[dragging])}{' '}
-          <span className="text-dim">({(range.end - range.start).toFixed(2)} s)</span>
+          <span className="text-dim">
+            ({(range.end - range.start).toFixed(2)} s)
+          </span>
         </div>
       )}
     </div>

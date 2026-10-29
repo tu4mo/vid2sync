@@ -1,4 +1,8 @@
-import { Delete02Icon, VolumeHighIcon, VolumeOffIcon } from '@hugeicons/core-free-icons'
+import {
+  Delete02Icon,
+  VolumeHighIcon,
+  VolumeOffIcon,
+} from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
 import type { Clip, TrackKind } from '../../media'
@@ -8,7 +12,10 @@ import { LANE_HEIGHT } from './layout'
 
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 // Full class names, so Tailwind finds them in the source.
-const HEAD_BORDERS: Record<TrackKind, string> = { video: 'border-l-video', audio: 'border-l-audio' }
+const HEAD_BORDERS: Record<TrackKind, string> = {
+  video: 'border-l-video',
+  audio: 'border-l-audio',
+}
 
 interface Props {
   kind: TrackKind
@@ -22,7 +29,16 @@ interface Props {
 }
 
 export function TrackHead(props: Props) {
-  const { kind, clip, muted, volume, loading, onToggleMute, onVolumeChange, onRemove } = props
+  const {
+    kind,
+    clip,
+    muted,
+    volume,
+    loading,
+    onToggleMute,
+    onVolumeChange,
+    onRemove,
+  } = props
   return (
     <div
       className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}
@@ -32,7 +48,9 @@ export function TrackHead(props: Props) {
     >
       <div className="flex items-center justify-between gap-1.5">
         <span className="font-semibold">{LABELS[kind]}</span>
-        <span className="min-w-0 flex-1 truncate text-xs text-dim">{loading && 'Loading…'}</span>
+        <span className="min-w-0 flex-1 truncate text-xs text-dim">
+          {loading && 'Loading…'}
+        </span>
         <Button
           size="sm"
           className="aria-pressed:border-danger aria-pressed:bg-danger aria-pressed:text-white"
@@ -41,7 +59,10 @@ export function TrackHead(props: Props) {
           onClick={onToggleMute}
           title={muted ? 'Unmute' : 'Mute'}
         >
-          <HugeiconsIcon icon={muted ? VolumeOffIcon : VolumeHighIcon} size={12} />
+          <HugeiconsIcon
+            icon={muted ? VolumeOffIcon : VolumeHighIcon}
+            size={12}
+          />
         </Button>
         {clip && (
           <Button

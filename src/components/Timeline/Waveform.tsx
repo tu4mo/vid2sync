@@ -13,7 +13,13 @@ interface Props {
   color: string
 }
 
-export const Waveform = memo(function Waveform({ peaks, duration, width, height, color }: Props) {
+export const Waveform = memo(function Waveform({
+  peaks,
+  duration,
+  width,
+  height,
+  color,
+}: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -36,7 +42,10 @@ export const Waveform = memo(function Waveform({ peaks, duration, width, height,
     for (let x = 0; x < cw; x++) {
       const i0 = Math.floor(x * bucketsPerPixel)
       if (i0 >= count) break
-      const i1 = Math.min(count, Math.max(i0 + 1, Math.floor((x + 1) * bucketsPerPixel)))
+      const i1 = Math.min(
+        count,
+        Math.max(i0 + 1, Math.floor((x + 1) * bucketsPerPixel)),
+      )
       let lo = 0
       let hi = 0
       for (let i = i0; i < i1; i++) {

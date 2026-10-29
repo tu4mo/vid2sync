@@ -12,13 +12,21 @@ import {
   type AudioCodec,
 } from 'mediabunny'
 
-import { scheduleClips, type Clips, type TimeRange, type TrackKind } from './media'
+import {
+  scheduleClips,
+  type Clips,
+  type TimeRange,
+  type TrackKind,
+} from './media'
 
 const SAMPLE_RATE = 48000
 
 function createMp4Output() {
   const target = new BufferTarget()
-  const output = new Output({ format: new Mp4OutputFormat({ fastStart: 'in-memory' }), target })
+  const output = new Output({
+    format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
+    target,
+  })
   return { output, target }
 }
 
@@ -32,7 +40,11 @@ async function mixAudio(
   start: number,
   duration: number,
 ): Promise<AudioBuffer> {
-  const ctx = new OfflineAudioContext(2, Math.ceil(duration * SAMPLE_RATE), SAMPLE_RATE)
+  const ctx = new OfflineAudioContext(
+    2,
+    Math.ceil(duration * SAMPLE_RATE),
+    SAMPLE_RATE,
+  )
   scheduleClips(ctx, clips, start, 0, (kind) => {
     if (gains[kind] <= 0) return null
     const gain = ctx.createGain()
@@ -68,7 +80,11 @@ async function measureEncoderDelay(codec: AudioCodec): Promise<number> {
   source.close()
   await output.finalize()
 
-  const decoded = await new OfflineAudioContext(2, 1, SAMPLE_RATE).decodeAudioData(target.buffer!)
+  const decoded = await new OfflineAudioContext(
+    2,
+    1,
+    SAMPLE_RATE,
+  ).decodeAudioData(target.buffer!)
   const data = decoded.getChannelData(0)
   const index = data.findIndex((v) => Math.abs(v) > 0.1)
   const delay = index < 0 ? 0 : Math.max(0, index / decoded.sampleRate - onset)
@@ -93,15 +109,20 @@ export async function exportSynced(
     start: Math.max(0, (range?.start ?? video.offset) - video.offset),
     end: Math.min(video.duration, (range?.end ?? Infinity) - video.offset),
   }
-  if (trim.end <= trim.start) throw new Error('The export range doesn’t overlap the video.')
+  if (trim.end <= trim.start)
+    throw new Error('The export range doesn’t overlap the video.')
 
   const audioCodec = await getFirstEncodableAudioCodec(['aac', 'opus'], {
     numberOfChannels: 2,
     sampleRate: SAMPLE_RATE,
   })
-  if (!audioCodec) throw new Error('This browser can’t encode audio for export.')
+  if (!audioCodec)
+    throw new Error('This browser can’t encode audio for export.')
 
-  const input = new Input({ source: new BlobSource(video.file), formats: ALL_FORMATS })
+  const input = new Input({
+    source: new BlobSource(video.file),
+    formats: ALL_FORMATS,
+  })
   try {
     const { output, target } = createMp4Output()
     const [conversion, encoderDelay, mix] = await Promise.all([
@@ -120,7 +141,9 @@ export async function exportSynced(
       mixAudio(clips, gains, video.offset + trim.start, trim.end - trim.start),
     ])
     if (!conversion.utilizedTracks.some((track) => track.type === 'video')) {
-      const discarded = conversion.discardedTracks.find((d) => d.track.type === 'video')
+      const discarded = conversion.discardedTracks.find(
+        (d) => d.track.type === 'video',
+      )
       const reason = discarded?.reason ?? 'no video track found'
       throw new Error(`The video stream can’t be written to MP4 (${reason}).`)
     }
@@ -133,7 +156,10 @@ export async function exportSynced(
     output.addAudioTrack(audioSource)
     await output.start()
 
-    await Promise.all([conversion.execute(), audioSource.add(mix).then(() => audioSource.close())])
+    await Promise.all([
+      conversion.execute(),
+      audioSource.add(mix).then(() => audioSource.close()),
+    ])
 
     await output.finalize()
     onProgress(1)

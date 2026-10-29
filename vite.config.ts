@@ -7,5 +7,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   // Relative asset paths, so the build works under any path (e.g. GitHub Pages' /<repo>/).
   base: './',
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()],
+  plugins: [
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
+    tailwindcss(),
+  ],
 })

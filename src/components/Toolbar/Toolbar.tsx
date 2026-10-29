@@ -10,7 +10,10 @@ import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Button } from '../Button/Button'
 import { Slider } from '../Slider/Slider'
-import { MAX_PIXELS_PER_SECOND, MIN_PIXELS_PER_SECOND } from '../Timeline/Timeline'
+import {
+  MAX_PIXELS_PER_SECOND,
+  MIN_PIXELS_PER_SECOND,
+} from '../Timeline/Timeline'
 
 /** How much one press of a zoom button zooms. */
 const ZOOM_STEP = 1.5
@@ -33,13 +36,20 @@ export function Toolbar(props: Props) {
   const { onPlay, onPause, onSeek, onExport, onZoom } = props
   const zoomBy = (factor: number) =>
     onZoom(
-      Math.min(MAX_PIXELS_PER_SECOND, Math.max(MIN_PIXELS_PER_SECOND, pixelsPerSecond * factor)),
+      Math.min(
+        MAX_PIXELS_PER_SECOND,
+        Math.max(MIN_PIXELS_PER_SECOND, pixelsPerSecond * factor),
+      ),
     )
   return (
     // Three columns, so the transport buttons stay centred whatever sits either side.
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
       <h1 className="flex items-center gap-2 text-base font-bold tracking-[0.02em]">
-        <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="" className="size-6" />
+        <img
+          src={`${import.meta.env.BASE_URL}favicon.png`}
+          alt=""
+          className="size-6"
+        />
         vid2sync
       </h1>
       <div className="flex items-center gap-2.5">
@@ -52,7 +62,11 @@ export function Toolbar(props: Props) {
         >
           <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} size={16} />
         </Button>
-        <Button aria-label="Go to start" title="Go to start (Home)" onClick={() => onSeek(0)}>
+        <Button
+          aria-label="Go to start"
+          title="Go to start (Home)"
+          onClick={() => onSeek(0)}
+        >
           <HugeiconsIcon icon={PreviousIcon} size={16} />
         </Button>
       </div>

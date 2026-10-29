@@ -7,14 +7,18 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { chromium } from '@playwright/test'
 
 const ORIGIN = 'https://fixtures.test' // served by page.route below; https gives a secure context
-const BUNDLE = new URL('../node_modules/mediabunny/dist/bundles/mediabunny.mjs', import.meta.url)
+const BUNDLE = new URL(
+  '../node_modules/mediabunny/dist/bundles/mediabunny.mjs',
+  import.meta.url,
+)
 const OUT = new URL('../tests/fixtures/', import.meta.url)
 
 const browser = await chromium.launch()
 try {
   const page = await browser.newPage()
   await page.route(`${ORIGIN}/**`, async (route) => {
-    const isBundle = new URL(route.request().url()).pathname === '/mediabunny.mjs'
+    const isBundle =
+      new URL(route.request().url()).pathname === '/mediabunny.mjs'
     await route.fulfill(
       isBundle
         ? { contentType: 'text/javascript', body: await readFile(BUNDLE) }
@@ -44,7 +48,9 @@ try {
     const toBase64 = (buffer: ArrayBuffer) =>
       new Promise<string>((resolve) => {
         const reader = new FileReader()
-        reader.addEventListener('load', () => resolve((reader.result as string).split(',')[1]))
+        reader.addEventListener('load', () =>
+          resolve((reader.result as string).split(',')[1]),
+        )
         reader.readAsDataURL(new Blob([buffer]))
       })
 
@@ -79,7 +85,10 @@ try {
     sound.close()
     await mp4.finalize()
 
-    const wav = new mb.Output({ format: new mb.WavOutputFormat(), target: new mb.BufferTarget() })
+    const wav = new mb.Output({
+      format: new mb.WavOutputFormat(),
+      target: new mb.BufferTarget(),
+    })
     const pcm = new mb.AudioBufferSource({ codec: 'pcm-s16' })
     wav.addAudioTrack(pcm)
     await wav.start()

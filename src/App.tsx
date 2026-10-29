@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { Timeline } from './components/Timeline/Timeline'
@@ -16,7 +23,12 @@ import {
 
 const engine = new Engine()
 
-function syncVideo(el: HTMLVideoElement | null, clip: Clip | null, t: number, playing: boolean) {
+function syncVideo(
+  el: HTMLVideoElement | null,
+  clip: Clip | null,
+  t: number,
+  playing: boolean,
+) {
   if (!el || !clip) return
   const local = t - clip.offset
   const inside = local >= 0 && local < clip.duration
@@ -42,8 +54,14 @@ const roundMs = (t: number) => Math.round(t * 1000) / 1000
 
 export default function App() {
   const [clips, setClips] = useState<Clips>({ video: null, audio: null })
-  const [muted, setMuted] = useState<Record<TrackKind, boolean>>({ video: false, audio: false })
-  const [volume, setVolume] = useState<Record<TrackKind, number>>({ video: 1, audio: 1 })
+  const [muted, setMuted] = useState<Record<TrackKind, boolean>>({
+    video: false,
+    audio: false,
+  })
+  const [volume, setVolume] = useState<Record<TrackKind, number>>({
+    video: 1,
+    audio: 1,
+  })
   const [selected, setSelected] = useState<TrackKind | null>(null)
   const [loading, setLoading] = useState<TrackKind | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -58,7 +76,9 @@ export default function App() {
 
   const end = Math.max(
     0,
-    ...TRACK_KINDS.map((k) => (clips[k] ? clips[k].offset + clips[k].duration : 0)),
+    ...TRACK_KINDS.map((k) =>
+      clips[k] ? clips[k].offset + clips[k].duration : 0,
+    ),
   )
 
   const gains = useMemo(
@@ -99,12 +119,17 @@ export default function App() {
   const setOffset = useCallback((kind: TrackKind, offset: number) => {
     setClips((prev) => {
       const clip = prev[kind]
-      return clip ? { ...prev, [kind]: { ...clip, offset: roundMs(Math.max(0, offset)) } } : prev
+      return clip
+        ? { ...prev, [kind]: { ...clip, offset: roundMs(Math.max(0, offset)) } }
+        : prev
     })
   }, [])
 
   const wholeVideo = clips.video
-    ? { start: clips.video.offset, end: clips.video.offset + clips.video.duration }
+    ? {
+        start: clips.video.offset,
+        end: clips.video.offset + clips.video.duration,
+      }
     : null
 
   const setRangePoint = (which: keyof TimeRange, t: number) => {
@@ -113,8 +138,10 @@ export default function App() {
       const next = { ...(prev ?? whole), [which]: roundMs(Math.max(0, t)) }
       // Like most editors: an in point after the out point (or vice versa) resets the other one.
       if (next.end - next.start < MIN_RANGE) {
-        if (which === 'start') next.end = Math.max(whole.end, next.start + MIN_RANGE)
-        else next.start = Math.max(0, Math.min(whole.start, next.end - MIN_RANGE))
+        if (which === 'start')
+          next.end = Math.max(whole.end, next.start + MIN_RANGE)
+        else
+          next.start = Math.max(0, Math.min(whole.start, next.end - MIN_RANGE))
       }
       if (next.end - next.start < MIN_RANGE) return prev
       // Back to the whole video: clear it, so the range keeps following the video if it moves.
@@ -166,7 +193,10 @@ export default function App() {
     try {
       const { downloadBlob, exportSynced } = await import('./export')
       const blob = await exportSynced(clips, gains, range, setExportProgress)
-      downloadBlob(blob, `${video.file.name.replace(/\.[^.]+$/, '')}-synced.mp4`)
+      downloadBlob(
+        blob,
+        `${video.file.name.replace(/\.[^.]+$/, '')}-synced.mp4`,
+      )
     } catch (e) {
       setError(`Export failed: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
@@ -215,7 +245,8 @@ export default function App() {
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     // Leave text fields, browser/OS shortcuts and the error dialog alone.
-    if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || error) return
+    if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || error)
+      return
     if (e.key === ' ') {
       e.preventDefault()
       if (playing) pause()
@@ -224,7 +255,8 @@ export default function App() {
       e.preventDefault()
       const dir = e.key === 'ArrowLeft' ? -1 : 1
       const clip = selected && clips[selected]
-      if (selected && clip) setOffset(selected, clip.offset + dir * (e.shiftKey ? 0.1 : 0.01))
+      if (selected && clip)
+        setOffset(selected, clip.offset + dir * (e.shiftKey ? 0.1 : 0.01))
       else seek(time + dir * (e.shiftKey ? 1 : 1 / 30))
     } else if (e.key === 'i') {
       setRangePoint('start', time)
@@ -248,7 +280,9 @@ export default function App() {
 
   const videoClip = clips.video
   const videoVisible =
-    !!videoClip && time >= videoClip.offset && time < videoClip.offset + videoClip.duration
+    !!videoClip &&
+    time >= videoClip.offset &&
+    time < videoClip.offset + videoClip.duration
 
   return (
     <div
@@ -273,14 +307,17 @@ export default function App() {
           return
         }
         // A single file dropped onto a track goes to that track (e.g. a video's sound onto Audio).
-        const target = (e.target as Element).closest<HTMLElement>('[data-track]')?.dataset.track
+        const target = (e.target as Element).closest<HTMLElement>(
+          '[data-track]',
+        )?.dataset.track
         for (const file of files) {
           const kind =
             files.length === 1 && (target === 'video' || target === 'audio')
               ? target
               : kindForFile(file)
           if (kind) void importFile(file, kind)
-          else setError(`“${file.name}” doesn’t look like a video or audio file.`)
+          else
+            setError(`“${file.name}” doesn’t look like a video or audio file.`)
         }
       }}
     >
@@ -300,7 +337,9 @@ export default function App() {
             style={{ visibility: videoVisible ? 'visible' : 'hidden' }}
           />
         )}
-        {!videoClip && <div className="text-dim">Import a video to preview it here</div>}
+        {!videoClip && (
+          <div className="text-dim">Import a video to preview it here</div>
+        )}
       </main>
 
       <Toolbar
@@ -320,7 +359,9 @@ export default function App() {
         clips={clips}
         muted={muted}
         volume={volume}
-        onVolumeChange={(kind, v) => setVolume((prev) => ({ ...prev, [kind]: v }))}
+        onVolumeChange={(kind, v) =>
+          setVolume((prev) => ({ ...prev, [kind]: v }))
+        }
         selected={selected}
         loading={loading}
         time={time}

@@ -2,7 +2,8 @@ import { readFile } from 'node:fs/promises'
 
 import { expect, test, type Page } from '@playwright/test'
 
-const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname
+const fixture = (name: string) =>
+  new URL(`fixtures/${name}`, import.meta.url).pathname
 
 // Shortcuts are ignored while an input has focus, so drop focus before pressing keys.
 const blur = (page: Page) =>
@@ -19,7 +20,9 @@ const clockSeconds = async (page: Page) => {
 // The export range in seconds, read from where its handles sit on the ruler.
 const rangeSeconds = async (page: Page) => {
   const left = (which: string) =>
-    page.getByTestId(`range-${which}`).evaluate((el) => parseFloat((el as HTMLElement).style.left))
+    page
+      .getByTestId(`range-${which}`)
+      .evaluate((el) => parseFloat((el as HTMLElement).style.left))
   return `${(await left('start')) / 50} – ${(await left('end')) / 50}`
 }
 
@@ -117,7 +120,9 @@ test('import, sync, play, set range and export', async ({ page }) => {
   const playhead = handle.x + clockToPx(await clockSeconds(page))
   await page.mouse.move(handle.x + 2, handle.y + handle.height / 2)
   await page.mouse.down()
-  await page.mouse.move(playhead + 3, handle.y + handle.height / 2, { steps: 5 }) // close enough to snap
+  await page.mouse.move(playhead + 3, handle.y + handle.height / 2, {
+    steps: 5,
+  }) // close enough to snap
   await page.mouse.up()
   await expect.poll(range).toBe('1 – 2')
   expect(await clockSeconds(page)).toBe(1) // dragging a handle doesn't scrub
@@ -135,14 +140,19 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.mouse.move(start.x + 2, start.y + start.height / 2)
   await page.mouse.down()
   await page.keyboard.down('Shift')
-  await page.mouse.move(start.x + 2 + 3, start.y + start.height / 2, { steps: 5 })
+  await page.mouse.move(start.x + 2 + 3, start.y + start.height / 2, {
+    steps: 5,
+  })
   await page.keyboard.up('Shift')
   await page.mouse.up()
   await expect.poll(range).toBe('1.06 – 2')
 
   // Double-clicking the range itself resets both ends (away from the playhead's time, which sits on top).
   await page.keyboard.press('Home')
-  await page.mouse.dblclick(start.x + clockToPx(0.5), start.y + start.height / 2)
+  await page.mouse.dblclick(
+    start.x + clockToPx(0.5),
+    start.y + start.height / 2,
+  )
   await expect.poll(range).toMatch(/^0 – 3\.0\d*$/)
   await page.keyboard.press('Home')
   await page.keyboard.press('Shift+ArrowRight')
@@ -179,7 +189,11 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await expect(page.getByTestId('sync')).toHaveCount(0)
 
   // A file that isn't media shows the error dialog; OK and Esc both close it.
-  const notMedia = { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not a video') }
+  const notMedia = {
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('not a video'),
+  }
   const dialog = page.getByRole('dialog')
   await audioLane.locator('input[type=file]').setInputFiles(notMedia)
   await expect(dialog).toContainText('Could not read “notes.txt”')
@@ -196,7 +210,10 @@ async function analyzeExport(base64: string) {
   const url = '/node_modules/mediabunny/dist/bundles/mediabunny.mjs'
   const mb: typeof import('mediabunny') = await import(url)
   const data = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
-  const input = new mb.Input({ source: new mb.BufferSource(data), formats: mb.ALL_FORMATS })
+  const input = new mb.Input({
+    source: new mb.BufferSource(data),
+    formats: mb.ALL_FORMATS,
+  })
 
   const videoTracks = await input.getVideoTracks()
   const audioTracks = await input.getAudioTracks()
@@ -207,17 +224,24 @@ async function analyzeExport(base64: string) {
   // Flatten channel 0 into one timeline-aligned array, starting at t = 0.
   const sampleRate = audioTracks[0].sampleRate
   const samples: number[] = []
-  for await (const { buffer, timestamp } of new mb.AudioBufferSink(audioTracks[0]).buffers()) {
+  for await (const { buffer, timestamp } of new mb.AudioBufferSink(
+    audioTracks[0],
+  ).buffers()) {
     const channel = buffer.getChannelData(0)
     const first = Math.round(timestamp * sampleRate)
-    for (let i = 0; i < channel.length; i++) if (first + i >= 0) samples[first + i] = channel[i]
+    for (let i = 0; i < channel.length; i++)
+      if (first + i >= 0) samples[first + i] = channel[i]
   }
 
   const onsetIndex = samples.findIndex((v) => Math.abs(v) > 0.05)
   // Measure a steady 0.3 s window after the onset.
-  const window = samples.slice(onsetIndex + sampleRate * 0.1, onsetIndex + sampleRate * 0.4)
+  const window = samples.slice(
+    onsetIndex + sampleRate * 0.1,
+    onsetIndex + sampleRate * 0.4,
+  )
   let crossings = 0
-  for (let i = 1; i < window.length; i++) if (window[i - 1] < 0 !== window[i] < 0) crossings++
+  for (let i = 1; i < window.length; i++)
+    if (window[i - 1] < 0 !== window[i] < 0) crossings++
 
   return {
     videoTracks: videoTracks.length,

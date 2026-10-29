@@ -68,7 +68,11 @@ function readDuration(url: string, kind: TrackKind): Promise<number> {
   })
 }
 
-export async function loadClip(file: File, kind: TrackKind, ctx: AudioContext): Promise<Clip> {
+export async function loadClip(
+  file: File,
+  kind: TrackKind,
+  ctx: AudioContext,
+): Promise<Clip> {
   const url = URL.createObjectURL(file)
   const [metaDuration, buffer] = await Promise.all([
     readDuration(url, kind),
@@ -81,7 +85,9 @@ export async function loadClip(file: File, kind: TrackKind, ctx: AudioContext): 
   const duration = metaDuration || buffer?.duration || 0
   if (!duration) {
     URL.revokeObjectURL(url)
-    throw new Error(`Could not read “${file.name}”. Is it a supported ${kind} format?`)
+    throw new Error(
+      `Could not read “${file.name}”. Is it a supported ${kind} format?`,
+    )
   }
 
   return {
@@ -95,7 +101,18 @@ export async function loadClip(file: File, kind: TrackKind, ctx: AudioContext): 
 }
 
 const VIDEO_EXTENSIONS = ['mov', 'mp4', 'm4v', 'webm', 'mkv', 'avi', '3gp']
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'm4a', 'aac', 'flac', 'ogg', 'opus', 'aif', 'aiff', 'caf']
+const AUDIO_EXTENSIONS = [
+  'mp3',
+  'wav',
+  'm4a',
+  'aac',
+  'flac',
+  'ogg',
+  'opus',
+  'aif',
+  'aiff',
+  'caf',
+]
 
 /**
  * Starts every clip's audio so that timeline time `from` sounds at context time `at`.

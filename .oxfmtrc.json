@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "ignorePatterns": [".claude/"],
-  "printWidth": 100,
+  "printWidth": 80,
   "quoteProps": "consistent",
   "semi": false,
   "singleQuote": true,

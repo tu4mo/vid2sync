@@ -19,7 +19,8 @@ export class Engine {
 
   constructor() {
     this.gains = { video: this.ctx.createGain(), audio: this.ctx.createGain() }
-    for (const gain of Object.values(this.gains)) gain.connect(this.ctx.destination)
+    for (const gain of Object.values(this.gains))
+      gain.connect(this.ctx.destination)
   }
 
   now(): number {

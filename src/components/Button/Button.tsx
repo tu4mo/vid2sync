@@ -5,7 +5,8 @@ import type { ComponentProps } from 'react'
 const VARIANTS = {
   default: 'border-line bg-panel-2 enabled:hover:border-line-strong',
   primary: 'border-accent bg-accent font-semibold text-[#1a1206]',
-  danger: 'border-line bg-panel-2 enabled:hover:border-danger enabled:hover:text-danger',
+  danger:
+    'border-line bg-panel-2 enabled:hover:border-danger enabled:hover:text-danger',
 }
 // Fixed heights, so buttons line up whether they hold text, an icon or both.
 const SIZES = {
@@ -18,7 +19,12 @@ interface Props extends ComponentProps<'button'> {
   size?: keyof typeof SIZES
 }
 
-export function Button({ variant = 'default', size = 'md', className = '', ...props }: Props) {
+export function Button({
+  variant = 'default',
+  size = 'md',
+  className = '',
+  ...props
+}: Props) {
   return (
     <button
       type="button"
