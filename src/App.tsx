@@ -138,6 +138,8 @@ export default function App() {
 
   const importFile = async (file: File, kind: TrackKind) => {
     pause()
+    // The new clip starts at the playhead.
+    const offset = roundMs(engine.now())
     setLoading(kind)
     setError(null)
     try {
@@ -145,7 +147,7 @@ export default function App() {
       setClips((prev) => {
         const old = prev[kind]
         if (old) URL.revokeObjectURL(old.url)
-        return { ...prev, [kind]: clip }
+        return { ...prev, [kind]: { ...clip, offset } }
       })
       setSelected(kind)
     } catch (e) {
