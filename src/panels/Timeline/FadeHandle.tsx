@@ -1,7 +1,6 @@
-import { useRef } from 'react'
-
 import { fadeGain } from '../../lib/fade'
 import type { FadeSpan, TimeRange } from '../../lib/media'
+import { useDrag } from './useDrag'
 
 const CURVE_POINTS = 32
 // Keeps the dot inside the clip when there's no fade, as far from the side as it is from the top.
@@ -69,8 +68,19 @@ function Dot({
   onMove,
   onReset,
 }: DotProps) {
-  // Where the pointer was and how far in the dot was when it was grabbed.
-  const drag = useRef<{ x: number; distance: number } | null>(null)
+  const drag = useDrag(
+    (e) => {
+      onGrab()
+      // Where the pointer was and how far in the dot was when it was grabbed.
+      return { x: e.clientX, distance }
+    },
+    (e, d) => {
+      // Inward is right for a fade-in and left for a fade-out.
+      const dir = which === 'start' ? 1 : -1
+      const t = edge + dir * d.distance + (e.clientX - d.x) / pixelsPerSecond
+      onMove(dir * ((e.shiftKey ? t : snap(t)) - edge))
+    },
+  )
   const x = Math.min(
     Math.max(distance * pixelsPerSecond, DOT_INSET_PX),
     clipWidth - DOT_INSET_PX,
@@ -88,28 +98,7 @@ function Dot({
       title={title}
       data-testid={`fade-${which}${point === 'silent' ? '-silent' : ''}`}
       data-distance={distance}
-      onPointerDown={(e) => {
-        if (e.button !== 0) {
-          return
-        }
-        // Keep the clip from moving, and the timeline from scrubbing.
-        e.stopPropagation()
-        e.currentTarget.setPointerCapture(e.pointerId)
-        onGrab()
-        drag.current = { x: e.clientX, distance }
-      }}
-      onPointerMove={(e) => {
-        const d = drag.current
-        if (!d) {
-          return
-        }
-        // Inward is right for a fade-in and left for a fade-out.
-        const dir = which === 'start' ? 1 : -1
-        const t = edge + dir * d.distance + (e.clientX - d.x) / pixelsPerSecond
-        onMove(dir * ((e.shiftKey ? t : snap(t)) - edge))
-      }}
-      onPointerUp={() => (drag.current = null)}
-      onPointerCancel={() => (drag.current = null)}
+      {...drag}
       onDoubleClick={onReset}
     >
       <div className="size-2.5 rounded-full bg-white shadow" />

@@ -23,6 +23,7 @@ import { Playhead } from './Playhead'
 import { Ruler } from './Ruler'
 import { SyncLane } from './SyncLane'
 import { TrackHead } from './TrackHead'
+import { useDrag } from './useDrag'
 
 const TAIL_SECONDS = 10
 const SNAP_PX = 6
@@ -86,7 +87,6 @@ export function Timeline({
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
-  const scrubbing = useRef(false)
   const zoomAnchor = useRef<{ t: number; x: number } | null>(null)
   const pixelsPerSecondRef = useRef(pixelsPerSecond)
   const [viewport, setViewport] = useState(800)
@@ -190,6 +190,14 @@ export function Timeline({
     onSeek(rect ? (clientX - rect.left) / pixelsPerSecond : 0)
   }
 
+  const scrub = useDrag(
+    (e) => {
+      onSelect(null)
+      seekToPointer(e.clientX)
+    },
+    (e) => seekToPointer(e.clientX),
+  )
+
   const visibleSeconds = Math.max(
     end + TAIL_SECONDS,
     viewport / pixelsPerSecond,
@@ -266,18 +274,7 @@ export function Timeline({
           className="relative grid h-full min-w-full cursor-text"
           ref={contentRef}
           style={{ width, gridTemplateRows: ROWS }}
-          onPointerDown={(e) => {
-            if (e.button !== 0) {
-              return
-            }
-            e.currentTarget.setPointerCapture(e.pointerId)
-            scrubbing.current = true
-            onSelect(null)
-            seekToPointer(e.clientX)
-          }}
-          onPointerMove={(e) => scrubbing.current && seekToPointer(e.clientX)}
-          onPointerUp={() => (scrubbing.current = false)}
-          onPointerCancel={() => (scrubbing.current = false)}
+          {...scrub}
         >
           <Ruler pixelsPerSecond={pixelsPerSecond} seconds={visibleSeconds} />
 
