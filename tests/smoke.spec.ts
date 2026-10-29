@@ -12,8 +12,15 @@ const blur = (page: Page) =>
 const clockToPx = (seconds: number) => seconds * 50
 
 const clockSeconds = async (page: Page) => {
-  const [m, s] = (await page.getByTestId('clock').innerText()).split(' ')[0].split(':')
+  const [m, s] = (await page.getByTestId('clock').innerText()).split(':')
   return Number(m) * 60 + Number(s)
+}
+
+// The export range in seconds, read from where its handles sit on the ruler.
+const rangeSeconds = async (page: Page) => {
+  const left = (which: string) =>
+    page.getByTestId(`range-${which}`).evaluate((el) => parseFloat((el as HTMLElement).style.left))
+  return `${(await left('start')) / 50} – ${(await left('end')) / 50}`
 }
 
 test('import, sync, play, set range and export', async ({ page }) => {
@@ -35,7 +42,10 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await expect(audioClip).toContainText('tone.wav')
   await expect(videoClip.locator('canvas')).toBeVisible()
   await expect(audioClip.locator('canvas')).toBeVisible()
-  await expect(page.getByTestId('clock')).toContainText(/\/ 0:03\.\d{3}/) // AAC padding makes the file slightly longer than 3 s
+  // AAC padding makes the file slightly longer than 3 s.
+  const videoWidth = (await videoClip.boundingBox())!.width
+  expect(videoWidth).toBeGreaterThan(clockToPx(3))
+  expect(videoWidth).toBeLessThan(clockToPx(3.1))
 
   // Sync: drag the audio clip, then set it exactly and nudge with the keyboard.
   const box = (await audioClip.boundingBox())!
@@ -83,14 +93,14 @@ test('import, sync, play, set range and export', async ({ page }) => {
   expect(await clockSeconds(page)).toBe(paused)
 
   // Export range 1–2 s: the end with the keyboard, the start by dragging its handle onto the playhead.
-  const range = page.getByTestId('range')
+  const range = () => rangeSeconds(page)
   const startHandle = page.getByTestId('range-start')
-  await expect(range).toContainText('Whole video')
+  await expect.poll(range).toMatch(/^0 – 3\.0\d*$/)
   await page.keyboard.press('Home')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('o')
-  await expect(range).toContainText('0:00.000 – 0:02.000')
+  await expect.poll(range).toBe('0 – 2')
   await page.keyboard.press('Shift+ArrowLeft')
   const handle = (await startHandle.boundingBox())!
   const playhead = handle.x + clockToPx(await clockSeconds(page))
@@ -98,15 +108,15 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.mouse.down()
   await page.mouse.move(playhead + 3, handle.y + handle.height / 2, { steps: 5 }) // close enough to snap
   await page.mouse.up()
-  await expect(range).toContainText('0:01.000 – 0:02.000')
+  await expect.poll(range).toBe('1 – 2')
   expect(await clockSeconds(page)).toBe(1) // dragging a handle doesn't scrub
 
   // Double-click puts a handle back at the video's edge.
   await page.getByTestId('range-end').dblclick()
-  await expect(range).toContainText(/0:01\.000 – 0:03\.\d{3}/)
+  await expect.poll(range).toMatch(/^1 – 3\.0\d*$/)
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('o')
-  await expect(range).toContainText('0:01.000 – 0:02.000')
+  await expect.poll(range).toBe('1 – 2')
 
   // Shift turns snapping off.
   await page.keyboard.press('Shift+ArrowLeft')
@@ -117,17 +127,17 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.mouse.move(start.x + 2 + 3, start.y + start.height / 2, { steps: 5 })
   await page.keyboard.up('Shift')
   await page.mouse.up()
-  await expect(range).toContainText('0:01.060 – 0:02.000')
+  await expect.poll(range).toBe('1.06 – 2')
 
   // Double-clicking the range itself resets both ends.
   await page.mouse.dblclick(start.x + clockToPx(0.5), start.y + start.height / 2)
-  await expect(range).toContainText('Whole video')
+  await expect.poll(range).toMatch(/^0 – 3\.0\d*$/)
   await page.keyboard.press('Home')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('i')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('o')
-  await expect(range).toContainText('0:01.000 – 0:02.000')
+  await expect.poll(range).toBe('1 – 2')
 
   // Export and check the file itself.
   const downloading = page.waitForEvent('download')

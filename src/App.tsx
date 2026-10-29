@@ -312,9 +312,7 @@ export default function App() {
 
       <Toolbar
         playing={playing}
-        time={time}
         end={end}
-        range={range}
         canExport={!!clips.video}
         exportProgress={exportProgress}
         pixelsPerSecond={pixelsPerSecond}

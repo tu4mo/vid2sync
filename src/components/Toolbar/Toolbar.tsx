@@ -8,7 +8,6 @@ import {
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
-import { formatTime, type TimeRange } from '../../media'
 import { Button } from '../Button/Button'
 import { Slider } from '../Slider/Slider'
 import { MAX_PIXELS_PER_SECOND, MIN_PIXELS_PER_SECOND } from '../Timeline/Timeline'
@@ -18,9 +17,7 @@ const ZOOM_STEP = 1.5
 
 interface Props {
   playing: boolean
-  time: number
   end: number
-  range: TimeRange | null
   canExport: boolean
   exportProgress: number | null
   pixelsPerSecond: number
@@ -32,7 +29,7 @@ interface Props {
 }
 
 export function Toolbar(props: Props) {
-  const { playing, time, end, range, canExport, exportProgress, pixelsPerSecond } = props
+  const { playing, end, canExport, exportProgress, pixelsPerSecond } = props
   const { onPlay, onPause, onSeek, onExport, onZoom } = props
   const zoomBy = (factor: number) =>
     onZoom(
@@ -52,21 +49,8 @@ export function Toolbar(props: Props) {
       <Button aria-label="Go to start" title="Go to start (Home)" onClick={() => onSeek(0)}>
         <HugeiconsIcon icon={PreviousIcon} size={16} />
       </Button>
-      <span className="font-mono tabular-nums" data-testid="clock">
-        {formatTime(time)} <span className="text-dim">/ {formatTime(end)}</span>
-      </span>
-      <span className="ml-auto font-mono text-xs whitespace-nowrap" data-testid="range">
-        {range ? (
-          <>
-            {formatTime(range.start)} – {formatTime(range.end)}{' '}
-            <span className="text-dim">({(range.end - range.start).toFixed(2)} s)</span>
-          </>
-        ) : (
-          <span className="text-dim">Whole video</span>
-        )}
-      </span>
       <Button
-        className="tabular-nums"
+        className="ml-auto tabular-nums"
         aria-label="Export MP4"
         onClick={onExport}
         disabled={!canExport || exportProgress !== null}
