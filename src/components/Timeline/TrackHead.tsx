@@ -1,3 +1,6 @@
+import { Delete02Icon, VolumeHighIcon, VolumeOffIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
+
 import type { Clip, TrackKind } from '../../media'
 import { Button } from '../Button/Button'
 import { Slider } from '../Slider/Slider'
@@ -38,7 +41,7 @@ export function TrackHead(props: Props) {
           onClick={onToggleMute}
           title={muted ? 'Unmute' : 'Mute'}
         >
-          M
+          <HugeiconsIcon icon={muted ? VolumeOffIcon : VolumeHighIcon} size={12} />
         </Button>
         {clip && (
           <Button
@@ -48,7 +51,7 @@ export function TrackHead(props: Props) {
             onClick={onRemove}
             title="Remove clip (Delete)"
           >
-            ×
+            <HugeiconsIcon icon={Delete02Icon} size={12} />
           </Button>
         )}
       </div>
