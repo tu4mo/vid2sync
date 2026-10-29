@@ -219,7 +219,8 @@ export function Timeline(props: Props) {
                       onOffsetChange={props.onOffsetChange}
                     />
                   ) : (
-                    <div className="sticky left-0 px-4 text-xs text-dim">
+                    // Above the range dimming, which knows nothing of the empty lane.
+                    <div className="sticky left-0 z-1 px-4 text-xs text-dim">
                       <label
                         className="cursor-pointer text-accent hover:underline"
                         // Keep the lane from scrubbing (and capturing the pointer, which eats the click).
