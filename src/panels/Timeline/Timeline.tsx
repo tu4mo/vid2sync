@@ -11,6 +11,7 @@ import {
   TRACK_KINDS,
   clipSpan,
   type Clips,
+  type FadeSpan,
   type TimeRange,
   type TrackKind,
 } from '../../lib/media'
@@ -47,6 +48,12 @@ type Props = {
   onTrimChange: (kind: TrackKind, which: keyof TimeRange, t: number) => void
   /** Puts one end of a clip's trim back at the file's edge. */
   onTrimReset: (kind: TrackKind, which: keyof TimeRange) => void
+  /** Sets a clip's fade-in (`start`) or fade-out (`end`). */
+  onFadeChange: (
+    kind: TrackKind,
+    which: keyof TimeRange,
+    span: FadeSpan,
+  ) => void
   onToggleMute: (kind: TrackKind) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onImport: (file: File, kind: TrackKind) => void
@@ -70,6 +77,7 @@ export function Timeline({
   onReachEnd,
   onTrimChange,
   onTrimReset,
+  onFadeChange,
   onToggleMute,
   onVolumeChange,
   onImport,
@@ -195,7 +203,7 @@ export function Timeline({
   }, [playing, time, visibleSeconds, onReachEnd])
 
   const width = visibleSeconds * pixelsPerSecond
-  // Trim edges snap to the playhead, the clips' edges and the files' edges.
+  // Trim edges and fades snap to the playhead, the clips' edges and the files' edges.
   const snapTimes = [
     time,
     ...TRACK_KINDS.flatMap((k) => {
@@ -291,11 +299,10 @@ export function Timeline({
                       muted={muted[kind]}
                       onSelect={onSelect}
                       onOffsetChange={onOffsetChange}
-                      // Only the video is trimmed; it's what gets exported.
-                      trimmable={kind === 'video'}
                       snap={snap}
                       onTrimChange={onTrimChange}
                       onTrimReset={onTrimReset}
+                      onFadeChange={onFadeChange}
                     />
                   ) : (
                     <div className="sticky left-0 px-4 text-xs text-dim">

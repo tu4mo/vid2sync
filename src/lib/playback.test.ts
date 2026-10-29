@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Clip, Clips } from './media'
+import { NO_FADE, type Clip, type Clips } from './media'
 import { Playback, scheduleClips } from './playback'
 
 class FakeAudioContext {
@@ -8,7 +8,11 @@ class FakeAudioContext {
   destination = {}
   gains: {
     connect: ReturnType<typeof vi.fn>
-    gain: { setTargetAtTime: ReturnType<typeof vi.fn> }
+    gain: {
+      setTargetAtTime: ReturnType<typeof vi.fn>
+      setValueCurveAtTime: ReturnType<typeof vi.fn>
+      setValueAtTime: ReturnType<typeof vi.fn>
+    }
   }[] = []
   sources: {
     connect: ReturnType<typeof vi.fn>
@@ -18,7 +22,14 @@ class FakeAudioContext {
   resume = vi.fn(async () => {})
 
   createGain() {
-    const gain = { connect: vi.fn(), gain: { setTargetAtTime: vi.fn() } }
+    const gain = {
+      connect: vi.fn(),
+      gain: {
+        setTargetAtTime: vi.fn(),
+        setValueCurveAtTime: vi.fn(),
+        setValueAtTime: vi.fn(),
+      },
+    }
     this.gains.push(gain)
     return gain
   }
@@ -40,6 +51,7 @@ function clip(
   duration: number,
   offset = 0,
   trim = { start: 0, end: duration },
+  fade = NO_FADE,
 ): Clip {
   return {
     file: new File([], 'clip'),
@@ -47,6 +59,7 @@ function clip(
     duration,
     offset,
     trim,
+    fade,
     buffer: { duration } as AudioBuffer,
     peaks: null,
   }
@@ -215,5 +228,29 @@ describe('scheduleClips', () => {
     )
     expect(scheduled).toHaveLength(1)
     expect(ctx.sources[0].connect).toHaveBeenCalledWith({ kind: 'audio' })
+  })
+
+  it('fades a clip through a gain of its own', () => {
+    const ctx = new FakeAudioContext()
+    const faded = clip(10, 2, undefined, {
+      start: { silent: 0, full: 1 },
+      end: { silent: 0, full: 0 },
+    })
+    scheduleClips(
+      audioContext(ctx),
+      { video: faded, audio: null },
+      0,
+      100,
+      output,
+    )
+
+    const [gain] = ctx.gains
+    expect(ctx.sources[0].connect).toHaveBeenCalledWith(gain)
+    expect(gain.connect).toHaveBeenCalledWith({ kind: 'video' })
+    expect(gain.gain.setValueCurveAtTime).toHaveBeenCalledWith(
+      expect.any(Float32Array),
+      102,
+      1,
+    )
   })
 })

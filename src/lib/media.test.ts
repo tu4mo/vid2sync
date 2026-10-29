@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { clipSpan, kindForFile, loadClip, type Clip } from './media'
+import {
+  clipFade,
+  clipSpan,
+  fitFade,
+  kindForFile,
+  loadClip,
+  type Clip,
+  type Fade,
+} from './media'
 
 function fakeBuffer(channels: number[][], sampleRate: number) {
   const length = channels[0].length
@@ -138,5 +146,49 @@ describe('clipSpan', () => {
   it('places the trimmed part on the timeline', () => {
     const clip = { offset: -1, trim: { start: 2, end: 5 } } as Clip
     expect(clipSpan(clip)).toEqual({ start: 1, end: 4 })
+  })
+})
+
+// A 3 s trimmed part with the given fades.
+function faded(fade: Fade) {
+  return { trim: { start: 1, end: 4 }, fade } as Clip
+}
+
+describe('fitFade', () => {
+  it('keeps a fade that fits', () => {
+    expect(fitFade({ silent: 0.5, full: 1 }, 3)).toEqual({
+      silent: 0.5,
+      full: 1,
+    })
+  })
+
+  it('cuts it down to the room, with the silence inside it', () => {
+    expect(fitFade({ silent: 2, full: 4 }, 3)).toEqual({ silent: 2, full: 3 })
+    expect(fitFade({ silent: 1, full: -1 }, 3)).toEqual({ silent: 0, full: 0 })
+  })
+
+  it('keeps a short ramp after the silence', () => {
+    expect(fitFade({ silent: 2, full: 1 }, 3)).toEqual({
+      silent: 0.99,
+      full: 1,
+    })
+  })
+})
+
+describe('clipFade', () => {
+  it('keeps fades that fit the trimmed part', () => {
+    const fade = {
+      start: { silent: 0, full: 1 },
+      end: { silent: 0.5, full: 1.5 },
+    }
+    expect(clipFade(faded(fade))).toEqual(fade)
+  })
+
+  it('cuts fades down to fit, the fade-in first', () => {
+    expect(
+      clipFade(
+        faded({ start: { silent: 0, full: 2 }, end: { silent: 0, full: 2 } }),
+      ),
+    ).toEqual({ start: { silent: 0, full: 2 }, end: { silent: 0, full: 1 } })
   })
 })

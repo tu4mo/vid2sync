@@ -1,7 +1,14 @@
-import { TRACK_KINDS, type Clips, type TrackKind } from './media'
+import { scheduleFade } from './fade'
+import {
+  TRACK_KINDS,
+  clipFade,
+  clipSpan,
+  type Clips,
+  type TrackKind,
+} from './media'
 
 /**
- * Starts every clip's audio (only its trimmed part) so that timeline time `from` sounds at context time `at`.
+ * Starts every clip's audio (only its trimmed part, with its fades) so that timeline time `from` sounds at context time `at`.
  * Live playback and the export mix both use this, so they place audio identically.
  * `output` returns where a track's audio goes, or null to leave the track out.
  */
@@ -31,7 +38,16 @@ export function scheduleClips(
 
     const source = ctx.createBufferSource()
     source.buffer = clip.buffer
-    source.connect(destination)
+    const fade = clipFade(clip)
+    if (fade.start.full > 0 || fade.end.full > 0) {
+      // Each source gets its own gain for the fades, under the track's volume.
+      const fadeGain = ctx.createGain()
+      fadeGain.connect(destination)
+      scheduleFade(fadeGain.gain, clipSpan(clip), fade, from, at)
+      source.connect(fadeGain)
+    } else {
+      source.connect(destination)
+    }
     source.start(at + Math.max(0, delay), into, end - into)
     sources.push(source)
   }

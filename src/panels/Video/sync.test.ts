@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Clip } from '../../lib/media'
+import { NO_FADE, type Clip } from '../../lib/media'
 import { syncVideo } from './sync'
 
 class FakeVideo {
@@ -33,6 +33,7 @@ const clip: Clip = {
   duration: 10,
   offset: 10,
   trim: { start: 2, end: 8 },
+  fade: NO_FADE,
   buffer: null,
   peaks: null,
 }

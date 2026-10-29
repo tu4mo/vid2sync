@@ -1,12 +1,15 @@
 import { memo, useRef } from 'react'
 
 import {
+  clipFade,
   clipSpan,
   type Clip,
+  type FadeSpan,
   type TimeRange,
   type TrackKind,
 } from '../../lib/media'
 import { formatTime } from '../../lib/time'
+import { FadeHandle } from './FadeHandle'
 import { Waveform } from './Waveform'
 
 const WAVE_COLORS: Record<TrackKind, string> = {
@@ -31,12 +34,15 @@ type ClipViewProps = {
   muted: boolean
   onSelect: (kind: TrackKind) => void
   onOffsetChange: (kind: TrackKind, offset: number) => void
-  /** Whether the clip's start and end can be dragged to trim it. */
-  trimmable: boolean
   /** Snaps a timeline time to nearby edges and the playhead. */
   snap: (t: number) => number
   onTrimChange: (kind: TrackKind, which: keyof TimeRange, t: number) => void
   onTrimReset: (kind: TrackKind, which: keyof TimeRange) => void
+  onFadeChange: (
+    kind: TrackKind,
+    which: keyof TimeRange,
+    span: FadeSpan,
+  ) => void
 }
 
 export const ClipView = memo(function ClipView({
@@ -47,26 +53,27 @@ export const ClipView = memo(function ClipView({
   muted,
   onSelect,
   onOffsetChange,
-  trimmable,
   snap,
   onTrimChange,
   onTrimReset,
+  onFadeChange,
 }: ClipViewProps) {
   const drag = useRef<{ lastX: number; offset: number } | null>(null)
   // Where the pointer and the edge were when a trim handle was grabbed.
   const trimDrag = useRef<{ x: number; t: number } | null>(null)
   const span = clipSpan(clip)
+  const fade = clipFade(clip)
   const width = (span.end - span.start) * pixelsPerSecond
   const fileWidth = clip.duration * pixelsPerSecond
 
   return (
     <div
-      className={`absolute inset-y-1 cursor-grab touch-none overflow-hidden rounded-md active:cursor-grabbing ${
+      className={`group absolute inset-y-1 cursor-grab touch-none overflow-hidden rounded-md active:cursor-grabbing ${
         CLIP_BACKGROUNDS[kind]
       } ${
         // An overlay draws the border inside the clip, on top of the waveform.
         selected
-          ? 'after:pointer-events-none after:absolute after:inset-0 after:rounded-md after:border-2 after:border-accent'
+          ? 'after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-md after:border-2 after:border-accent'
           : ''
       } ${muted ? 'opacity-45' : ''}`}
       data-testid={`clip-${kind}`}
@@ -117,37 +124,50 @@ export const ClipView = memo(function ClipView({
       ) : (
         <div className="px-1.5 py-1 text-2xs text-white/50">no audio track</div>
       )}
-      {trimmable &&
-        (['start', 'end'] as const).map((which) => (
-          <div
-            key={which}
-            className={`absolute inset-y-0 z-20 w-2 cursor-ew-resize ${TRIM_HANDLE_CLASSES[which]}`}
-            title={`Trim the ${which} (drag, Shift to not snap; double-click to reset)`}
-            data-testid={`trim-${which}`}
-            data-time={span[which]}
-            onPointerDown={(e) => {
-              if (e.button !== 0) {
-                return
-              }
-              // Keep the clip from moving, and the timeline from scrubbing.
-              e.stopPropagation()
-              e.currentTarget.setPointerCapture(e.pointerId)
-              onSelect(kind)
-              trimDrag.current = { x: e.clientX, t: span[which] }
-            }}
-            onPointerMove={(e) => {
-              const d = trimDrag.current
-              if (!d) {
-                return
-              }
-              const t = d.t + (e.clientX - d.x) / pixelsPerSecond
-              onTrimChange(kind, which, e.shiftKey ? t : snap(t))
-            }}
-            onPointerUp={() => (trimDrag.current = null)}
-            onPointerCancel={() => (trimDrag.current = null)}
-            onDoubleClick={() => onTrimReset(kind, which)}
-          />
-        ))}
+      {(['start', 'end'] as const).map((which) => (
+        <FadeHandle
+          key={which}
+          which={which}
+          span={fade[which]}
+          edge={span[which]}
+          clipWidth={width}
+          pixelsPerSecond={pixelsPerSecond}
+          active={selected}
+          snap={snap}
+          onGrab={() => onSelect(kind)}
+          onChange={(w, next) => onFadeChange(kind, w, next)}
+        />
+      ))}
+      {(['start', 'end'] as const).map((which) => (
+        <div
+          key={which}
+          className={`absolute inset-y-0 z-20 w-2 cursor-ew-resize ${TRIM_HANDLE_CLASSES[which]}`}
+          title={`Trim the ${which} (drag, Shift to not snap; double-click to reset)`}
+          data-testid={`trim-${which}`}
+          data-time={span[which]}
+          onPointerDown={(e) => {
+            if (e.button !== 0) {
+              return
+            }
+            // Keep the clip from moving, and the timeline from scrubbing.
+            e.stopPropagation()
+            e.currentTarget.setPointerCapture(e.pointerId)
+            onSelect(kind)
+            trimDrag.current = { x: e.clientX, t: span[which] }
+          }}
+          onPointerMove={(e) => {
+            const d = trimDrag.current
+            if (!d) {
+              return
+            }
+            const t = d.t + (e.clientX - d.x) / pixelsPerSecond
+            onTrimChange(kind, which, e.shiftKey ? t : snap(t))
+          }}
+          onPointerUp={() => (trimDrag.current = null)}
+          onPointerCancel={() => (trimDrag.current = null)}
+          onDoubleClick={() => onTrimReset(kind, which)}
+        />
+      ))}
     </div>
   )
 })

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 function fixture(name: string) {
   return new URL(`fixtures/${name}`, import.meta.url).pathname
@@ -24,10 +24,13 @@ async function clockSeconds(page: Page) {
   return Number(m) * 60 + Number(s)
 }
 
-// The video's trimmed part on the timeline in seconds, as its handles report it.
-async function trimSeconds(page: Page) {
+// A clip's trimmed part on the timeline in seconds, as its handles report it.
+async function trimSeconds(page: Page, kind = 'video') {
   function time(which: string) {
-    return page.getByTestId(`trim-${which}`).getAttribute('data-time')
+    return page
+      .getByTestId(`clip-${kind}`)
+      .getByTestId(`trim-${which}`)
+      .getAttribute('data-time')
   }
   return `${await time('start')} – ${await time('end')}`
 }
@@ -123,7 +126,7 @@ test('import, sync, play, trim and export', async ({ page }) => {
   function trim() {
     return trimSeconds(page)
   }
-  const startHandle = page.getByTestId('trim-start')
+  const startHandle = videoClip.getByTestId('trim-start')
   await expect.poll(trim).toMatch(/^0 – 3\.0\d*$/)
   await page.keyboard.press('Home')
   await page.keyboard.press('Shift+ArrowRight')
@@ -147,7 +150,7 @@ test('import, sync, play, trim and export', async ({ page }) => {
 
   // Double-click puts a handle back at the file's edge. Grabbing a handle selects the clip,
   // so deselect it before the arrows, which would otherwise nudge it.
-  await page.getByTestId('trim-end').dblclick()
+  await videoClip.getByTestId('trim-end').dblclick()
   await expect.poll(trim).toMatch(/^1 – 3\.0\d*$/)
   await page.keyboard.press('Escape')
   await page.keyboard.press('Shift+ArrowRight')
@@ -182,17 +185,22 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await page.keyboard.press('o')
   await expect.poll(trim).toBe('1 – 2')
 
-  // Export and check the file itself.
-  const downloading = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Export MP4' }).click()
-  const download = await downloading
-  expect(download.suggestedFilename()).toBe('clip-synced.mp4')
-  const file = await readFile(await download.path())
-  // A fresh tab, so this Mediabunny copy doesn't share a page with the app's.
-  const checker = await page.context().newPage()
-  await checker.goto('/')
-  const result = await checker.evaluate(analyzeExport, file.toString('base64'))
+  // With the audio selected, the keys trim it instead, leaving the video alone.
+  const audioBox = (await audioClip.boundingBox())!
+  await page.mouse.click(
+    audioBox.x + audioBox.width / 2,
+    audioBox.y + audioBox.height / 2,
+  )
+  await page.keyboard.press('i')
+  await expect.poll(() => trimSeconds(page, 'audio')).toBe('2 – 3.5')
+  await page.keyboard.press('x')
+  await expect.poll(() => trimSeconds(page, 'audio')).toBe('1.5 – 3.5')
+  await expect.poll(trim).toBe('1 – 2')
+  await page.keyboard.press('Escape')
 
+  // Export and check the file itself.
+  const result = await exportAndAnalyze(page)
+  expect(result.name).toBe('clip-synced.mp4')
   expect(result.videoTracks).toBe(1)
   expect(result.audioTracks).toBe(1)
   // Trimmed, frame-exact.
@@ -203,6 +211,55 @@ test('import, sync, play, trim and export', async ({ page }) => {
   expect(Math.abs(result.frequency - 880)).toBeLessThan(10)
   // The WAV is at 0.5, the track volume at 50%.
   expect(Math.abs(result.peak - 0.25)).toBeLessThan(0.03)
+
+  // Fade the audio in over 0.2 s by dragging its fade-in dot onto the playhead at 1.7 s.
+  async function setPlayhead(t: string) {
+    await clockField.click()
+    await clockField.fill(t)
+    await clockField.press('Enter')
+    await blur(page)
+  }
+  // Drags a fade dot `seconds` to the right, onto the playhead.
+  async function dragDot(dot: Locator, seconds: number) {
+    const dotBox = (await dot.boundingBox())!
+    const x = dotBox.x + dotBox.width / 2
+    const y = dotBox.y + dotBox.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x + clockToPx(seconds) + 2, y, { steps: 5 }) // Close enough to snap
+    await page.mouse.up()
+  }
+  await setPlayhead('1.7')
+  const fadeIn = audioClip.getByTestId('fade-start')
+  await dragDot(fadeIn, 0.2)
+  await expect(fadeIn).toHaveAttribute('data-distance', '0.2')
+  // Double-click clears it.
+  await fadeIn.dblclick()
+  await expect(fadeIn).toHaveAttribute('data-distance', '0')
+  await dragDot(fadeIn, 0.2)
+  await expect(fadeIn).toHaveAttribute('data-distance', '0.2')
+
+  // Its bottom dot moves where it starts, silent before then: onto the playhead at 1.6 s.
+  await setPlayhead('1.6')
+  const fadeInStart = audioClip.getByTestId('fade-start-silent')
+  await dragDot(fadeInStart, 0.1)
+  await expect(fadeInStart).toHaveAttribute('data-distance', '0.1')
+  await expect(fadeIn).toHaveAttribute('data-distance', '0.2')
+
+  // The audio starts 0.5 s into the export, silent until 0.6 s, then ramps up linearly until 0.7 s.
+  const faded = await exportAndAnalyze(page)
+  // The peak of the 10 ms from `t`.
+  function levelAt(t: number) {
+    return faded.levels[Math.round(t / LEVEL_SECONDS)]
+  }
+  expect(levelAt(0.55)).toBeLessThan(0.03)
+  // Up to halfway through, a linear fade reaches ½ (an equal-power one would reach √½).
+  expect(Math.abs(levelAt(0.64) - 0.25 * 0.5)).toBeLessThan(0.02)
+  expect(Math.abs(levelAt(0.8) - 0.25)).toBeLessThan(0.03)
+
+  // Double-clicking the bottom dot puts the start back at the clip's edge.
+  await fadeInStart.dblclick()
+  await expect(fadeInStart).toHaveAttribute('data-distance', '0')
 
   // Remove the audio from its track head.
   await audioHead.getByRole('button', { name: 'Remove clip' }).click()
@@ -225,6 +282,23 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
 })
+
+/** Exports the project, then decodes the file and measures it. */
+async function exportAndAnalyze(page: Page) {
+  const downloading = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export MP4' }).click()
+  const download = await downloading
+  const file = await readFile(await download.path())
+  // A fresh tab, so this Mediabunny copy doesn't share a page with the app's.
+  const checker = await page.context().newPage()
+  await checker.goto('/')
+  const result = await checker.evaluate(analyzeExport, file.toString('base64'))
+  await checker.close()
+  return { name: download.suggestedFilename(), ...result }
+}
+
+// The windows `analyzeExport` measures the level of; it runs in the page, so it has its own copy.
+const LEVEL_SECONDS = 0.01
 
 /** Runs in the page: decodes the exported MP4 with Mediabunny and measures it. */
 async function analyzeExport(base64: string) {
@@ -270,6 +344,17 @@ async function analyzeExport(base64: string) {
     }
   }
 
+  // The peak of each 10 ms window, for following how loud it is over time.
+  const perLevel = Math.round(sampleRate * 0.01)
+  const levels: number[] = []
+  for (let i = 0; i < samples.length; i += perLevel) {
+    let peak = 0
+    for (let j = i; j < Math.min(samples.length, i + perLevel); j++) {
+      peak = Math.max(peak, Math.abs(samples[j] ?? 0))
+    }
+    levels.push(peak)
+  }
+
   return {
     videoTracks: videoTracks.length,
     audioTracks: audioTracks.length,
@@ -277,5 +362,6 @@ async function analyzeExport(base64: string) {
     onset: onsetIndex / sampleRate,
     frequency: crossings / 2 / 0.3,
     peak: Math.max(...window.map(Math.abs)),
+    levels,
   }
 }

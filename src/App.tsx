@@ -11,11 +11,14 @@ import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
 import {
   TRACK_KINDS,
+  clipFade,
   clipSpan,
+  fitFade,
   kindForFile,
   loadClip,
   minOffset,
   type Clips,
+  type FadeSpan,
   type TimeRange,
   type TrackKind,
 } from './lib/media'
@@ -165,6 +168,28 @@ export default function App() {
     })
   }, [])
 
+  /** Sets a clip's fade-in or fade-out, leaving room for the other fade. */
+  const setFade = useCallback(
+    (kind: TrackKind, which: keyof TimeRange, span: FadeSpan) => {
+      setClips((prev) => {
+        const clip = prev[kind]
+        if (!clip) {
+          return prev
+        }
+        const other = which === 'start' ? 'end' : 'start'
+        const room =
+          clip.trim.end - clip.trim.start - clipFade(clip)[other].full
+        const rounded = {
+          silent: roundMs(span.silent),
+          full: roundMs(span.full),
+        }
+        const fade = { ...clip.fade, [which]: fitFade(rounded, room) }
+        return { ...prev, [kind]: { ...clip, fade } }
+      })
+    },
+    [],
+  )
+
   function removeClip(kind: TrackKind) {
     const clip = clips[kind]
     if (!clip) {
@@ -301,11 +326,12 @@ export default function App() {
         seek(time + dir * (e.shiftKey ? 1 : 1 / 30))
       }
     } else if (e.key === 'i') {
-      setTrim('video', 'start', time)
+      // Trim keys act on the selected clip, or else the video.
+      setTrim(selected ?? 'video', 'start', time)
     } else if (e.key === 'o') {
-      setTrim('video', 'end', time)
+      setTrim(selected ?? 'video', 'end', time)
     } else if (e.key === 'x') {
-      resetTrim('video')
+      resetTrim(selected ?? 'video')
     } else if (e.key === 'Home') {
       seek(0)
     } else if (e.key === 'Escape') {
@@ -377,6 +403,7 @@ export default function App() {
               onReachEnd={stopAt}
               onTrimChange={setTrim}
               onTrimReset={resetTrim}
+              onFadeChange={setFade}
               onToggleMute={(kind) =>
                 setMuted((m) => ({ ...m, [kind]: !m[kind] }))
               }

@@ -25,6 +25,8 @@ export type Clip = {
   offset: number
   /** The part of the file that's used, in seconds into the file. */
   trim: TimeRange
+  /** How the sound fades in from the trimmed part's start and out to its end. */
+  fade: Fade
   /** Decoded audio, or null when the file has no decodable audio track. */
   buffer: AudioBuffer | null
   /** Waveform of `buffer`, or null when there's no audio. */
@@ -40,12 +42,52 @@ export type TimeRange = {
   end: number
 }
 
+/**
+ * One fade, as distances in from its clip edge in seconds: silent up to `silent`, ramping to
+ * full volume at `full`.
+ */
+export type FadeSpan = {
+  silent: number
+  full: number
+}
+
+/** A clip's fade-in (`start`) and fade-out (`end`). */
+export type Fade = Record<keyof TimeRange, FadeSpan>
+
+/** No fade at either end. */
+export const NO_FADE: Fade = {
+  start: { silent: 0, full: 0 },
+  end: { silent: 0, full: 0 },
+}
+
+// The shortest a ramp can be after a silence, so a fade never turns into a hard cut.
+const MIN_RAMP = 0.01
+
+/** Fits a fade into `room` seconds, keeping the silence before its ramp. */
+export function fitFade({ silent, full }: FadeSpan, room: number): FadeSpan {
+  const fitted = Math.min(Math.max(0, full), room)
+  return {
+    silent: Math.min(Math.max(0, silent), Math.max(0, fitted - MIN_RAMP)),
+    full: fitted,
+  }
+}
+
 /** Where the clip's used part starts and ends on the timeline. */
 export function clipSpan(clip: Clip): TimeRange {
   return {
     start: clip.offset + clip.trim.start,
     end: clip.offset + clip.trim.end,
   }
+}
+
+/**
+ * The fades as they apply: trimming can leave less room than they were set to, so they're
+ * cut down to fit, the fade-in first.
+ */
+export function clipFade(clip: Clip): Fade {
+  const length = clip.trim.end - clip.trim.start
+  const start = fitFade(clip.fade.start, length)
+  return { start, end: fitFade(clip.fade.end, length - start.full) }
 }
 
 /** The earliest offset a clip can have: its trimmed part can't start before 0:00. */
@@ -135,6 +177,7 @@ export async function loadClip(
     duration,
     offset: 0,
     trim: { start: 0, end: duration },
+    fade: NO_FADE,
     buffer,
     peaks: buffer ? computePeaks(buffer) : null,
   }
