@@ -259,7 +259,7 @@ export function Timeline({
         </div>
       )}
       <div
-        className="overflow-x-auto overflow-y-hidden"
+        className="overflow-x-auto overflow-y-hidden overscroll-x-contain"
         style={{ paddingInline: EDGE_PX }}
         ref={scrollRef}
         onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
