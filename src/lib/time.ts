@@ -13,3 +13,20 @@ export function parseTime(text: string): number | null {
   if (parts.some((p) => !/^\d*\.?\d+$|^\d+\.$/.test(p.trim()))) return null
   return parts.reduce((t, p) => t * 60 + Number(p), 0)
 }
+
+/** Moves `t` onto the nearest of `targets` within `tolerance`, or leaves it as is. */
+export function snapTo(
+  t: number,
+  targets: number[],
+  tolerance: number,
+): number {
+  let best = t
+  let distance = tolerance
+  for (const target of targets) {
+    if (Math.abs(target - t) <= distance) {
+      best = target
+      distance = Math.abs(target - t)
+    }
+  }
+  return best
+}

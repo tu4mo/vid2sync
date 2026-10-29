@@ -104,12 +104,17 @@ class FakeOfflineAudioContext {
 const mixContext = () =>
   FakeOfflineAudioContext.created.find((c) => c.sources.length > 0)
 
-function clip(offset: number, duration: number): Clip {
+function clip(
+  offset: number,
+  duration: number,
+  trim = { start: 0, end: duration },
+): Clip {
   return {
     file: new File([], 'clip'),
     url: 'blob:clip',
     duration,
     offset,
+    trim,
     buffer: { duration } as AudioBuffer,
     peaks: null,
   }
@@ -144,28 +149,21 @@ describe('exportSynced', () => {
 
   it('needs a video', async () => {
     await expect(
-      exportSynced({ video: null, audio: clip(0, 10) }, gains, null, progress),
+      exportSynced({ video: null, audio: clip(0, 10) }, gains, progress),
     ).rejects.toThrow('There’s no video to export.')
-  })
-
-  it('needs the range to overlap the video', async () => {
-    const clips: Clips = { video: clip(5, 10), audio: null }
-    await expect(
-      exportSynced(clips, gains, { start: 15, end: 20 }, progress),
-    ).rejects.toThrow('The export range doesn’t overlap the video.')
   })
 
   it('needs an audio encoder', async () => {
     mb.module.getFirstEncodableAudioCodec.mockResolvedValue(null)
     const clips: Clips = { video: clip(0, 10), audio: null }
-    await expect(exportSynced(clips, gains, null, progress)).rejects.toThrow(
+    await expect(exportSynced(clips, gains, progress)).rejects.toThrow(
       'This browser can’t encode audio for export.',
     )
   })
 
-  it('exports the whole video when there is no range', async () => {
+  it('exports the whole video when it isn’t trimmed', async () => {
     const clips: Clips = { video: clip(2, 10), audio: clip(0, 30) }
-    const blob = await exportSynced(clips, gains, null, progress)
+    const blob = await exportSynced(clips, gains, progress)
 
     expect(blob.type).toBe('video/mp4')
     expect(mb.module.Conversion.init).toHaveBeenCalledWith(
@@ -178,41 +176,43 @@ describe('exportSynced', () => {
     expect(mb.state.inputs[0].dispose).toHaveBeenCalled()
   })
 
-  it('trims to the range, clamped to the video', async () => {
-    const clips: Clips = { video: clip(2, 10), audio: null }
-    await exportSynced(clips, gains, { start: 5, end: 8 }, progress)
+  it('exports the trimmed part of the video', async () => {
+    const clips: Clips = {
+      video: clip(2, 10, { start: 3, end: 6 }),
+      audio: null,
+    }
+    await exportSynced(clips, gains, progress)
     expect(mb.module.Conversion.init).toHaveBeenCalledWith(
       expect.objectContaining({ trim: { start: 3, end: 6 } }),
     )
-
-    await exportSynced(clips, gains, { start: 0, end: 100 }, progress)
-    expect(mb.module.Conversion.init).toHaveBeenLastCalledWith(
-      expect.objectContaining({ trim: { start: 0, end: 10 } }),
-    )
+    expect(mixContext()?.length).toBe(3 * SAMPLE_RATE)
   })
 
-  it('mixes the tracks from the start of the range at their gains', async () => {
-    const clips: Clips = { video: clip(2, 10), audio: clip(0, 30) }
-    await exportSynced(clips, gains, { start: 5, end: 8 }, progress)
+  it('mixes the tracks from the start of the trim at their gains', async () => {
+    const clips: Clips = {
+      video: clip(2, 10, { start: 3, end: 6 }),
+      audio: clip(0, 30),
+    }
+    await exportSynced(clips, gains, progress)
 
     const ctx = mixContext()!
     expect(ctx.sources.map((s) => s.start.mock.calls[0])).toEqual([
-      [0, 3],
-      [0, 5],
+      [0, 3, 3],
+      [0, 5, 25],
     ])
     expect(ctx.gains.map((g) => g.gain.value)).toEqual([1, 0.5])
   })
 
   it('leaves muted tracks out of the mix', async () => {
     const clips: Clips = { video: clip(0, 10), audio: clip(0, 10) }
-    await exportSynced(clips, { video: 0, audio: 1 }, null, progress)
+    await exportSynced(clips, { video: 0, audio: 1 }, progress)
     expect(mixContext()?.sources).toHaveLength(1)
   })
 
   it('cancels the encoder delay, measuring it once per codec', async () => {
     const clips: Clips = { video: clip(0, 10), audio: null }
-    await exportSynced(clips, gains, null, progress)
-    await exportSynced(clips, gains, null, progress)
+    await exportSynced(clips, gains, progress)
+    await exportSynced(clips, gains, progress)
 
     expect(FakeOfflineAudioContext.decoded).toBe(1)
     const exported = mb.state.audioSources.filter((s) => s.options)
@@ -225,7 +225,7 @@ describe('exportSynced', () => {
 
   it('reports progress up to 1', async () => {
     const clips: Clips = { video: clip(0, 10), audio: null }
-    await exportSynced(clips, gains, null, progress)
+    await exportSynced(clips, gains, progress)
     expect(progress.mock.calls).toEqual([[0.9], [1]])
   })
 
@@ -236,7 +236,7 @@ describe('exportSynced', () => {
     ]
     const clips: Clips = { video: clip(0, 10), audio: null }
 
-    await expect(exportSynced(clips, gains, null, progress)).rejects.toThrow(
+    await expect(exportSynced(clips, gains, progress)).rejects.toThrow(
       'The video stream can’t be written to MP4 (undecodable_source_codec).',
     )
     expect(mb.state.inputs[0].dispose).toHaveBeenCalled()

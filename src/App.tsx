@@ -19,6 +19,7 @@ import { MIN_PIXELS_PER_SECOND, Timeline } from './components/Timeline/Timeline'
 import { Toolbar } from './components/Toolbar/Toolbar'
 import {
   TRACK_KINDS,
+  clipSpan,
   kindForFile,
   loadClip,
   type Clip,
@@ -38,12 +39,12 @@ function syncVideo(
 ) {
   if (!el || !clip) return
   const local = t - clip.offset
-  const inside = local >= 0 && local < clip.duration
+  const inside = local >= clip.trim.start && local < clip.trim.end
 
   if (!playing || !inside) {
     if (!el.paused) el.pause()
     el.playbackRate = 1
-    const target = Math.min(Math.max(local, 0), clip.duration)
+    const target = Math.min(Math.max(local, clip.trim.start), clip.trim.end)
     if (Math.abs(el.currentTime - target) > 0.005) el.currentTime = target
     return
   }
@@ -55,7 +56,8 @@ function syncVideo(
   if (el.paused) void el.play().catch(() => {})
 }
 
-const MIN_RANGE = 0.05
+// The shortest a clip can be trimmed to.
+const MIN_CLIP = 0.05
 
 // The toolbar and the timeline's top border, then the timeline's fixed rows.
 const TIMELINE_CHROME_HEIGHT = 42 + 1 + RULER_HEIGHT + SYNC_LANE_HEIGHT
@@ -82,15 +84,11 @@ export default function App() {
   const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
   const [dragging, setDragging] = useState(false)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
-  /** In/out points on the timeline; null exports the whole video. */
-  const [range, setRange] = useState<TimeRange | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const end = Math.max(
     0,
-    ...TRACK_KINDS.map((k) =>
-      clips[k] ? clips[k].offset + clips[k].duration : 0,
-    ),
+    ...TRACK_KINDS.map((k) => (clips[k] ? clipSpan(clips[k]).end : 0)),
   )
 
   const gains = useMemo(
@@ -131,40 +129,59 @@ export default function App() {
   const setOffset = useCallback((kind: TrackKind, offset: number) => {
     setClips((prev) => {
       const clip = prev[kind]
+      // The trimmed part can't start before 0:00.
       return clip
-        ? { ...prev, [kind]: { ...clip, offset: roundMs(Math.max(0, offset)) } }
+        ? {
+            ...prev,
+            [kind]: {
+              ...clip,
+              offset: roundMs(Math.max(-clip.trim.start, offset)),
+            },
+          }
         : prev
     })
   }, [])
 
-  const wholeVideo = clips.video
-    ? {
-        start: clips.video.offset,
-        end: clips.video.offset + clips.video.duration,
-      }
-    : null
+  /** Moves the trimmed part's start or end to timeline time `t`, within the file and 0:00. */
+  const setTrim = useCallback(
+    (kind: TrackKind, which: keyof TimeRange, t: number) => {
+      setClips((prev) => {
+        const clip = prev[kind]
+        if (!clip) return prev
+        const local = roundMs(t - clip.offset)
+        const trim =
+          which === 'start'
+            ? {
+                ...clip.trim,
+                start: Math.min(
+                  Math.max(0, -clip.offset, local),
+                  clip.trim.end - MIN_CLIP,
+                ),
+              }
+            : {
+                ...clip.trim,
+                end: Math.max(
+                  Math.min(clip.duration, local),
+                  clip.trim.start + MIN_CLIP,
+                ),
+              }
+        return { ...prev, [kind]: { ...clip, trim } }
+      })
+    },
+    [],
+  )
 
-  const setRangePoint = (which: keyof TimeRange, t: number) => {
-    const whole = wholeVideo ?? { start: 0, end }
-    setRange((prev) => {
-      const next = { ...(prev ?? whole), [which]: roundMs(Math.max(0, t)) }
-      // Like most editors: an in point after the out point (or vice versa) resets the other one.
-      if (next.end - next.start < MIN_RANGE) {
-        if (which === 'start')
-          next.end = Math.max(whole.end, next.start + MIN_RANGE)
-        else
-          next.start = Math.max(0, Math.min(whole.start, next.end - MIN_RANGE))
-      }
-      if (next.end - next.start < MIN_RANGE) return prev
-      // Back to the whole video: clear it, so the range keeps following the video if it moves.
-      return next.start === whole.start && next.end === whole.end ? null : next
+  /** Puts one end of the trim, or with no argument both, back at the file's edge. */
+  const resetTrim = useCallback((kind: TrackKind, which?: keyof TimeRange) => {
+    setClips((prev) => {
+      const clip = prev[kind]
+      if (!clip) return prev
+      // The start can only go back as far as 0:00.
+      const edges = { start: Math.max(0, -clip.offset), end: clip.duration }
+      const trim = which ? { ...clip.trim, [which]: edges[which] } : edges
+      return { ...prev, [kind]: { ...clip, trim } }
     })
-  }
-
-  const resetRange = (which?: keyof TimeRange) => {
-    if (which && wholeVideo) setRangePoint(which, wholeVideo[which])
-    else setRange(null)
-  }
+  }, [])
 
   const removeClip = (kind: TrackKind) => {
     const clip = clips[kind]
@@ -204,7 +221,7 @@ export default function App() {
     setExportProgress(0)
     try {
       const { downloadBlob, exportSynced } = await import('./lib/export')
-      const blob = await exportSynced(clips, gains, range, setExportProgress)
+      const blob = await exportSynced(clips, gains, setExportProgress)
       downloadBlob(
         blob,
         `${video.file.name.replace(/\.[^.]+$/, '')}-synced.mp4`,
@@ -271,11 +288,11 @@ export default function App() {
         setOffset(selected, clip.offset + dir * (e.shiftKey ? 0.1 : 0.01))
       else seek(time + dir * (e.shiftKey ? 1 : 1 / 30))
     } else if (e.key === 'i') {
-      setRangePoint('start', time)
+      setTrim('video', 'start', time)
     } else if (e.key === 'o') {
-      setRangePoint('end', time)
+      setTrim('video', 'end', time)
     } else if (e.key === 'x') {
-      setRange(null)
+      resetTrim('video')
     } else if (e.key === 'Home') {
       seek(0)
     } else if (e.key === 'Escape') {
@@ -291,10 +308,9 @@ export default function App() {
   }, [])
 
   const videoClip = clips.video
+  const videoSpan = videoClip && clipSpan(videoClip)
   const videoVisible =
-    !!videoClip &&
-    time >= videoClip.offset &&
-    time < videoClip.offset + videoClip.duration
+    !!videoSpan && time >= videoSpan.start && time < videoSpan.end
 
   return (
     <div
@@ -395,9 +411,8 @@ export default function App() {
               onOffsetChange={setOffset}
               onSeek={seek}
               onReachEnd={stopAt}
-              range={range ?? wholeVideo}
-              onRangeChange={setRangePoint}
-              onRangeReset={resetRange}
+              onTrimChange={setTrim}
+              onTrimReset={resetTrim}
               onToggleMute={(kind) =>
                 setMuted((m) => ({ ...m, [kind]: !m[kind] }))
               }

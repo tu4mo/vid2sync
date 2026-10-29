@@ -20,7 +20,8 @@ type Props = {
 }
 
 /**
- * A rounded-md elbow from the video clip's start down to the audio clip's start, labelled with the gap between them.
+ * A rounded-md elbow from the video file's start down to the audio file's start (trimming doesn't change
+ * the sync), labelled with the gap between them.
  * Clicking the label lets you type the gap.
  */
 export function SyncLane({
@@ -58,12 +59,14 @@ export function SyncLane({
       Math.max(ms, -Math.floor(audio.duration * 1000)),
       Math.floor(video.duration * 1000),
     )
+    // The earliest the audio can go, with its trimmed part starting at 0:00.
+    const audioMin = -audio.trim.start
     const target = video.offset + clamped / 1000
-    if (target >= 0) {
+    if (target >= audioMin) {
       onOffsetChange('audio', target)
     } else {
-      onOffsetChange('audio', 0)
-      onOffsetChange('video', -clamped / 1000)
+      onOffsetChange('audio', audioMin)
+      onOffsetChange('video', audioMin - clamped / 1000)
     }
     return clamped
   }

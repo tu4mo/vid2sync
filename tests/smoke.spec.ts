@@ -18,14 +18,14 @@ const clockSeconds = async (page: Page) => {
   return Number(m) * 60 + Number(s)
 }
 
-// The export range in seconds, as its handles report it.
-const rangeSeconds = async (page: Page) => {
+// The video's trimmed part on the timeline in seconds, as its handles report it.
+const trimSeconds = async (page: Page) => {
   const time = (which: string) =>
-    page.getByTestId(`range-${which}`).getAttribute('data-time')
+    page.getByTestId(`trim-${which}`).getAttribute('data-time')
   return `${await time('start')} – ${await time('end')}`
 }
 
-test('import, sync, play, set range and export', async ({ page }) => {
+test('import, sync, play, trim and export', async ({ page }) => {
   await page.goto('/')
 
   // Import both tracks.
@@ -110,15 +110,15 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await clockField.press('Escape')
   expect(await clockSeconds(page)).toBe(1.5)
 
-  // Export range 1–2 s: the end with the keyboard, the start by dragging its handle onto the playhead.
-  const range = () => rangeSeconds(page)
-  const startHandle = page.getByTestId('range-start')
-  await expect.poll(range).toMatch(/^0 – 3\.0\d*$/)
+  // Trim the video to 1–2 s: the end with the keyboard, the start by dragging its handle onto the playhead.
+  const trim = () => trimSeconds(page)
+  const startHandle = page.getByTestId('trim-start')
+  await expect.poll(trim).toMatch(/^0 – 3\.0\d*$/)
   await page.keyboard.press('Home')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('o')
-  await expect.poll(range).toBe('0 – 2')
+  await expect.poll(trim).toBe('0 – 2')
   await page.keyboard.press('Shift+ArrowLeft')
   const handle = (await startHandle.boundingBox())!
   const playhead = handle.x + clockToPx(await clockSeconds(page))
@@ -128,15 +128,20 @@ test('import, sync, play, set range and export', async ({ page }) => {
     steps: 5,
   }) // close enough to snap
   await page.mouse.up()
-  await expect.poll(range).toBe('1 – 2')
+  await expect.poll(trim).toBe('1 – 2')
   expect(await clockSeconds(page)).toBe(1) // dragging a handle doesn't scrub
+  // Trimming the start doesn't move the rest of the video, so the sync holds.
+  await expect(sync).toContainText('+1500 ms')
+  await expect(videoClip).toContainText('@ 0:01.000')
 
-  // Double-click puts a handle back at the video's edge.
-  await page.getByTestId('range-end').dblclick()
-  await expect.poll(range).toMatch(/^1 – 3\.0\d*$/)
+  // Double-click puts a handle back at the file's edge. Grabbing a handle selects the clip,
+  // so deselect it before the arrows, which would otherwise nudge it.
+  await page.getByTestId('trim-end').dblclick()
+  await expect.poll(trim).toMatch(/^1 – 3\.0\d*$/)
+  await page.keyboard.press('Escape')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('o')
-  await expect.poll(range).toBe('1 – 2')
+  await expect.poll(trim).toBe('1 – 2')
 
   // Shift turns snapping off.
   await page.keyboard.press('Shift+ArrowLeft')
@@ -153,21 +158,18 @@ test('import, sync, play, set range and export', async ({ page }) => {
   )
   await page.keyboard.up('Shift')
   await page.mouse.up()
-  await expect.poll(range).toBe('1.06 – 2')
+  await expect.poll(trim).toBe('1.06 – 2')
 
-  // Double-clicking the range itself resets both ends (away from the playhead's time, which sits on top).
-  await page.keyboard.press('Home')
-  await page.mouse.dblclick(
-    start.x + clockToPx(0.5),
-    start.y + start.height / 2,
-  )
-  await expect.poll(range).toMatch(/^0 – 3\.0\d*$/)
+  // X resets both ends; I and O set them at the playhead.
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('x')
+  await expect.poll(trim).toMatch(/^0 – 3\.0\d*$/)
   await page.keyboard.press('Home')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('i')
   await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('o')
-  await expect.poll(range).toBe('1 – 2')
+  await expect.poll(trim).toBe('1 – 2')
 
   // Export and check the file itself.
   const downloading = page.waitForEvent('download')
@@ -182,9 +184,9 @@ test('import, sync, play, set range and export', async ({ page }) => {
 
   expect(result.videoTracks).toBe(1)
   expect(result.audioTracks).toBe(1)
-  // Trimmed to the range, frame-exact.
+  // Trimmed, frame-exact.
   expect(result.videoDuration).toBeCloseTo(1, 2)
-  // Audio sits at 1.5 s on the timeline, the range starts at 1 s → it starts 0.5 s in.
+  // Audio sits at 1.5 s on the timeline, the trimmed video starts at 1 s → it starts 0.5 s in.
   expect(Math.abs(result.onset - 0.5)).toBeLessThan(0.005)
   // Only the WAV's 880 Hz tone: the video's 440 Hz sound is muted.
   expect(Math.abs(result.frequency - 880)).toBeLessThan(10)

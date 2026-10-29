@@ -21,8 +21,10 @@ export type Clip = {
   url: string
   /** Length in seconds. */
   duration: number
-  /** Position of the clip's start on the timeline, in seconds. */
+  /** Position of the file's start on the timeline, in seconds. Below 0 when trimmed. */
   offset: number
+  /** The part of the file that's used, in seconds into the file. */
+  trim: TimeRange
   /** Decoded audio, or null when the file has no decodable audio track. */
   buffer: AudioBuffer | null
   /** Waveform of `buffer`, or null when there's no audio. */
@@ -36,6 +38,14 @@ export type Clips = Record<TrackKind, Clip | null>
 export type TimeRange = {
   start: number
   end: number
+}
+
+/** Where the clip's used part starts and ends on the timeline. */
+export function clipSpan(clip: Clip): TimeRange {
+  return {
+    start: clip.offset + clip.trim.start,
+    end: clip.offset + clip.trim.end,
+  }
 }
 
 const PEAKS_PER_SECOND = 200
@@ -116,6 +126,7 @@ export async function loadClip(
     url,
     duration,
     offset: 0,
+    trim: { start: 0, end: duration },
     buffer,
     peaks: buffer ? computePeaks(buffer) : null,
   }

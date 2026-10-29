@@ -1,7 +1,7 @@
 import { TRACK_KINDS, type Clips, type TrackKind } from './media'
 
 /**
- * Starts every clip's audio so that timeline time `from` sounds at context time `at`.
+ * Starts every clip's audio (only its trimmed part) so that timeline time `from` sounds at context time `at`.
  * Live playback and the export mix both use this, so they place audio identically.
  * `output` returns where a track's audio goes, or null to leave the track out.
  */
@@ -16,16 +16,17 @@ export function scheduleClips(
   for (const kind of TRACK_KINDS) {
     const clip = clips[kind]
     if (!clip?.buffer) continue
-    const delay = clip.offset - from
-    const into = Math.max(0, -delay)
-    if (into >= clip.buffer.duration) continue
+    const end = Math.min(clip.trim.end, clip.buffer.duration)
+    const delay = clip.offset + clip.trim.start - from
+    const into = clip.trim.start + Math.max(0, -delay)
+    if (into >= end) continue
     const destination = output(kind)
     if (!destination) continue
 
     const source = ctx.createBufferSource()
     source.buffer = clip.buffer
     source.connect(destination)
-    source.start(at + Math.max(0, delay), into)
+    source.start(at + Math.max(0, delay), into, end - into)
     sources.push(source)
   }
   return sources

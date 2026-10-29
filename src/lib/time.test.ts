@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatTime, parseTime } from './time'
+import { formatTime, parseTime, snapTo } from './time'
 
 describe('formatTime', () => {
   it('formats minutes, seconds and milliseconds', () => {
@@ -32,5 +32,12 @@ describe('parseTime', () => {
     expect(parseTime('abc')).toBeNull()
     expect(parseTime('1:-2')).toBeNull()
     expect(parseTime('1::2')).toBeNull()
+  })
+})
+
+describe('snapTo', () => {
+  it('snaps to the nearest target within the tolerance', () => {
+    expect(snapTo(1.04, [1, 1.05, 2], 0.1)).toBe(1.05)
+    expect(snapTo(1.5, [1, 2], 0.1)).toBe(1.5)
   })
 })

@@ -36,12 +36,17 @@ class FakeAudioContext {
   }
 }
 
-function clip(duration: number, offset = 0): Clip {
+function clip(
+  duration: number,
+  offset = 0,
+  trim = { start: 0, end: duration },
+): Clip {
   return {
     file: new File([], 'clip'),
     url: 'blob:clip',
     duration,
     offset,
+    trim,
     buffer: { duration } as AudioBuffer,
     peaks: null,
   }
@@ -80,7 +85,7 @@ describe('Playback', () => {
     expect(ctx.resume).toHaveBeenCalled()
     expect(ctx.sources).toHaveLength(2)
     for (const source of ctx.sources)
-      expect(source.start).toHaveBeenCalledWith(10.05, 5)
+      expect(source.start).toHaveBeenCalledWith(10.05, 5, 55)
 
     // Inside the lead, time hasn't started moving yet.
     expect(playback.now()).toBe(5)
@@ -107,7 +112,7 @@ describe('Playback', () => {
     expect(playback.startedFrom()).toBe(30)
     expect(ctx.sources).toHaveLength(4)
     expect(ctx.sources[0].stop).toHaveBeenCalled()
-    expect(ctx.sources[2].start).toHaveBeenCalledWith(10.05, 30)
+    expect(ctx.sources[2].start).toHaveBeenCalledWith(10.05, 30, 30)
   })
 
   it('re-schedules from the current time when clips change during playback', () => {
@@ -145,7 +150,7 @@ describe('scheduleClips', () => {
     const ctx = new FakeAudioContext()
     const tracks: Clips = { video: clip(10, 3), audio: null }
     scheduleClips(audioContext(ctx), tracks, 1, 100, output)
-    expect(ctx.sources[0].start).toHaveBeenCalledWith(102, 0)
+    expect(ctx.sources[0].start).toHaveBeenCalledWith(102, 0, 10)
     expect(ctx.sources[0].connect).toHaveBeenCalledWith({ kind: 'video' })
   })
 
@@ -153,7 +158,40 @@ describe('scheduleClips', () => {
     const ctx = new FakeAudioContext()
     const tracks: Clips = { video: null, audio: clip(10, 1) }
     scheduleClips(audioContext(ctx), tracks, 4, 100, output)
-    expect(ctx.sources[0].start).toHaveBeenCalledWith(100, 3)
+    expect(ctx.sources[0].start).toHaveBeenCalledWith(100, 3, 7)
+  })
+
+  it('plays only the trimmed part of a clip', () => {
+    const ctx = new FakeAudioContext()
+    // The file sits at 1 s and is used from 2 s to 5 s into it: 3–6 s on the timeline.
+    const trimmed = clip(10, 1, { start: 2, end: 5 })
+    scheduleClips(
+      audioContext(ctx),
+      { video: trimmed, audio: null },
+      0,
+      100,
+      output,
+    )
+    expect(ctx.sources[0].start).toHaveBeenCalledWith(103, 2, 3)
+
+    scheduleClips(
+      audioContext(ctx),
+      { video: trimmed, audio: null },
+      4,
+      100,
+      output,
+    )
+    expect(ctx.sources[1].start).toHaveBeenCalledWith(100, 3, 2)
+
+    expect(
+      scheduleClips(
+        audioContext(ctx),
+        { video: trimmed, audio: null },
+        6,
+        100,
+        output,
+      ),
+    ).toEqual([])
   })
 
   it('skips clips that ended, have no audio, or have no output', () => {

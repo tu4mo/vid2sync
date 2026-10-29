@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { kindForFile, loadClip } from './media'
+import { clipSpan, kindForFile, loadClip, type Clip } from './media'
 
 function fakeBuffer(channels: number[][], sampleRate: number) {
   const length = channels[0].length
@@ -88,6 +88,7 @@ describe('loadClip', () => {
       url: 'blob:test',
       duration: 12,
       offset: 0,
+      trim: { start: 0, end: 12 },
       buffer,
     })
     expect(clip.peaks?.perSecond).toBe(200)
@@ -130,5 +131,12 @@ describe('loadClip', () => {
       'Could not read “take.wav”. Is it a supported video format?',
     )
     expect(revoke).toHaveBeenCalledWith('blob:test')
+  })
+})
+
+describe('clipSpan', () => {
+  it('places the trimmed part on the timeline', () => {
+    const clip = { offset: -1, trim: { start: 2, end: 5 } } as Clip
+    expect(clipSpan(clip)).toEqual({ start: 1, end: 4 })
   })
 })

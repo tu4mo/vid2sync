@@ -1,11 +1,20 @@
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import {
   TRACK_KINDS,
+  clipSpan,
   type Clips,
   type TimeRange,
   type TrackKind,
 } from '../../lib/media'
+import { snapTo } from '../../lib/time'
 import { ClipView } from './ClipView'
 import { ROWS } from './layout'
 import { Playhead } from './Playhead'
@@ -17,6 +26,7 @@ export const MIN_PIXELS_PER_SECOND = 5
 export const MAX_PIXELS_PER_SECOND = 2000
 
 const TAIL_SECONDS = 10
+const SNAP_PX = 6
 
 type Props = {
   clips: Clips
@@ -33,10 +43,10 @@ type Props = {
   onSeek: (t: number) => void
   /** Called with the timeline's length when playback reaches the end of it. */
   onReachEnd: (t: number) => void
-  /** The export range, or null when there's no video. */
-  range: TimeRange | null
-  onRangeChange: (which: keyof TimeRange, t: number) => void
-  onRangeReset: (which?: keyof TimeRange) => void
+  /** Moves the start or end of a clip's trimmed part to timeline time `t`. */
+  onTrimChange: (kind: TrackKind, which: keyof TimeRange, t: number) => void
+  /** Puts one end of a clip's trim back at the file's edge. */
+  onTrimReset: (kind: TrackKind, which: keyof TimeRange) => void
   onToggleMute: (kind: TrackKind) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onImport: (file: File, kind: TrackKind) => void
@@ -51,7 +61,6 @@ export function Timeline(props: Props) {
     end,
     pixelsPerSecond,
     playing,
-    range,
     onSeek,
     onReachEnd,
     onSelect,
@@ -131,13 +140,26 @@ export function Timeline(props: Props) {
   }, [playing, time, visibleSeconds, onReachEnd])
 
   const width = visibleSeconds * pixelsPerSecond
+  // Trim edges snap to the playhead, the clips' edges and the files' edges.
   const snapTimes = [
     time,
     ...TRACK_KINDS.flatMap((k) => {
       const clip = clips[k]
-      return clip ? [clip.offset, clip.offset + clip.duration] : []
+      if (!clip) return []
+      const span = clipSpan(clip)
+      return [span.start, span.end, clip.offset, clip.offset + clip.duration]
     }),
   ]
+  // Read through a ref, so memoized clips don't re-render as the playhead moves.
+  const snapTimesRef = useRef(snapTimes)
+  useEffect(() => {
+    snapTimesRef.current = snapTimes
+  })
+  const snap = useCallback(
+    (t: number) =>
+      snapTo(t, snapTimesRef.current, SNAP_PX / pixelsPerSecondRef.current),
+    [],
+  )
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-[170px_minmax(0,1fr)] border-t border-line bg-panel">
@@ -190,14 +212,7 @@ export function Timeline(props: Props) {
           onPointerUp={() => (scrubbing.current = false)}
           onPointerCancel={() => (scrubbing.current = false)}
         >
-          <Ruler
-            pixelsPerSecond={pixelsPerSecond}
-            seconds={visibleSeconds}
-            range={range}
-            snapTimes={snapTimes}
-            onRangeChange={props.onRangeChange}
-            onRangeReset={props.onRangeReset}
-          />
+          <Ruler pixelsPerSecond={pixelsPerSecond} seconds={visibleSeconds} />
 
           {TRACK_KINDS.map((kind) => {
             const clip = clips[kind]
@@ -217,10 +232,14 @@ export function Timeline(props: Props) {
                       muted={props.muted[kind]}
                       onSelect={onSelect}
                       onOffsetChange={props.onOffsetChange}
+                      // Only the video is trimmed; it's what gets exported.
+                      trimmable={kind === 'video'}
+                      snap={snap}
+                      onTrimChange={props.onTrimChange}
+                      onTrimReset={props.onTrimReset}
                     />
                   ) : (
-                    // Above the range dimming, which knows nothing of the empty lane.
-                    <div className="sticky left-0 z-1 px-4 text-xs text-dim">
+                    <div className="sticky left-0 px-4 text-xs text-dim">
                       <label
                         className="cursor-pointer text-accent hover:underline"
                         // Keep the lane from scrubbing (and capturing the pointer, which eats the click).
@@ -254,20 +273,6 @@ export function Timeline(props: Props) {
               </Fragment>
             )
           })}
-
-          {/* Dim what won't be exported. */}
-          {range && (
-            <>
-              <div
-                className="pointer-events-none absolute top-7 bottom-0 left-0 bg-bg/60"
-                style={{ width: range.start * pixelsPerSecond }}
-              />
-              <div
-                className="pointer-events-none absolute top-7 right-0 bottom-0 bg-bg/60"
-                style={{ left: range.end * pixelsPerSecond }}
-              />
-            </>
-          )}
 
           <Playhead
             time={time}

@@ -12,7 +12,7 @@ import {
   type AudioCodec,
 } from 'mediabunny'
 
-import type { Clips, TimeRange, TrackKind } from './media'
+import type { Clips, TrackKind } from './media'
 import { scheduleClips } from './playback'
 
 const SAMPLE_RATE = 48000
@@ -89,24 +89,18 @@ async function measureEncoderDelay(codec: AudioCodec): Promise<number> {
 }
 
 /**
- * Builds an MP4 of the timeline `range` (or the whole video when null), limited to where the
- * video is. The video's encoded frames are copied untouched whenever possible (no quality
- * loss) and a freshly encoded audio track holds the synced mix.
+ * Builds an MP4 of the video clip's trimmed part. The video's encoded frames are copied
+ * untouched whenever possible (no quality loss) and a freshly encoded audio track holds
+ * the synced mix.
  */
 export async function exportSynced(
   clips: Clips,
   gains: Record<TrackKind, number>,
-  range: TimeRange | null,
   onProgress: (fraction: number) => void,
 ): Promise<Blob> {
   const video = clips.video
   if (!video) throw new Error('There’s no video to export.')
-  const trim = {
-    start: Math.max(0, (range?.start ?? video.offset) - video.offset),
-    end: Math.min(video.duration, (range?.end ?? Infinity) - video.offset),
-  }
-  if (trim.end <= trim.start)
-    throw new Error('The export range doesn’t overlap the video.')
+  const { trim } = video
 
   const audioCodec = await getFirstEncodableAudioCodec(['aac', 'opus'], {
     numberOfChannels: 2,
