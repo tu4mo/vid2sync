@@ -1,9 +1,12 @@
 import { memo, useRef } from 'react'
 
 import { formatTime, type Clip, type TrackKind } from '../../media'
+import { LANE_HEIGHT } from './layout'
 import { Waveform } from './Waveform'
 
-const WAVE_HEIGHT = 48
+// The clip is inset 4px top and bottom (inset-y-1) within its lane, and the
+// waveform is inset a further 4px within the clip.
+const WAVE_HEIGHT = LANE_HEIGHT - 16
 const WAVE_COLORS: Record<TrackKind, string> = { video: '#9cc4ff', audio: '#8ef0b8' }
 // Full class names, so Tailwind finds them in the source.
 const CLIP_BACKGROUNDS: Record<TrackKind, string> = { video: 'bg-video/45', audio: 'bg-audio/45' }
@@ -54,7 +57,7 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
       onPointerUp={() => (drag.current = null)}
       onPointerCancel={() => (drag.current = null)}
     >
-      <div className="pointer-events-none sticky left-0 inline-block px-1.5 py-0.5 text-2xs whitespace-nowrap">
+      <div className="pointer-events-none sticky left-0 z-10 inline-block px-1.5 py-0.5 text-2xs whitespace-nowrap">
         {clip.file.name}{' '}
         <span className="text-white/60 tabular-nums">@ {formatTime(clip.offset)}</span>
       </div>
