@@ -8,7 +8,6 @@ import {
   type TimeRange,
   type TrackKind,
 } from '../../lib/media'
-import { formatTime } from '../../lib/time'
 import { FadeHandle } from './FadeHandle'
 import { useDrag } from './useDrag'
 import { Waveform } from './Waveform'
@@ -141,10 +140,7 @@ export const ClipView = memo(function ClipView({
         className={`absolute inset-0 overflow-hidden rounded-md ${CLIP_BACKGROUNDS[kind]}`}
       >
         <div className="pointer-events-none sticky left-1 z-10 mt-1 ml-1 inline-block max-w-[calc(100%-0.5rem)] truncate rounded bg-black/60 px-1.5 py-0.5 text-2xs">
-          {clip.file.name}{' '}
-          <span className="text-white/60 tabular-nums">
-            @ {formatTime(span.start)}
-          </span>
+          {clip.file.name}
         </div>
         {clip.peaks ? (
           // The whole file's waveform, shifted so the trimmed part shows.

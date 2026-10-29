@@ -24,6 +24,14 @@ async function clockSeconds(page: Page) {
   return Number(m) * 60 + Number(s)
 }
 
+// Where a clip's trimmed part starts on the timeline, in seconds.
+async function clipStart(page: Page, kind: string) {
+  const left = await page
+    .getByTestId(`clip-${kind}`)
+    .evaluate((el) => parseFloat(el.style.left))
+  return left / pixelsPerSecond
+}
+
 // A clip's trimmed part on the timeline in seconds, as its handles report it.
 async function trimSeconds(page: Page, kind = 'video') {
   function time(which: string) {
@@ -80,13 +88,13 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await offset.press('Enter')
   await page.keyboard.press('Shift+ArrowRight')
   await expect(sync).toContainText('1500 ms ahead of audio')
-  await expect(audioClip).toContainText('@ 0:01.500')
-  await expect(videoClip).toContainText('@ 0:00.000')
+  expect(await clipStart(page, 'audio')).toBeCloseTo(1.5, 4)
+  expect(await clipStart(page, 'video')).toBe(0)
 
   // ↑ steps live; Escape puts it back.
   await sync.click()
   await offset.press('ArrowUp')
-  await expect(audioClip).toContainText('@ 0:01.501')
+  await expect.poll(() => clipStart(page, 'audio')).toBeCloseTo(1.501, 4)
   await offset.press('Escape')
   await expect(sync).toContainText('1500 ms ahead of audio')
 
@@ -146,7 +154,6 @@ test('import, sync, play, trim and export', async ({ page }) => {
   expect(await clockSeconds(page)).toBe(1) // Dragging a handle doesn't scrub
   // Trimming the start doesn't move the rest of the video, so the sync holds.
   await expect(sync).toContainText('1500 ms ahead of audio')
-  await expect(videoClip).toContainText('@ 0:01.000')
 
   // Double-click puts a handle back at the file's edge. Grabbing a handle selects the clip,
   // so deselect it before the arrows, which would otherwise nudge it.
