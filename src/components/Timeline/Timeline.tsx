@@ -110,13 +110,28 @@ export function Timeline(props: Props) {
     return () => el.removeEventListener('wheel', onWheel)
   }, [onZoom])
 
+  // Read through a ref, so the zoom effect doesn't rerun as the playhead moves.
+  const timeRef = useRef(time)
+  useEffect(() => {
+    timeRef.current = time
+  }, [time])
+
   // Sync the ref before paint, so the next wheel event can't pair the new
   // scroll position with the old zoom.
   useLayoutEffect(() => {
+    const previous = pixelsPerSecondRef.current
     pixelsPerSecondRef.current = pixelsPerSecond
     const el = scrollRef.current
-    const anchor = zoomAnchor.current
-    if (!el || !anchor) return
+    if (!el) return
+    // The wheel zooms around the cursor; the toolbar around the playhead,
+    // pulled into view if it's scrolled off.
+    const anchor = zoomAnchor.current ?? {
+      t: timeRef.current,
+      x: Math.min(
+        el.clientWidth,
+        Math.max(0, timeRef.current * previous - el.scrollLeft),
+      ),
+    }
     el.scrollLeft = anchor.t * pixelsPerSecond - anchor.x
     zoomAnchor.current = null
   }, [pixelsPerSecond])
