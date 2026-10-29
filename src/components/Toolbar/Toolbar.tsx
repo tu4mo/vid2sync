@@ -66,7 +66,7 @@ export function Toolbar(props: Props) {
         )}
       </span>
       <Button
-        className="flex items-center gap-1.5 tabular-nums"
+        className="tabular-nums"
         aria-label="Export MP4"
         onClick={onExport}
         disabled={!canExport || exportProgress !== null}
