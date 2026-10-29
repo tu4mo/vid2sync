@@ -27,6 +27,8 @@ const TAIL_SECONDS = 10
 const SNAP_PX = 6
 // How far from the left edge a playhead scrolled back into view lands.
 const REVEAL_MARGIN_PX = 40
+/** Room before 0:00 and after the end, so clips don't run into the viewport's edges. */
+const EDGE_PX = 16
 
 type Props = {
   clips: Clips
@@ -119,10 +121,10 @@ export function Timeline({
       }
       const pending = zoomAnchor.current
       const from = pending
-        ? Math.max(0, pending.t * current - pending.x)
+        ? Math.max(0, pending.t * current + EDGE_PX - pending.x)
         : el.scrollLeft
       const x = e.clientX - el.getBoundingClientRect().left
-      zoomAnchor.current = { t: (from + x) / current, x }
+      zoomAnchor.current = { t: (from + x - EDGE_PX) / current, x }
       pixelsPerSecondRef.current = next
       onZoom(next)
     }
@@ -151,10 +153,10 @@ export function Timeline({
       t: timeRef.current,
       x: Math.min(
         el.clientWidth,
-        Math.max(0, timeRef.current * previous - el.scrollLeft),
+        Math.max(0, timeRef.current * previous + EDGE_PX - el.scrollLeft),
       ),
     }
-    el.scrollLeft = anchor.t * pixelsPerSecond - anchor.x
+    el.scrollLeft = anchor.t * pixelsPerSecond + EDGE_PX - anchor.x
     zoomAnchor.current = null
   }, [pixelsPerSecond])
 
@@ -162,7 +164,7 @@ export function Timeline({
   const reveal = useCallback(
     (t: number) => {
       const el = scrollRef.current
-      const x = t * pixelsPerSecond
+      const x = t * pixelsPerSecond + EDGE_PX
       if (
         el &&
         (x > el.scrollLeft + el.clientWidth - REVEAL_MARGIN_PX ||
@@ -196,7 +198,7 @@ export function Timeline({
 
   const visibleSeconds = Math.max(
     end + TAIL_SECONDS,
-    viewport / pixelsPerSecond,
+    (viewport - 2 * EDGE_PX) / pixelsPerSecond,
   )
 
   // Playing past the clips runs into empty timeline; stop at the end of it.
@@ -234,6 +236,7 @@ export function Timeline({
     <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel">
       <div
         className="overflow-x-auto overflow-y-hidden"
+        style={{ paddingInline: EDGE_PX }}
         ref={scrollRef}
         onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
       >
@@ -302,7 +305,7 @@ export function Timeline({
                     video={clips.video}
                     audio={clips.audio}
                     pixelsPerSecond={pixelsPerSecond}
-                    view={{ start: scrollLeft, width: viewport }}
+                    view={{ start: scrollLeft - EDGE_PX, width: viewport }}
                     onOffsetChange={onOffsetChange}
                   />
                 )}
