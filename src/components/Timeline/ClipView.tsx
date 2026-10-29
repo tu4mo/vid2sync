@@ -67,7 +67,7 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
       onPointerUp={() => (drag.current = null)}
       onPointerCancel={() => (drag.current = null)}
     >
-      <div className="pointer-events-none sticky left-0 z-10 inline-block px-1.5 py-0.5 text-2xs whitespace-nowrap">
+      <div className="pointer-events-none sticky left-1 z-10 mt-1 ml-1 inline-block rounded bg-black/60 px-1.5 py-0.5 text-2xs whitespace-nowrap">
         {clip.file.name}{' '}
         <span className="text-white/60 tabular-nums">
           @ {formatTime(clip.offset)}
