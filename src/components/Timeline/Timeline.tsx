@@ -75,10 +75,6 @@ export function Timeline(props: Props) {
   const [scrollLeft, setScrollLeft] = useState(0)
 
   useEffect(() => {
-    pixelsPerSecondRef.current = pixelsPerSecond
-  }, [pixelsPerSecond])
-
-  useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     const observer = new ResizeObserver(() => setViewport(el.clientWidth))
@@ -93,20 +89,31 @@ export function Timeline(props: Props) {
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return
       e.preventDefault()
+      // Wheel events can outpace renders, so work from the zoom and scroll
+      // the last event asked for, not what's been rendered yet.
       const current = pixelsPerSecondRef.current
       const next = Math.min(
         MAX_PIXELS_PER_SECOND,
         Math.max(MIN_PIXELS_PER_SECOND, current * Math.exp(-e.deltaY * 0.01)),
       )
+      if (next === current) return
+      const pending = zoomAnchor.current
+      const from = pending
+        ? Math.max(0, pending.t * current - pending.x)
+        : el.scrollLeft
       const x = e.clientX - el.getBoundingClientRect().left
-      zoomAnchor.current = { t: (el.scrollLeft + x) / current, x }
+      zoomAnchor.current = { t: (from + x) / current, x }
+      pixelsPerSecondRef.current = next
       onZoom(next)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [onZoom])
 
+  // Sync the ref before paint, so the next wheel event can't pair the new
+  // scroll position with the old zoom.
   useLayoutEffect(() => {
+    pixelsPerSecondRef.current = pixelsPerSecond
     const el = scrollRef.current
     const anchor = zoomAnchor.current
     if (!el || !anchor) return
