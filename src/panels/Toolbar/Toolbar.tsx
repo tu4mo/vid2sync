@@ -19,6 +19,23 @@ import {
 /** How much one press of a zoom button zooms. */
 const ZOOM_STEP = 1.5
 
+const LOG_MIN = Math.log(MIN_PIXELS_PER_SECOND)
+const LOG_RANGE = Math.log(MAX_PIXELS_PER_SECOND) - LOG_MIN
+
+// The slider runs 0–100 on a log scale, so its native tooltip shows a tidy percentage
+// rather than the raw logarithm.
+function zoomToSlider(pixelsPerSecond: number) {
+  return ((Math.log(pixelsPerSecond) - LOG_MIN) / LOG_RANGE) * 100
+}
+
+function sliderToZoom(value: number) {
+  // Written as a power so the ends land exactly on the limits, which the zoom buttons check.
+  return (
+    MIN_PIXELS_PER_SECOND *
+    (MAX_PIXELS_PER_SECOND / MIN_PIXELS_PER_SECOND) ** (value / 100)
+  )
+}
+
 type Props = {
   playing: boolean
   end: number
@@ -99,11 +116,10 @@ export function Toolbar({
           <Slider
             className="w-32"
             aria-label="Zoom"
-            min={Math.log(MIN_PIXELS_PER_SECOND)}
-            max={Math.log(MAX_PIXELS_PER_SECOND)}
-            step={0.01}
-            value={Math.log(pixelsPerSecond)}
-            onChange={(e) => onZoom(Math.exp(Number(e.target.value)))}
+            min={0}
+            max={100}
+            value={zoomToSlider(pixelsPerSecond)}
+            onChange={(e) => onZoom(sliderToZoom(Number(e.target.value)))}
           />
           <Button
             aria-label="Zoom in"
