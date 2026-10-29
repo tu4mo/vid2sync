@@ -193,6 +193,10 @@ export default function App() {
     setMuted((m) => ({ ...m, [kind]: !m[kind] }))
   }, [])
 
+  const changeVolume = useCallback((kind: TrackKind, v: number) => {
+    setVolume((prev) => ({ ...prev, [kind]: v }))
+  }, [])
+
   const removeClip = useCallback(
     (kind: TrackKind) => {
       const clip = clips[kind]
@@ -391,9 +395,7 @@ export default function App() {
               clips={clips}
               muted={muted}
               volume={volume}
-              onVolumeChange={(kind, v) =>
-                setVolume((prev) => ({ ...prev, [kind]: v }))
-              }
+              onVolumeChange={changeVolume}
               selected={selected}
               time={time}
               end={end}

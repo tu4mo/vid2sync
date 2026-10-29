@@ -1,4 +1,3 @@
-// Shared by the track heads and the lanes, so the two columns line up.
 /** Empty room above and below the lanes, to scrub the playhead in. */
 export const SCRUB_STRIP_HEIGHT = 16
 export const SYNC_LANE_HEIGHT = 26

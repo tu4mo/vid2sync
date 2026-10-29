@@ -6,6 +6,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react'
 import { memo } from 'react'
 
+import { Slider } from '../../components/Slider/Slider'
 import {
   clipFade,
   clipSpan,
@@ -85,6 +86,7 @@ type ClipViewProps = {
   pixelsPerSecond: number
   selected: boolean
   muted: boolean
+  volume: number
   onSelect: (kind: TrackKind) => void
   onOffsetChange: (kind: TrackKind, offset: number) => void
   /** Snaps a timeline time to nearby edges and the playhead. */
@@ -97,6 +99,7 @@ type ClipViewProps = {
     span: FadeSpan,
   ) => void
   onToggleMute: (kind: TrackKind) => void
+  onVolumeChange: (kind: TrackKind, volume: number) => void
   onRemove: (kind: TrackKind) => void
 }
 
@@ -106,6 +109,7 @@ export const ClipView = memo(function ClipView({
   pixelsPerSecond,
   selected,
   muted,
+  volume,
   onSelect,
   onOffsetChange,
   snap,
@@ -113,6 +117,7 @@ export const ClipView = memo(function ClipView({
   onTrimReset,
   onFadeChange,
   onToggleMute,
+  onVolumeChange,
   onRemove,
 }: ClipViewProps) {
   const drag = useDrag(
@@ -133,6 +138,7 @@ export const ClipView = memo(function ClipView({
   const fade = clipFade(clip)
   const width = (span.end - span.start) * pixelsPerSecond
   const fileWidth = clip.duration * pixelsPerSecond
+  const percent = Math.round(volume * 100)
 
   return (
     <div
@@ -157,7 +163,7 @@ export const ClipView = memo(function ClipView({
           // Keep the buttons from dragging the clip (and capturing the pointer, which eats the click).
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="pointer-events-none h-4.5 min-w-0 truncate rounded bg-black/60 px-1.5 text-2xs leading-4.5">
+          <div className="pointer-events-none h-4.5 shrink-0 rounded bg-black/60 px-1.5 text-2xs leading-4.5">
             {LABELS[kind]}
           </div>
           <ClipButton
@@ -180,6 +186,23 @@ export const ClipView = memo(function ClipView({
           >
             <HugeiconsIcon icon={Delete02Icon} size={12} />
           </ClipButton>
+          <div className="flex h-4.5 shrink-0 items-center gap-1 rounded bg-black/60 px-1.5">
+            <Slider
+              className="w-16"
+              aria-label="Volume"
+              min={0}
+              max={2}
+              step={0.01}
+              value={volume}
+              disabled={muted}
+              onChange={(e) => onVolumeChange(kind, Number(e.target.value))}
+              onDoubleClick={() => onVolumeChange(kind, 1)}
+              title={`Volume ${percent}% (double-click to reset)`}
+            />
+            <span className="w-[4ch] text-right text-2xs tabular-nums">
+              {percent}%
+            </span>
+          </div>
         </div>
         {clip.peaks ? (
           // The whole file's waveform, shifted so the trimmed part shows.

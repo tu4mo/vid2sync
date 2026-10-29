@@ -21,7 +21,6 @@ import { ClipView } from './ClipView'
 import { ROWS } from './layout'
 import { Playhead } from './Playhead'
 import { SyncLane } from './SyncLane'
-import { TrackHead } from './TrackHead'
 import { useDrag } from './useDrag'
 
 const TAIL_SECONDS = 10
@@ -232,26 +231,7 @@ export function Timeline({
   )
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[170px_minmax(0,1fr)] bg-panel">
-      <div
-        className="grid grid-cols-[minmax(0,1fr)]"
-        style={{ gridTemplateRows: ROWS }}
-      >
-        <div />
-        {TRACK_KINDS.map((kind) => (
-          <Fragment key={kind}>
-            <TrackHead
-              kind={kind}
-              muted={muted[kind]}
-              volume={volume[kind]}
-              onVolumeChange={(v) => onVolumeChange(kind, v)}
-            />
-            {kind === 'video' && <div />}
-          </Fragment>
-        ))}
-        <div />
-      </div>
-
+    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel">
       <div
         className="overflow-x-auto overflow-y-hidden"
         ref={scrollRef}
@@ -281,6 +261,7 @@ export function Timeline({
                       pixelsPerSecond={pixelsPerSecond}
                       selected={selected === kind}
                       muted={muted[kind]}
+                      volume={volume[kind]}
                       onSelect={onSelect}
                       onOffsetChange={onOffsetChange}
                       snap={snap}
@@ -288,6 +269,7 @@ export function Timeline({
                       onTrimReset={onTrimReset}
                       onFadeChange={onFadeChange}
                       onToggleMute={onToggleMute}
+                      onVolumeChange={onVolumeChange}
                       onRemove={onRemove}
                     />
                   ) : (

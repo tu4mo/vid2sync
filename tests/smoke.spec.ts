@@ -51,7 +51,6 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await page.goto('/')
 
   // Import both tracks.
-  const audioHead = page.getByTestId('head-audio')
   const videoLane = page.getByTestId('lane-video')
   const audioLane = page.getByTestId('lane-audio')
   // The video through the file chooser, so a click on Import opens it rather than scrubbing.
@@ -105,8 +104,8 @@ test('import, sync, play, trim and export', async ({ page }) => {
   const mute = videoClip.getByRole('button', { name: 'Mute' })
   await mute.click()
   await expect(mute).toHaveAttribute('aria-pressed', 'true')
-  await audioHead.getByRole('slider').fill('0.5')
-  await expect(audioHead).toContainText('50%')
+  await audioClip.getByRole('slider', { name: 'Volume' }).fill('0.5')
+  await expect(audioClip).toContainText('50%')
 
   // Play, let the clock run, pause.
   await blur(page)
