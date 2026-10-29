@@ -335,16 +335,7 @@ export function Timeline({
             )
           })}
 
-          <Playhead
-            time={time}
-            pixelsPerSecond={pixelsPerSecond}
-            max={visibleSeconds}
-            onSeek={(t) => {
-              onSeek(t)
-              // Bring a typed time into view.
-              reveal(t)
-            }}
-          />
+          <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
         </div>
       </div>
     </div>

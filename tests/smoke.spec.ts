@@ -20,8 +20,12 @@ function clockToPx(seconds: number) {
 }
 
 async function clockSeconds(page: Page) {
-  const [m, s] = (await page.getByTestId('clock').inputValue()).split(':')
-  return Number(m) * 60 + Number(s)
+  return Number(await page.getByTestId('playhead').getAttribute('data-time'))
+}
+
+// How far a fade dot sits from the clip's edge, in seconds, for polling.
+function distance(dot: Locator) {
+  return async () => Number(await dot.getAttribute('data-distance'))
 }
 
 // Where a clip's trimmed part starts on the timeline, in seconds.
@@ -119,17 +123,6 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await page.waitForTimeout(200)
   expect(await clockSeconds(page)).toBe(paused)
 
-  // Type a time into the playhead to jump there; Escape leaves it where it was.
-  const clockField = page.getByTestId('clock')
-  await clockField.click()
-  await clockField.fill('1.5')
-  await clockField.press('Enter')
-  expect(await clockSeconds(page)).toBe(1.5)
-  await clockField.click()
-  await clockField.fill('0:00.250')
-  await clockField.press('Escape')
-  expect(await clockSeconds(page)).toBe(1.5)
-
   // Trim the video to 1–2 s: the end with the keyboard, the start by dragging its handle onto the playhead.
   function trim() {
     return trimSeconds(page)
@@ -220,11 +213,16 @@ test('import, sync, play, trim and export', async ({ page }) => {
   expect(Math.abs(result.peak - 0.25)).toBeLessThan(0.03)
 
   // Fade the audio in over 0.2 s by dragging its fade-in dot onto the playhead at 1.7 s.
-  async function setPlayhead(t: string) {
-    await clockField.click()
-    await clockField.fill(t)
-    await clockField.press('Enter')
+  // Moves the playhead to 1 s plus `frames` frames with the keyboard. Escape first, so the
+  // arrows don't nudge the clip a grabbed dot selected.
+  async function setPlayhead(frames: number) {
     await blur(page)
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Home')
+    await page.keyboard.press('Shift+ArrowRight')
+    for (let i = 0; i < frames; i++) {
+      await page.keyboard.press('ArrowRight')
+    }
   }
   // Drags a fade dot `seconds` to the right, onto the playhead.
   async function dragDot(dot: Locator, seconds: number) {
@@ -236,22 +234,23 @@ test('import, sync, play, trim and export', async ({ page }) => {
     await page.mouse.move(x + clockToPx(seconds) + 2, y, { steps: 5 }) // Close enough to snap
     await page.mouse.up()
   }
-  await setPlayhead('1.7')
+  // Frame steps don't add up to round seconds exactly, so the distances are only close.
+  await setPlayhead(21)
   const fadeIn = audioClip.getByTestId('fade-start')
   await dragDot(fadeIn, 0.2)
-  await expect(fadeIn).toHaveAttribute('data-distance', '0.2')
+  await expect.poll(distance(fadeIn)).toBeCloseTo(0.2, 6)
   // Double-click clears it.
   await fadeIn.dblclick()
   await expect(fadeIn).toHaveAttribute('data-distance', '0')
   await dragDot(fadeIn, 0.2)
-  await expect(fadeIn).toHaveAttribute('data-distance', '0.2')
+  await expect.poll(distance(fadeIn)).toBeCloseTo(0.2, 6)
 
   // Its bottom dot moves where it starts, silent before then: onto the playhead at 1.6 s.
-  await setPlayhead('1.6')
+  await setPlayhead(18)
   const fadeInStart = audioClip.getByTestId('fade-start-silent')
   await dragDot(fadeInStart, 0.1)
-  await expect(fadeInStart).toHaveAttribute('data-distance', '0.1')
-  await expect(fadeIn).toHaveAttribute('data-distance', '0.2')
+  await expect.poll(distance(fadeInStart)).toBeCloseTo(0.1, 6)
+  await expect.poll(distance(fadeIn)).toBeCloseTo(0.2, 6)
 
   // The audio starts 0.5 s into the export, silent until 0.6 s, then ramps up linearly until 0.7 s.
   const faded = await exportAndAnalyze(page)
