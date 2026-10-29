@@ -70,17 +70,20 @@ export function Ruler({
         />
       )}
 
-      {ticks.map((t) => (
-        <div
-          key={t}
-          className="pointer-events-none absolute top-3.5 bottom-0 border-l border-line-strong"
-          style={{ left: t * pixelsPerSecond }}
-        >
-          <span className="absolute -top-[13px] left-1 text-2xs whitespace-nowrap text-dim tabular-nums">
-            {formatTick(t, step)}
-          </span>
-        </div>
-      ))}
+      {/* Clipped, so the labels of the last ticks don't widen the scroll area past the lanes. */}
+      <div className="pointer-events-none absolute inset-0 overflow-clip">
+        {ticks.map((t) => (
+          <div
+            key={t}
+            className="absolute top-3.5 bottom-0 border-l border-line-strong"
+            style={{ left: t * pixelsPerSecond }}
+          >
+            <span className="absolute -top-[13px] left-1 text-2xs whitespace-nowrap text-dim tabular-nums">
+              {formatTick(t, step)}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {range &&
         (['start', 'end'] as const).flatMap((which) => [

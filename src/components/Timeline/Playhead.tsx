@@ -2,6 +2,9 @@ import { useRef, useState, type KeyboardEvent } from 'react'
 
 import { formatTime, parseTime } from '../../media'
 
+// Room the time needs to the right of the line before it flips to the left, so it doesn't widen the scroll area.
+const FLAG_WIDTH = 80
+
 interface Props {
   time: number
   pixelsPerSecond: number
@@ -17,6 +20,7 @@ interface Props {
 export function Playhead({ time, pixelsPerSecond, max, onSeek }: Props) {
   const [draft, setDraft] = useState<string | null>(null)
   const cancelled = useRef(false)
+  const flip = (max - time) * pixelsPerSecond < FLAG_WIDTH
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -34,7 +38,7 @@ export function Playhead({ time, pixelsPerSecond, max, onSeek }: Props) {
     >
       {/* Always the same field, so it looks the same whether you're typing in it or not. */}
       <input
-        className="pointer-events-auto absolute top-0 left-0 field-sizing-content min-w-[8ch] cursor-text rounded-r-sm bg-accent px-1.5 py-0.5 font-mono text-2xs font-semibold whitespace-nowrap text-[#1a1206] tabular-nums outline-none not-supports-[field-sizing:content]:w-20 selection:bg-[#1a1206]/20"
+        className={`pointer-events-auto absolute top-0 field-sizing-content min-w-[8ch] cursor-text bg-accent px-1.5 py-0.5 font-mono text-2xs font-semibold whitespace-nowrap text-[#1a1206] tabular-nums outline-none not-supports-[field-sizing:content]:w-20 selection:bg-[#1a1206]/20 ${flip ? 'right-0.5 rounded-l-sm' : 'left-0 rounded-r-sm'}`}
         aria-label="Playhead time"
         title="Click to type a time"
         data-testid="clock"
