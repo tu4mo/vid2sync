@@ -59,7 +59,9 @@ export function Playhead({ time, pixelsPerSecond, max, onSeek }: Props) {
           onKeyDown={onKeyDown}
           onBlur={() => {
             const t = draft === null ? null : parseTime(draft)
-            if (!cancelled.current && t !== null) onSeek(Math.min(t, max))
+            if (!cancelled.current && t !== null) {
+              onSeek(Math.min(t, max))
+            }
             cancelled.current = false
             setDraft(null)
           }}

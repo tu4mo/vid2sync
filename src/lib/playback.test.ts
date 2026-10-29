@@ -84,8 +84,9 @@ describe('Playback', () => {
     playback.play(5)
     expect(ctx.resume).toHaveBeenCalled()
     expect(ctx.sources).toHaveLength(2)
-    for (const source of ctx.sources)
+    for (const source of ctx.sources) {
       expect(source.start).toHaveBeenCalledWith(10.05, 5, 55)
+    }
 
     // Inside the lead, time hasn't started moving yet.
     expect(playback.now()).toBe(5)
@@ -101,7 +102,9 @@ describe('Playback', () => {
 
     expect(playback.playing).toBe(false)
     expect(playback.now()).toBeCloseTo(3)
-    for (const source of ctx.sources) expect(source.stop).toHaveBeenCalled()
+    for (const source of ctx.sources) {
+      expect(source.stop).toHaveBeenCalled()
+    }
   })
 
   it('re-schedules from the new time when seeking during playback', () => {
@@ -136,8 +139,9 @@ describe('Playback', () => {
 
   it('routes each track through its own gain', () => {
     const [video, audio] = ctx.gains
-    for (const gain of ctx.gains)
+    for (const gain of ctx.gains) {
       expect(gain.connect).toHaveBeenCalledWith(ctx.destination)
+    }
 
     playback.setGain('audio', 0.5)
     expect(audio.gain.setTargetAtTime).toHaveBeenCalledWith(0.5, 10, 0.01)

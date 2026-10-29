@@ -13,7 +13,9 @@ export function Ruler({ pixelsPerSecond, seconds }: Props) {
     TICK_STEPS.find((s) => s * pixelsPerSecond >= 80) ??
     TICK_STEPS[TICK_STEPS.length - 1]
   const ticks: number[] = []
-  for (let t = 0; t <= seconds; t += step) ticks.push(t)
+  for (let t = 0; t <= seconds; t += step) {
+    ticks.push(t)
+  }
 
   return (
     <div className="relative border-b border-line bg-panel-2">

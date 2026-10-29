@@ -10,7 +10,9 @@ export function formatTime(t: number): string {
 /** Reads a typed time such as `1:02.5`, `62.5` or `0:01:02.5`; null if it isn't one. */
 export function parseTime(text: string): number | null {
   const parts = text.trim().split(':')
-  if (parts.some((p) => !/^\d*\.?\d+$|^\d+\.$/.test(p.trim()))) return null
+  if (parts.some((p) => !/^\d*\.?\d+$|^\d+\.$/.test(p.trim()))) {
+    return null
+  }
   return parts.reduce((t, p) => t * 60 + Number(p), 0)
 }
 

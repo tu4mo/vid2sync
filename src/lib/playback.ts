@@ -15,13 +15,19 @@ export function scheduleClips(
   const sources: AudioBufferSourceNode[] = []
   for (const kind of TRACK_KINDS) {
     const clip = clips[kind]
-    if (!clip?.buffer) continue
+    if (!clip?.buffer) {
+      continue
+    }
     const end = Math.min(clip.trim.end, clip.buffer.duration)
     const delay = clip.offset + clip.trim.start - from
     const into = clip.trim.start + Math.max(0, -delay)
-    if (into >= end) continue
+    if (into >= end) {
+      continue
+    }
     const destination = output(kind)
-    if (!destination) continue
+    if (!destination) {
+      continue
+    }
 
     const source = ctx.createBufferSource()
     source.buffer = clip.buffer
@@ -51,12 +57,15 @@ export class Playback {
 
   constructor() {
     this.gains = { video: this.ctx.createGain(), audio: this.ctx.createGain() }
-    for (const gain of Object.values(this.gains))
+    for (const gain of Object.values(this.gains)) {
       gain.connect(this.ctx.destination)
+    }
   }
 
   now(): number {
-    if (!this.playing) return this.anchorTime
+    if (!this.playing) {
+      return this.anchorTime
+    }
     return this.anchorTime + Math.max(0, this.ctx.currentTime - this.anchorCtx)
   }
 
@@ -68,7 +77,9 @@ export class Playback {
   /** Updates the clips, re-scheduling audio if they change during playback. */
   setClips(clips: Clips) {
     this.clips = clips
-    if (this.playing) this.play(this.now())
+    if (this.playing) {
+      this.play(this.now())
+    }
   }
 
   play(from: number) {
@@ -93,8 +104,11 @@ export class Playback {
   }
 
   seek(t: number) {
-    if (this.playing) this.play(t)
-    else this.anchorTime = t
+    if (this.playing) {
+      this.play(t)
+    } else {
+      this.anchorTime = t
+    }
   }
 
   setGain(kind: TrackKind, gain: number) {

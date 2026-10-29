@@ -217,10 +217,11 @@ describe('exportSynced', () => {
     expect(FakeOfflineAudioContext.decoded).toBe(1)
     const exported = mb.state.audioSources.filter((s) => s.options)
     expect(exported).toHaveLength(2)
-    for (const source of exported)
+    for (const source of exported) {
       expect(source.options).toEqual({
         startTimestamp: expect.closeTo(-PRIMING / SAMPLE_RATE),
       })
+    }
   })
 
   it('reports progress up to 1', async () => {

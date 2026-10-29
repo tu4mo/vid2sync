@@ -73,7 +73,9 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
       data-testid={`clip-${kind}`}
       style={{ left: span.start * pixelsPerSecond, width }}
       onPointerDown={(e) => {
-        if (e.button !== 0) return
+        if (e.button !== 0) {
+          return
+        }
         e.stopPropagation()
         e.currentTarget.setPointerCapture(e.pointerId)
         onSelect(kind)
@@ -81,7 +83,9 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
       }}
       onPointerMove={(e) => {
         const d = drag.current
-        if (!d) return
+        if (!d) {
+          return
+        }
         // Shift slows the drag down 10× for fine alignment.
         const dx = (e.clientX - d.lastX) * (e.shiftKey ? 0.1 : 1)
         d.lastX = e.clientX
@@ -123,7 +127,9 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
             data-testid={`trim-${which}`}
             data-time={span[which]}
             onPointerDown={(e) => {
-              if (e.button !== 0) return
+              if (e.button !== 0) {
+                return
+              }
               // Keep the clip from moving, and the timeline from scrubbing.
               e.stopPropagation()
               e.currentTarget.setPointerCapture(e.pointerId)
@@ -132,7 +138,9 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
             }}
             onPointerMove={(e) => {
               const d = trimDrag.current
-              if (!d) return
+              if (!d) {
+                return
+              }
               const t = d.t + (e.clientX - d.x) / pixelsPerSecond
               onTrimChange(kind, which, e.shiftKey ? t : snap(t))
             }}

@@ -71,8 +71,11 @@ function computePeaks(buffer: AudioBuffer): Peaks {
     for (const data of channels) {
       for (let s = start; s < end; s++) {
         const v = data[s]
-        if (v < lo) lo = v
-        else if (v > hi) hi = v
+        if (v < lo) {
+          lo = v
+        } else if (v > hi) {
+          hi = v
+        }
       }
     }
     min[i] = lo
@@ -148,11 +151,19 @@ const AUDIO_EXTENSIONS = [
 
 /** Picks the track a file belongs on, by MIME type or else extension; null if neither. */
 export function kindForFile(file: File): TrackKind | null {
-  if (file.type.startsWith('video/')) return 'video'
-  if (file.type.startsWith('audio/')) return 'audio'
+  if (file.type.startsWith('video/')) {
+    return 'video'
+  }
+  if (file.type.startsWith('audio/')) {
+    return 'audio'
+  }
   // Files dragged from some apps (e.g. macOS Photos) can arrive without a MIME type.
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
-  if (VIDEO_EXTENSIONS.includes(ext)) return 'video'
-  if (AUDIO_EXTENSIONS.includes(ext)) return 'audio'
+  if (VIDEO_EXTENSIONS.includes(ext)) {
+    return 'video'
+  }
+  if (AUDIO_EXTENSIONS.includes(ext)) {
+    return 'audio'
+  }
   return null
 }

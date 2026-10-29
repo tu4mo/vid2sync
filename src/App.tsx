@@ -37,23 +37,34 @@ function syncVideo(
   t: number,
   playing: boolean,
 ) {
-  if (!el || !clip) return
+  if (!el || !clip) {
+    return
+  }
   const local = t - clip.offset
   const inside = local >= clip.trim.start && local < clip.trim.end
 
   if (!playing || !inside) {
-    if (!el.paused) el.pause()
+    if (!el.paused) {
+      el.pause()
+    }
     el.playbackRate = 1
     const target = Math.min(Math.max(local, clip.trim.start), clip.trim.end)
-    if (Math.abs(el.currentTime - target) > 0.005) el.currentTime = target
+    if (Math.abs(el.currentTime - target) > 0.005) {
+      el.currentTime = target
+    }
     return
   }
 
   // Audio is the master clock; nudge the video's rate to follow it, and hard-seek on big jumps.
   const drift = el.currentTime - local
-  if (Math.abs(drift) > 0.3) el.currentTime = local
-  else el.playbackRate = Math.min(1.1, Math.max(0.9, 1 - drift * 2))
-  if (el.paused) void el.play().catch(() => {})
+  if (Math.abs(drift) > 0.3) {
+    el.currentTime = local
+  } else {
+    el.playbackRate = Math.min(1.1, Math.max(0.9, 1 - drift * 2))
+  }
+  if (el.paused) {
+    void el.play().catch(() => {})
+  }
 }
 
 // The shortest a clip can be trimmed to.
@@ -114,7 +125,9 @@ export default function App() {
   }, [])
 
   const play = () => {
-    if (end === 0) return
+    if (end === 0) {
+      return
+    }
     playback.play(time)
     setPlaying(true)
   }
@@ -147,7 +160,9 @@ export default function App() {
     (kind: TrackKind, which: keyof TimeRange, t: number) => {
       setClips((prev) => {
         const clip = prev[kind]
-        if (!clip) return prev
+        if (!clip) {
+          return prev
+        }
         const local = roundMs(t - clip.offset)
         const trim =
           which === 'start'
@@ -175,7 +190,9 @@ export default function App() {
   const resetTrim = useCallback((kind: TrackKind, which?: keyof TimeRange) => {
     setClips((prev) => {
       const clip = prev[kind]
-      if (!clip) return prev
+      if (!clip) {
+        return prev
+      }
       // The start can only go back as far as 0:00.
       const edges = { start: Math.max(0, -clip.offset), end: clip.duration }
       const trim = which ? { ...clip.trim, [which]: edges[which] } : edges
@@ -185,7 +202,9 @@ export default function App() {
 
   const removeClip = (kind: TrackKind) => {
     const clip = clips[kind]
-    if (!clip) return
+    if (!clip) {
+      return
+    }
     pause()
     URL.revokeObjectURL(clip.url)
     setClips((prev) => ({ ...prev, [kind]: null }))
@@ -202,7 +221,9 @@ export default function App() {
       const clip = await loadClip(file, kind, playback.ctx)
       setClips((prev) => {
         const old = prev[kind]
-        if (old) URL.revokeObjectURL(old.url)
+        if (old) {
+          URL.revokeObjectURL(old.url)
+        }
         return { ...prev, [kind]: { ...clip, offset } }
       })
       setSelected(kind)
@@ -215,7 +236,9 @@ export default function App() {
 
   const exportVideo = async () => {
     const video = clips.video
-    if (!video) return
+    if (!video) {
+      return
+    }
     pause()
     setError(null)
     setExportProgress(0)
@@ -235,7 +258,9 @@ export default function App() {
 
   // Playback loop: read the audio clock, drive the playhead and the video element.
   useEffect(() => {
-    if (!playing) return
+    if (!playing) {
+      return
+    }
     let raf = 0
     const tick = () => {
       const t = playback.now()
@@ -257,36 +282,53 @@ export default function App() {
   }, [clips])
 
   useEffect(() => {
-    if (!playing) syncVideo(videoRef.current, clips.video, time, false)
+    if (!playing) {
+      syncVideo(videoRef.current, clips.video, time, false)
+    }
   }, [time, playing, clips.video])
 
   useEffect(() => {
-    for (const kind of TRACK_KINDS) playback.setGain(kind, gains[kind])
+    for (const kind of TRACK_KINDS) {
+      playback.setGain(kind, gains[kind])
+    }
   }, [gains])
 
   // The video element only plays its own sound when Web Audio couldn't decode it.
   useEffect(() => {
     const el = videoRef.current
-    if (!el) return
+    if (!el) {
+      return
+    }
     el.muted = muted.video || !!clips.video?.buffer
     el.volume = Math.min(1, volume.video)
   }, [muted.video, volume.video, clips.video])
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     // Leave text fields, browser/OS shortcuts and the error dialog alone.
-    if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || error)
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.metaKey ||
+      e.ctrlKey ||
+      error
+    ) {
       return
+    }
     if (e.key === ' ') {
       e.preventDefault()
-      if (playing) pause()
-      else play()
+      if (playing) {
+        pause()
+      } else {
+        play()
+      }
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault()
       const dir = e.key === 'ArrowLeft' ? -1 : 1
       const clip = selected && clips[selected]
-      if (selected && clip)
+      if (selected && clip) {
         setOffset(selected, clip.offset + dir * (e.shiftKey ? 0.1 : 0.01))
-      else seek(time + dir * (e.shiftKey ? 1 : 1 / 30))
+      } else {
+        seek(time + dir * (e.shiftKey ? 1 : 1 / 30))
+      }
     } else if (e.key === 'i') {
       setTrim('video', 'start', time)
     } else if (e.key === 'o') {
@@ -321,7 +363,9 @@ export default function App() {
         setDragging(true)
       }}
       onDragLeave={(e) => {
-        if (!e.relatedTarget) setDragging(false)
+        if (!e.relatedTarget) {
+          setDragging(false)
+        }
       }}
       onDrop={(e) => {
         e.preventDefault()
@@ -343,9 +387,11 @@ export default function App() {
             files.length === 1 && (target === 'video' || target === 'audio')
               ? target
               : kindForFile(file)
-          if (kind) void importFile(file, kind)
-          else
+          if (kind) {
+            void importFile(file, kind)
+          } else {
             setError(`“${file.name}” doesn’t look like a video or audio file.`)
+          }
         }
       }}
     >

@@ -42,7 +42,9 @@ async function mixAudio(
     SAMPLE_RATE,
   )
   scheduleClips(ctx, clips, start, 0, (kind) => {
-    if (gains[kind] <= 0) return null
+    if (gains[kind] <= 0) {
+      return null
+    }
     const gain = ctx.createGain()
     gain.gain.value = gains[kind]
     gain.connect(ctx.destination)
@@ -60,7 +62,9 @@ const encoderDelays = new Map<AudioCodec, number>()
  */
 async function measureEncoderDelay(codec: AudioCodec): Promise<number> {
   const cached = encoderDelays.get(codec)
-  if (cached !== undefined) return cached
+  if (cached !== undefined) {
+    return cached
+  }
 
   const onset = 0.1
   const tone = new OfflineAudioContext(2, SAMPLE_RATE / 2, SAMPLE_RATE)
@@ -99,15 +103,18 @@ export async function exportSynced(
   onProgress: (fraction: number) => void,
 ): Promise<Blob> {
   const video = clips.video
-  if (!video) throw new Error('There’s no video to export.')
+  if (!video) {
+    throw new Error('There’s no video to export.')
+  }
   const { trim } = video
 
   const audioCodec = await getFirstEncodableAudioCodec(['aac', 'opus'], {
     numberOfChannels: 2,
     sampleRate: SAMPLE_RATE,
   })
-  if (!audioCodec)
+  if (!audioCodec) {
     throw new Error('This browser can’t encode audio for export.')
+  }
 
   const input = new Input({
     source: new BlobSource(video.file),

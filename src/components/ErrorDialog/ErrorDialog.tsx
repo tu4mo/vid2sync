@@ -13,9 +13,14 @@ export function ErrorDialog({ message, onClose }: Props) {
 
   useEffect(() => {
     const el = ref.current
-    if (!el) return
-    if (message && !el.open) el.showModal()
-    else if (!message && el.open) el.close()
+    if (!el) {
+      return
+    }
+    if (message && !el.open) {
+      el.showModal()
+    } else if (!message && el.open) {
+      el.close()
+    }
   }, [message])
 
   return (

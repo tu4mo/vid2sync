@@ -24,7 +24,9 @@ export const Waveform = memo(function Waveform({
 
   useEffect(() => {
     const canvas = ref.current
-    if (!canvas) return
+    if (!canvas) {
+      return
+    }
     const observer = new ResizeObserver(() => setHeight(canvas.clientHeight))
     observer.observe(canvas)
     return () => observer.disconnect()
@@ -33,7 +35,9 @@ export const Waveform = memo(function Waveform({
   useEffect(() => {
     const canvas = ref.current
     const g = canvas?.getContext('2d')
-    if (!canvas || !g) return
+    if (!canvas || !g) {
+      return
+    }
 
     const dpr = window.devicePixelRatio || 1
     const cw = Math.max(1, Math.min(Math.round(width * dpr), MAX_CANVAS_WIDTH))
@@ -49,7 +53,9 @@ export const Waveform = memo(function Waveform({
 
     for (let x = 0; x < cw; x++) {
       const i0 = Math.floor(x * bucketsPerPixel)
-      if (i0 >= count) break
+      if (i0 >= count) {
+        break
+      }
       const i1 = Math.min(
         count,
         Math.max(i0 + 1, Math.floor((x + 1) * bucketsPerPixel)),
@@ -57,8 +63,12 @@ export const Waveform = memo(function Waveform({
       let lo = 0
       let hi = 0
       for (let i = i0; i < i1; i++) {
-        if (peaks.min[i] < lo) lo = peaks.min[i]
-        if (peaks.max[i] > hi) hi = peaks.max[i]
+        if (peaks.min[i] < lo) {
+          lo = peaks.min[i]
+        }
+        if (peaks.max[i] > hi) {
+          hi = peaks.max[i]
+        }
       }
       const top = mid - hi * mid
       const bottom = mid - lo * mid

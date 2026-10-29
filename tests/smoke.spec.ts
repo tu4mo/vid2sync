@@ -46,7 +46,9 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await expect(audioClip.locator('canvas')).toBeVisible()
   // Zoom in from the zoomed-out start, once there's a clip to zoom.
   const zoomIn = page.getByRole('button', { name: 'Zoom in' })
-  for (let i = 0; i < 6; i++) await zoomIn.click()
+  for (let i = 0; i < 6; i++) {
+    await zoomIn.click()
+  }
   pixelsPerSecond = 5 * 1.5 ** 6 // the minimum zoom, six 1.5× steps in
 
   // AAC padding makes the file slightly longer than 3 s.
@@ -239,8 +241,11 @@ async function analyzeExport(base64: string) {
   ).buffers()) {
     const channel = buffer.getChannelData(0)
     const first = Math.round(timestamp * sampleRate)
-    for (let i = 0; i < channel.length; i++)
-      if (first + i >= 0) samples[first + i] = channel[i]
+    for (let i = 0; i < channel.length; i++) {
+      if (first + i >= 0) {
+        samples[first + i] = channel[i]
+      }
+    }
   }
 
   const onsetIndex = samples.findIndex((v) => Math.abs(v) > 0.05)
@@ -250,8 +255,11 @@ async function analyzeExport(base64: string) {
     onsetIndex + sampleRate * 0.4,
   )
   let crossings = 0
-  for (let i = 1; i < window.length; i++)
-    if (window[i - 1] < 0 !== window[i] < 0) crossings++
+  for (let i = 1; i < window.length; i++) {
+    if (window[i - 1] < 0 !== window[i] < 0) {
+      crossings++
+    }
+  }
 
   return {
     videoTracks: videoTracks.length,

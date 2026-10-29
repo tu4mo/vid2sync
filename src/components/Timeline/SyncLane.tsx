@@ -66,7 +66,9 @@ export function SyncLane({
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!editing) return
+    if (!editing) {
+      return
+    }
     if (e.key === 'Enter') {
       e.currentTarget.blur()
     } else if (e.key === 'Escape') {
@@ -121,8 +123,9 @@ export function SyncLane({
                   !cancelled.current &&
                   editing.draft.trim() !== '' &&
                   Number.isFinite(ms)
-                )
+                ) {
                   setDelta(Math.round(ms))
+                }
                 cancelled.current = false
                 setEditing(null)
               }}

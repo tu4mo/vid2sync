@@ -76,7 +76,9 @@ export function Timeline(props: Props) {
 
   useEffect(() => {
     const el = scrollRef.current
-    if (!el) return
+    if (!el) {
+      return
+    }
     const observer = new ResizeObserver(() => setViewport(el.clientWidth))
     observer.observe(el)
     return () => observer.disconnect()
@@ -85,9 +87,13 @@ export function Timeline(props: Props) {
   // Ctrl/⌘ + wheel (and trackpad pinch) zooms around the cursor.
   useEffect(() => {
     const el = scrollRef.current
-    if (!el) return
+    if (!el) {
+      return
+    }
     const onWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return
+      if (!e.ctrlKey && !e.metaKey) {
+        return
+      }
       e.preventDefault()
       // Wheel events can outpace renders, so work from the zoom and scroll
       // the last event asked for, not what's been rendered yet.
@@ -96,7 +102,9 @@ export function Timeline(props: Props) {
         MAX_PIXELS_PER_SECOND,
         Math.max(MIN_PIXELS_PER_SECOND, current * Math.exp(-e.deltaY * 0.01)),
       )
-      if (next === current) return
+      if (next === current) {
+        return
+      }
       const pending = zoomAnchor.current
       const from = pending
         ? Math.max(0, pending.t * current - pending.x)
@@ -122,7 +130,9 @@ export function Timeline(props: Props) {
     const previous = pixelsPerSecondRef.current
     pixelsPerSecondRef.current = pixelsPerSecond
     const el = scrollRef.current
-    if (!el) return
+    if (!el) {
+      return
+    }
     // The wheel zooms around the cursor; the toolbar around the playhead,
     // pulled into view if it's scrolled off.
     const anchor = zoomAnchor.current ?? {
@@ -139,10 +149,13 @@ export function Timeline(props: Props) {
   // Keep the playhead in view during playback.
   useEffect(() => {
     const el = scrollRef.current
-    if (!el || !playing) return
+    if (!el || !playing) {
+      return
+    }
     const x = time * pixelsPerSecond
-    if (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft)
+    if (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft) {
       el.scrollLeft = x - 40
+    }
   }, [time, pixelsPerSecond, playing])
 
   const timeAt = (clientX: number) => {
@@ -158,7 +171,9 @@ export function Timeline(props: Props) {
 
   // Playing past the clips runs into empty timeline; stop at the end of it.
   useEffect(() => {
-    if (playing && time >= visibleSeconds) onReachEnd(visibleSeconds)
+    if (playing && time >= visibleSeconds) {
+      onReachEnd(visibleSeconds)
+    }
   }, [playing, time, visibleSeconds, onReachEnd])
 
   const width = visibleSeconds * pixelsPerSecond
@@ -167,7 +182,9 @@ export function Timeline(props: Props) {
     time,
     ...TRACK_KINDS.flatMap((k) => {
       const clip = clips[k]
-      if (!clip) return []
+      if (!clip) {
+        return []
+      }
       const span = clipSpan(clip)
       return [span.start, span.end, clip.offset, clip.offset + clip.duration]
     }),
@@ -224,7 +241,9 @@ export function Timeline(props: Props) {
           ref={contentRef}
           style={{ width, gridTemplateRows: ROWS }}
           onPointerDown={(e) => {
-            if (e.button !== 0) return
+            if (e.button !== 0) {
+              return
+            }
             e.currentTarget.setPointerCapture(e.pointerId)
             scrubbing.current = true
             onSelect(null)
@@ -274,7 +293,9 @@ export function Timeline(props: Props) {
                           accept={`${kind}/*`}
                           onChange={(e) => {
                             const file = e.target.files?.[0]
-                            if (file) props.onImport(file, kind)
+                            if (file) {
+                              props.onImport(file, kind)
+                            }
                             e.target.value = ''
                           }}
                         />
@@ -308,8 +329,9 @@ export function Timeline(props: Props) {
               if (
                 el &&
                 (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft)
-              )
+              ) {
                 el.scrollLeft = x - 40
+              }
             }}
           />
         </div>
