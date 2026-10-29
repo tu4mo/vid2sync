@@ -25,7 +25,8 @@ import { useDrag } from './useDrag'
 
 const TAIL_SECONDS = 10
 const SNAP_PX = 6
-// How far from the left edge a playhead scrolled back into view lands.
+// How far from the left edge a playhead scrolled back into view lands, and how close to the right
+// edge it gets before following it during playback scrolls the timeline.
 const REVEAL_MARGIN_PX = 40
 /** Room before 0:00 and after the end, so clips don't run into the viewport's edges. */
 const EDGE_PX = 16
@@ -180,16 +181,44 @@ export function Timeline({
     [pixelsPerSecond],
   )
 
-  // Keep the playhead in view during playback.
+  // Keep the playhead in view during playback: once it nears the right edge, scroll along with it,
+  // so it stays put and the clips move instead.
   useEffect(() => {
-    if (playing && followPlayhead) {
+    const el = scrollRef.current
+    if (!el || !playing || !followPlayhead) {
+      return
+    }
+    const x = time * pixelsPerSecond + EDGE_PX
+    const right = el.scrollLeft + el.clientWidth
+    if (x > right - REVEAL_MARGIN_PX && x <= right) {
+      el.scrollLeft = x - el.clientWidth + REVEAL_MARGIN_PX
+    } else {
       reveal(time)
     }
-  }, [time, playing, followPlayhead, reveal])
+  }, [time, playing, followPlayhead, pixelsPerSecond, reveal])
+
+  // Where scrubbing last put the playhead. It's under the pointer, so there's nothing to reveal.
+  const scrubbedTo = useRef<number | null>(null)
+
+  // Bring the playhead into view when a seek while paused (Home, the arrow keys) moves it off
+  // screen. Only on a move, so pausing or zooming doesn't scroll back to it.
+  const pausedTime = useRef(time)
+  useEffect(() => {
+    if (playing || time === pausedTime.current) {
+      pausedTime.current = time
+      return
+    }
+    pausedTime.current = time
+    if (time !== scrubbedTo.current) {
+      reveal(time)
+    }
+  }, [time, playing, reveal])
 
   function seekToPointer(clientX: number) {
     const rect = contentRef.current?.getBoundingClientRect()
-    onSeek(rect ? (clientX - rect.left) / pixelsPerSecond : 0)
+    const t = Math.max(0, rect ? (clientX - rect.left) / pixelsPerSecond : 0)
+    scrubbedTo.current = t
+    onSeek(t)
   }
 
   const scrub = useDrag(
