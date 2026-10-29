@@ -190,16 +190,23 @@ export default function App() {
     [],
   )
 
-  function removeClip(kind: TrackKind) {
-    const clip = clips[kind]
-    if (!clip) {
-      return
-    }
-    pause()
-    URL.revokeObjectURL(clip.url)
-    setClips((prev) => ({ ...prev, [kind]: null }))
-    setSelected(null)
-  }
+  const toggleMute = useCallback((kind: TrackKind) => {
+    setMuted((m) => ({ ...m, [kind]: !m[kind] }))
+  }, [])
+
+  const removeClip = useCallback(
+    (kind: TrackKind) => {
+      const clip = clips[kind]
+      if (!clip) {
+        return
+      }
+      pause()
+      URL.revokeObjectURL(clip.url)
+      setClips((prev) => ({ ...prev, [kind]: null }))
+      setSelected(null)
+    },
+    [clips, pause],
+  )
 
   async function importFile(file: File, kind: TrackKind) {
     pause()
@@ -404,9 +411,7 @@ export default function App() {
               onTrimChange={setTrim}
               onTrimReset={resetTrim}
               onFadeChange={setFade}
-              onToggleMute={(kind) =>
-                setMuted((m) => ({ ...m, [kind]: !m[kind] }))
-              }
+              onToggleMute={toggleMute}
               onImport={(file, kind) => void importFile(file, kind)}
               onRemove={removeClip}
               onZoom={setPixelsPerSecond}

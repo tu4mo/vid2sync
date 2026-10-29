@@ -1,3 +1,9 @@
+import {
+  Delete02Icon,
+  VolumeHighIcon,
+  VolumeOffIcon,
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { memo } from 'react'
 
 import {
@@ -8,10 +14,12 @@ import {
   type TimeRange,
   type TrackKind,
 } from '../../lib/media'
+import { ClipButton } from './ClipButton'
 import { FadeHandle } from './FadeHandle'
 import { useDrag } from './useDrag'
 import { Waveform } from './Waveform'
 
+const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 const WAVE_COLORS: Record<TrackKind, string> = {
   video: '#9cc4ff',
   audio: '#8ef0b8',
@@ -88,6 +96,8 @@ type ClipViewProps = {
     which: keyof TimeRange,
     span: FadeSpan,
   ) => void
+  onToggleMute: (kind: TrackKind) => void
+  onRemove: (kind: TrackKind) => void
 }
 
 export const ClipView = memo(function ClipView({
@@ -102,6 +112,8 @@ export const ClipView = memo(function ClipView({
   onTrimChange,
   onTrimReset,
   onFadeChange,
+  onToggleMute,
+  onRemove,
 }: ClipViewProps) {
   const drag = useDrag(
     (e) => {
@@ -137,10 +149,37 @@ export const ClipView = memo(function ClipView({
       {...drag}
     >
       <div
-        className={`absolute inset-0 overflow-hidden rounded-md ${CLIP_BACKGROUNDS[kind]}`}
+        // Clip, not hidden: hidden would make this the scroll container the label sticks to.
+        className={`absolute inset-0 overflow-clip rounded-md ${CLIP_BACKGROUNDS[kind]}`}
       >
-        <div className="pointer-events-none sticky left-1 z-10 mt-1 ml-1 inline-block max-w-[calc(100%-0.5rem)] truncate rounded bg-black/60 px-1.5 py-0.5 text-2xs">
-          {clip.file.name}
+        <div
+          className="sticky left-1 z-10 mt-1 ml-1 inline-flex max-w-[calc(100%-0.5rem)] items-center gap-1"
+          // Keep the buttons from dragging the clip (and capturing the pointer, which eats the click).
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="pointer-events-none h-4.5 min-w-0 truncate rounded bg-black/60 px-1.5 text-2xs leading-4.5">
+            {LABELS[kind]}
+          </div>
+          <ClipButton
+            className="aria-pressed:border-danger aria-pressed:bg-danger aria-pressed:text-white"
+            aria-label="Mute"
+            aria-pressed={muted}
+            onClick={() => onToggleMute(kind)}
+            title={muted ? 'Unmute' : 'Mute'}
+          >
+            <HugeiconsIcon
+              icon={muted ? VolumeOffIcon : VolumeHighIcon}
+              size={12}
+            />
+          </ClipButton>
+          <ClipButton
+            variant="danger"
+            aria-label="Remove clip"
+            onClick={() => onRemove(kind)}
+            title="Remove clip (Delete)"
+          >
+            <HugeiconsIcon icon={Delete02Icon} size={12} />
+          </ClipButton>
         </div>
         {clip.peaks ? (
           // The whole file's waveform, shifted so the trimmed part shows.

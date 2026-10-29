@@ -244,13 +244,10 @@ export function Timeline({
           <Fragment key={kind}>
             <TrackHead
               kind={kind}
-              clip={clips[kind]}
               muted={muted[kind]}
               volume={volume[kind]}
               loading={loading === kind}
-              onToggleMute={() => onToggleMute(kind)}
               onVolumeChange={(v) => onVolumeChange(kind, v)}
-              onRemove={() => onRemove(kind)}
             />
             {kind === 'video' && <div />}
           </Fragment>
@@ -293,6 +290,8 @@ export function Timeline({
                       onTrimChange={onTrimChange}
                       onTrimReset={onTrimReset}
                       onFadeChange={onFadeChange}
+                      onToggleMute={onToggleMute}
+                      onRemove={onRemove}
                     />
                   ) : (
                     <div className="sticky left-0 px-4 text-xs text-dim">

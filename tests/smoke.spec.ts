@@ -51,7 +51,6 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await page.goto('/')
 
   // Import both tracks.
-  const videoHead = page.getByTestId('head-video')
   const audioHead = page.getByTestId('head-audio')
   const videoLane = page.getByTestId('lane-video')
   const audioLane = page.getByTestId('lane-audio')
@@ -62,8 +61,8 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await audioLane.locator('input[type=file]').setInputFiles(fixture('tone.wav'))
   const videoClip = page.getByTestId('clip-video')
   const audioClip = page.getByTestId('clip-audio')
-  await expect(videoClip).toContainText('clip.mp4')
-  await expect(audioClip).toContainText('tone.wav')
+  await expect(videoClip).toContainText('Video')
+  await expect(audioClip).toContainText('Audio')
   await expect(videoClip.locator('canvas')).toBeVisible()
   await expect(audioClip.locator('canvas')).toBeVisible()
   // Zoom in from the zoomed-out start, once there's a clip to zoom.
@@ -103,7 +102,7 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await expect(sync).toContainText('1500 ms ahead of audio')
 
   // Mute the video's own sound and halve the audio track.
-  const mute = videoHead.getByRole('button', { name: 'Mute' })
+  const mute = videoClip.getByRole('button', { name: 'Mute' })
   await mute.click()
   await expect(mute).toHaveAttribute('aria-pressed', 'true')
   await audioHead.getByRole('slider').fill('0.5')
@@ -267,8 +266,8 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await fadeInStart.dblclick()
   await expect(fadeInStart).toHaveAttribute('data-distance', '0')
 
-  // Remove the audio from its track head.
-  await audioHead.getByRole('button', { name: 'Remove clip' }).click()
+  // Remove the audio with its clip's button.
+  await audioClip.getByRole('button', { name: 'Remove clip' }).click()
   await expect(audioClip).toHaveCount(0)
   await expect(page.getByTestId('sync')).toHaveCount(0)
 
