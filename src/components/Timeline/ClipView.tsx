@@ -39,20 +39,19 @@ type ClipViewProps = {
   onTrimReset: (kind: TrackKind, which: keyof TimeRange) => void
 }
 
-export const ClipView = memo(function ClipView(props: ClipViewProps) {
-  const {
-    kind,
-    clip,
-    pixelsPerSecond,
-    selected,
-    muted,
-    onSelect,
-    onOffsetChange,
-    trimmable,
-    snap,
-    onTrimChange,
-    onTrimReset,
-  } = props
+export const ClipView = memo(function ClipView({
+  kind,
+  clip,
+  pixelsPerSecond,
+  selected,
+  muted,
+  onSelect,
+  onOffsetChange,
+  trimmable,
+  snap,
+  onTrimChange,
+  onTrimReset,
+}: ClipViewProps) {
   const drag = useRef<{ lastX: number; offset: number } | null>(null)
   // Where the pointer and the edge were when a trim handle was grabbed.
   const trimDrag = useRef<{ x: number; t: number } | null>(null)

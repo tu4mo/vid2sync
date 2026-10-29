@@ -54,18 +54,28 @@ type Props = {
   onZoom: (pixelsPerSecond: number) => void
 }
 
-export function Timeline(props: Props) {
-  const {
-    clips,
-    time,
-    end,
-    pixelsPerSecond,
-    playing,
-    onSeek,
-    onReachEnd,
-    onSelect,
-    onZoom,
-  } = props
+export function Timeline({
+  clips,
+  muted,
+  volume,
+  selected,
+  loading,
+  time,
+  end,
+  pixelsPerSecond,
+  playing,
+  onSelect,
+  onOffsetChange,
+  onSeek,
+  onReachEnd,
+  onTrimChange,
+  onTrimReset,
+  onToggleMute,
+  onVolumeChange,
+  onImport,
+  onRemove,
+  onZoom,
+}: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const scrubbing = useRef(false)
@@ -90,6 +100,7 @@ export function Timeline(props: Props) {
     if (!el) {
       return
     }
+    // oxlint-disable-next-line eslint/func-style -- a hoisted declaration would lose the null check above
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) {
         return
@@ -158,11 +169,13 @@ export function Timeline(props: Props) {
     }
   }, [time, pixelsPerSecond, playing])
 
-  const timeAt = (clientX: number) => {
+  function timeAt(clientX: number) {
     const rect = contentRef.current?.getBoundingClientRect()
     return rect ? (clientX - rect.left) / pixelsPerSecond : 0
   }
-  const seekToPointer = (clientX: number) => onSeek(timeAt(clientX))
+  function seekToPointer(clientX: number) {
+    onSeek(timeAt(clientX))
+  }
 
   const visibleSeconds = Math.max(
     end + TAIL_SECONDS,
@@ -212,12 +225,12 @@ export function Timeline(props: Props) {
             <TrackHead
               kind={kind}
               clip={clips[kind]}
-              muted={props.muted[kind]}
-              volume={props.volume[kind]}
-              loading={props.loading === kind}
-              onToggleMute={() => props.onToggleMute(kind)}
-              onVolumeChange={(v) => props.onVolumeChange(kind, v)}
-              onRemove={() => props.onRemove(kind)}
+              muted={muted[kind]}
+              volume={volume[kind]}
+              loading={loading === kind}
+              onToggleMute={() => onToggleMute(kind)}
+              onVolumeChange={(v) => onVolumeChange(kind, v)}
+              onRemove={() => onRemove(kind)}
             />
             {kind === 'video' && (
               <div className="flex items-center border-b border-line px-3 text-2xs font-bold tracking-[0.08em] text-dim uppercase">
@@ -269,15 +282,15 @@ export function Timeline(props: Props) {
                       kind={kind}
                       clip={clip}
                       pixelsPerSecond={pixelsPerSecond}
-                      selected={props.selected === kind}
-                      muted={props.muted[kind]}
+                      selected={selected === kind}
+                      muted={muted[kind]}
                       onSelect={onSelect}
-                      onOffsetChange={props.onOffsetChange}
+                      onOffsetChange={onOffsetChange}
                       // Only the video is trimmed; it's what gets exported.
                       trimmable={kind === 'video'}
                       snap={snap}
-                      onTrimChange={props.onTrimChange}
-                      onTrimReset={props.onTrimReset}
+                      onTrimChange={onTrimChange}
+                      onTrimReset={onTrimReset}
                     />
                   ) : (
                     <div className="sticky left-0 px-4 text-xs text-dim">
@@ -294,7 +307,7 @@ export function Timeline(props: Props) {
                           onChange={(e) => {
                             const file = e.target.files?.[0]
                             if (file) {
-                              props.onImport(file, kind)
+                              onImport(file, kind)
                             }
                             e.target.value = ''
                           }}
@@ -310,7 +323,7 @@ export function Timeline(props: Props) {
                     audio={clips.audio}
                     pixelsPerSecond={pixelsPerSecond}
                     view={{ start: scrollLeft, width: viewport }}
-                    onOffsetChange={props.onOffsetChange}
+                    onOffsetChange={onOffsetChange}
                   />
                 )}
               </Fragment>

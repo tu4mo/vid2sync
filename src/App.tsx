@@ -75,7 +75,9 @@ const TIMELINE_CHROME_HEIGHT = 42 + 1 + RULER_HEIGHT + SYNC_LANE_HEIGHT
 const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
 const TIMELINE_MIN_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_MIN_HEIGHT
 
-const roundMs = (t: number) => Math.round(t * 1000) / 1000
+function roundMs(t: number) {
+  return Math.round(t * 1000) / 1000
+}
 
 export default function App() {
   const [clips, setClips] = useState<Clips>({ video: null, audio: null })
@@ -124,7 +126,7 @@ export default function App() {
     setPlaying(false)
   }, [])
 
-  const play = () => {
+  function play() {
     if (end === 0) {
       return
     }
@@ -132,7 +134,7 @@ export default function App() {
     setPlaying(true)
   }
 
-  const seek = (t: number) => {
+  function seek(t: number) {
     const clamped = Math.max(0, t)
     playback.seek(clamped)
     setTime(clamped)
@@ -200,7 +202,7 @@ export default function App() {
     })
   }, [])
 
-  const removeClip = (kind: TrackKind) => {
+  function removeClip(kind: TrackKind) {
     const clip = clips[kind]
     if (!clip) {
       return
@@ -211,7 +213,7 @@ export default function App() {
     setSelected(null)
   }
 
-  const importFile = async (file: File, kind: TrackKind) => {
+  async function importFile(file: File, kind: TrackKind) {
     pause()
     // The new clip starts at the playhead.
     const offset = roundMs(playback.now())
@@ -234,7 +236,7 @@ export default function App() {
     }
   }
 
-  const exportVideo = async () => {
+  async function exportVideo() {
     const video = clips.video
     if (!video) {
       return
@@ -262,7 +264,7 @@ export default function App() {
       return
     }
     let raf = 0
-    const tick = () => {
+    function tick() {
       const t = playback.now()
       // Stop when playback runs off the end, but not when it was started past the end.
       if (t >= end && playback.startedFrom() < end) {

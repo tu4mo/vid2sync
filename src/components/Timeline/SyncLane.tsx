@@ -1,8 +1,34 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 import { clipSpan, type Clip, type TrackKind } from '../../lib/media'
 
 const EDGE_GAP = 4
+
+type Sync = {
+  /** The gap that was set, in ms. */
+  delta: number
+  audio: number
+  /** Only there when the video has to move too. */
+  video?: number
+}
+
+/**
+ * Where the clips go for the audio to start `ms` after the video. Moves the audio; if that would
+ * put it before 0:00, the video moves the other way instead. Clamped to where the clips still
+ * overlap, which also keeps a typo from stretching the timeline to days.
+ */
+function syncTo(video: Clip, audio: Clip, ms: number): Sync {
+  const delta = Math.min(
+    Math.max(ms, -Math.floor(audio.duration * 1000)),
+    Math.floor(video.duration * 1000),
+  )
+  // The earliest the audio can go, with its trimmed part starting at 0:00.
+  const audioMin = -audio.trim.start
+  const target = video.offset + delta / 1000
+  return target >= audioMin
+    ? { delta, audio: target }
+    : { delta, audio: audioMin, video: audioMin - delta / 1000 }
+}
 
 type Props = {
   video: Clip | null
@@ -46,44 +72,12 @@ export function SyncLane({
     return <div className="border-b border-line" />
   }
 
-  // Moves the audio; if that would put it before 0:00, the video moves the other way instead.
-  // Clamped to where the clips still overlap, which also keeps a typo from stretching the timeline to days.
-  const setDelta = (ms: number) => {
-    const clamped = Math.min(
-      Math.max(ms, -Math.floor(audio.duration * 1000)),
-      Math.floor(video.duration * 1000),
-    )
-    // The earliest the audio can go, with its trimmed part starting at 0:00.
-    const audioMin = -audio.trim.start
-    const target = video.offset + clamped / 1000
-    if (target >= audioMin) {
-      onOffsetChange('audio', target)
-    } else {
-      onOffsetChange('audio', audioMin)
-      onOffsetChange('video', audioMin - clamped / 1000)
+  function applySync(sync: Sync) {
+    onOffsetChange('audio', sync.audio)
+    if (sync.video !== undefined) {
+      onOffsetChange('video', sync.video)
     }
-    return clamped
-  }
-
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!editing) {
-      return
-    }
-    if (e.key === 'Enter') {
-      e.currentTarget.blur()
-    } else if (e.key === 'Escape') {
-      cancelled.current = true
-      setDelta(editing.original)
-      e.currentTarget.blur()
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      // Step live, so you can hear the change.
-      e.preventDefault()
-      const current = Number(editing.draft)
-      const next =
-        (Number.isFinite(current) ? Math.round(current) : delta) +
-        (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)
-      setEditing({ ...editing, draft: String(setDelta(next)) })
-    }
+    return sync.delta
   }
 
   const span = clipSpan(video)
@@ -116,7 +110,24 @@ export function SyncLane({
               onChange={(e) =>
                 setEditing({ ...editing, draft: e.target.value })
               }
-              onKeyDown={onKeyDown}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur()
+                } else if (e.key === 'Escape') {
+                  cancelled.current = true
+                  applySync(syncTo(video, audio, editing.original))
+                  e.currentTarget.blur()
+                } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                  // Step live, so you can hear the change.
+                  e.preventDefault()
+                  const current = Number(editing.draft)
+                  const next =
+                    (Number.isFinite(current) ? Math.round(current) : delta) +
+                    (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)
+                  const set = applySync(syncTo(video, audio, next))
+                  setEditing({ ...editing, draft: String(set) })
+                }
+              }}
               onBlur={() => {
                 const ms = Number(editing.draft)
                 if (
@@ -124,7 +135,7 @@ export function SyncLane({
                   editing.draft.trim() !== '' &&
                   Number.isFinite(ms)
                 ) {
-                  setDelta(Math.round(ms))
+                  applySync(syncTo(video, audio, Math.round(ms)))
                 }
                 cancelled.current = false
                 setEditing(null)

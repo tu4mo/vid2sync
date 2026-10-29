@@ -22,7 +22,7 @@ export function Playhead({ time, pixelsPerSecond, max, onSeek }: Props) {
   const cancelled = useRef(false)
   const flip = (max - time) * pixelsPerSecond < FLAG_WIDTH
 
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       e.currentTarget.blur()
     } else if (e.key === 'Escape') {

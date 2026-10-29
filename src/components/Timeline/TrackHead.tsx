@@ -27,17 +27,16 @@ type Props = {
   onRemove: () => void
 }
 
-export function TrackHead(props: Props) {
-  const {
-    kind,
-    clip,
-    muted,
-    volume,
-    loading,
-    onToggleMute,
-    onVolumeChange,
-    onRemove,
-  } = props
+export function TrackHead({
+  kind,
+  clip,
+  muted,
+  volume,
+  loading,
+  onToggleMute,
+  onVolumeChange,
+  onRemove,
+}: Props) {
   return (
     <div
       className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}

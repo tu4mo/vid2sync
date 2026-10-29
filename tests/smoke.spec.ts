@@ -2,26 +2,33 @@ import { readFile } from 'node:fs/promises'
 
 import { expect, test, type Page } from '@playwright/test'
 
-const fixture = (name: string) =>
-  new URL(`fixtures/${name}`, import.meta.url).pathname
+function fixture(name: string) {
+  return new URL(`fixtures/${name}`, import.meta.url).pathname
+}
 
 // Shortcuts are ignored while an input has focus, so drop focus before pressing keys.
-const blur = (page: Page) =>
-  page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+function blur(page: Page) {
+  return page.evaluate(() =>
+    (document.activeElement as HTMLElement | null)?.blur(),
+  )
+}
 
 // The timeline opens zoomed out; the test zooms in and sets this to match.
 let pixelsPerSecond = 0
-const clockToPx = (seconds: number) => seconds * pixelsPerSecond
+function clockToPx(seconds: number) {
+  return seconds * pixelsPerSecond
+}
 
-const clockSeconds = async (page: Page) => {
+async function clockSeconds(page: Page) {
   const [m, s] = (await page.getByTestId('clock').inputValue()).split(':')
   return Number(m) * 60 + Number(s)
 }
 
 // The video's trimmed part on the timeline in seconds, as its handles report it.
-const trimSeconds = async (page: Page) => {
-  const time = (which: string) =>
-    page.getByTestId(`trim-${which}`).getAttribute('data-time')
+async function trimSeconds(page: Page) {
+  function time(which: string) {
+    return page.getByTestId(`trim-${which}`).getAttribute('data-time')
+  }
   return `${await time('start')} – ${await time('end')}`
 }
 
@@ -113,7 +120,9 @@ test('import, sync, play, trim and export', async ({ page }) => {
   expect(await clockSeconds(page)).toBe(1.5)
 
   // Trim the video to 1–2 s: the end with the keyboard, the start by dragging its handle onto the playhead.
-  const trim = () => trimSeconds(page)
+  function trim() {
+    return trimSeconds(page)
+  }
   const startHandle = page.getByTestId('trim-start')
   await expect.poll(trim).toMatch(/^0 – 3\.0\d*$/)
   await page.keyboard.press('Home')

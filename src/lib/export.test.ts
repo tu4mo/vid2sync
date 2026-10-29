@@ -101,8 +101,9 @@ class FakeOfflineAudioContext {
 }
 
 /** The context that rendered the mix (the others measured the encoder delay). */
-const mixContext = () =>
-  FakeOfflineAudioContext.created.find((c) => c.sources.length > 0)
+function mixContext() {
+  return FakeOfflineAudioContext.created.find((c) => c.sources.length > 0)
+}
 
 function clip(
   offset: number,

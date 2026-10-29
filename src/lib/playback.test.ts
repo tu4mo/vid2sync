@@ -54,10 +54,13 @@ function clip(
 
 const clips: Clips = { video: clip(60), audio: clip(60) }
 
-const audioContext = (ctx: FakeAudioContext) =>
-  ctx as unknown as BaseAudioContext
+function audioContext(ctx: FakeAudioContext) {
+  return ctx as unknown as BaseAudioContext
+}
 
-const output = (kind: string) => ({ kind }) as unknown as AudioNode
+function output(kind: string) {
+  return { kind } as unknown as AudioNode
+}
 
 describe('Playback', () => {
   let playback: Playback

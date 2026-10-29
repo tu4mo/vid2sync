@@ -33,7 +33,7 @@ try {
     const SAMPLE_RATE = 48000
     const FPS = 30
 
-    const tone = (freq: number, seconds: number) => {
+    function tone(freq: number, seconds: number) {
       const ctx = new OfflineAudioContext(2, seconds * SAMPLE_RATE, SAMPLE_RATE)
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
@@ -45,14 +45,15 @@ try {
     }
 
     // oxlint-disable-next-line unicorn/consistent-function-scoping -- runs in the page, so it can't move out of evaluate()
-    const toBase64 = (buffer: ArrayBuffer) =>
-      new Promise<string>((resolve) => {
+    function toBase64(buffer: ArrayBuffer) {
+      return new Promise<string>((resolve) => {
         const reader = new FileReader()
         reader.addEventListener('load', () =>
           resolve((reader.result as string).split(',')[1]),
         )
         reader.readAsDataURL(new Blob([buffer]))
       })
+    }
 
     // Video: a frame counter, so a wrong trim is easy to spot by eye.
     const mp4 = new mb.Output({

@@ -31,16 +31,26 @@ type Props = {
   onZoom: (pixelsPerSecond: number) => void
 }
 
-export function Toolbar(props: Props) {
-  const { playing, end, canExport, exportProgress, pixelsPerSecond } = props
-  const { onPlay, onPause, onSeek, onExport, onZoom } = props
-  const zoomBy = (factor: number) =>
+export function Toolbar({
+  playing,
+  end,
+  canExport,
+  exportProgress,
+  pixelsPerSecond,
+  onPlay,
+  onPause,
+  onSeek,
+  onExport,
+  onZoom,
+}: Props) {
+  function zoomBy(factor: number) {
     onZoom(
       Math.min(
         MAX_PIXELS_PER_SECOND,
         Math.max(MIN_PIXELS_PER_SECOND, pixelsPerSecond * factor),
       ),
     )
+  }
   return (
     // Three columns, so the transport buttons stay centred whatever sits either side.
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2.5 bg-panel px-4 py-2">

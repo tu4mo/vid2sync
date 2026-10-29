@@ -7,6 +7,7 @@
   "plugins": ["eslint", "import", "react", "typescript", "unicorn", "oxc"],
   "rules": {
     "eslint/curly": ["error", "all"],
+    "eslint/func-style": ["error", "declaration"],
     "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
     "react/react-in-jsx-scope": "off",
     "react/rules-of-hooks": "error",
