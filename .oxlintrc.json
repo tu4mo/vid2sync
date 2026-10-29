@@ -6,6 +6,11 @@
   },
   "plugins": ["eslint", "import", "react", "typescript", "unicorn", "oxc"],
   "rules": {
+    "eslint/capitalized-comments": [
+      "error",
+      "always",
+      { "ignoreConsecutiveComments": true }
+    ],
     "eslint/curly": ["error", "all"],
     "eslint/func-style": ["error", "declaration"],
     "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],

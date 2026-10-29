@@ -6,7 +6,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 // Encoding needs WebCodecs, so it runs in Playwright's Chromium.
 import { chromium } from '@playwright/test'
 
-const ORIGIN = 'https://fixtures.test' // served by page.route below; https gives a secure context
+const ORIGIN = 'https://fixtures.test' // Served by page.route below; https gives a secure context
 const BUNDLE = new URL(
   '../node_modules/mediabunny/dist/bundles/mediabunny.mjs',
   import.meta.url,

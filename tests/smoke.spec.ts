@@ -56,7 +56,7 @@ test('import, sync, play, trim and export', async ({ page }) => {
   for (let i = 0; i < 6; i++) {
     await zoomIn.click()
   }
-  pixelsPerSecond = 5 * 1.5 ** 6 // the minimum zoom, six 1.5× steps in
+  pixelsPerSecond = 5 * 1.5 ** 6 // The minimum zoom, six 1.5× steps in
 
   // AAC padding makes the file slightly longer than 3 s.
   const videoWidth = (await videoClip.boundingBox())!.width
@@ -137,10 +137,10 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await page.mouse.down()
   await page.mouse.move(playhead + 3, handle.y + handle.height / 2, {
     steps: 5,
-  }) // close enough to snap
+  }) // Close enough to snap
   await page.mouse.up()
   await expect.poll(trim).toBe('1 – 2')
-  expect(await clockSeconds(page)).toBe(1) // dragging a handle doesn't scrub
+  expect(await clockSeconds(page)).toBe(1) // Dragging a handle doesn't scrub
   // Trimming the start doesn't move the rest of the video, so the sync holds.
   await expect(sync).toContainText('1500 ms ahead of audio')
   await expect(videoClip).toContainText('@ 0:01.000')

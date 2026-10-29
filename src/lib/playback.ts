@@ -121,7 +121,7 @@ export class Playback {
       try {
         source.stop()
       } catch {
-        // already stopped
+        // Already stopped
       }
       source.disconnect()
     }
