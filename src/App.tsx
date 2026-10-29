@@ -15,10 +15,7 @@ import {
   RULER_HEIGHT,
   SYNC_LANE_HEIGHT,
 } from './components/Timeline/layout'
-import {
-  MIN_PIXELS_PER_SECOND,
-  Timeline,
-} from './components/Timeline/Timeline'
+import { MIN_PIXELS_PER_SECOND, Timeline } from './components/Timeline/Timeline'
 import { Toolbar } from './components/Toolbar/Toolbar'
 import { Engine } from './engine'
 import {

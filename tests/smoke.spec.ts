@@ -9,21 +9,20 @@ const fixture = (name: string) =>
 const blur = (page: Page) =>
   page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
 
-// The timeline opens at 50 px per second.
-const clockToPx = (seconds: number) => seconds * 50
+// The timeline opens zoomed out; the test zooms in and sets this to match.
+let pixelsPerSecond = 0
+const clockToPx = (seconds: number) => seconds * pixelsPerSecond
 
 const clockSeconds = async (page: Page) => {
   const [m, s] = (await page.getByTestId('clock').inputValue()).split(':')
   return Number(m) * 60 + Number(s)
 }
 
-// The export range in seconds, read from where its handles sit on the ruler.
+// The export range in seconds, as its handles report it.
 const rangeSeconds = async (page: Page) => {
-  const left = (which: string) =>
-    page
-      .getByTestId(`range-${which}`)
-      .evaluate((el) => parseFloat((el as HTMLElement).style.left))
-  return `${(await left('start')) / 50} – ${(await left('end')) / 50}`
+  const time = (which: string) =>
+    page.getByTestId(`range-${which}`).getAttribute('data-time')
+  return `${await time('start')} – ${await time('end')}`
 }
 
 test('import, sync, play, set range and export', async ({ page }) => {
@@ -45,6 +44,11 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await expect(audioClip).toContainText('tone.wav')
   await expect(videoClip.locator('canvas')).toBeVisible()
   await expect(audioClip.locator('canvas')).toBeVisible()
+  // Zoom in from the zoomed-out start, once there's a clip to zoom.
+  const zoomIn = page.getByRole('button', { name: 'Zoom in' })
+  for (let i = 0; i < 6; i++) await zoomIn.click()
+  pixelsPerSecond = 5 * 1.5 ** 6 // the minimum zoom, six 1.5× steps in
+
   // AAC padding makes the file slightly longer than 3 s.
   const videoWidth = (await videoClip.boundingBox())!.width
   expect(videoWidth).toBeGreaterThan(clockToPx(3))
@@ -140,9 +144,13 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.mouse.move(start.x + 2, start.y + start.height / 2)
   await page.mouse.down()
   await page.keyboard.down('Shift')
-  await page.mouse.move(start.x + 2 + 3, start.y + start.height / 2, {
-    steps: 5,
-  })
+  await page.mouse.move(
+    start.x + 2 + clockToPx(0.06),
+    start.y + start.height / 2,
+    {
+      steps: 5,
+    },
+  )
   await page.keyboard.up('Shift')
   await page.mouse.up()
   await expect.poll(range).toBe('1.06 – 2')

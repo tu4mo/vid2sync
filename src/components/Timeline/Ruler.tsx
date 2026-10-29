@@ -99,6 +99,7 @@ export function Ruler({
             style={{ left: range[which] * pixelsPerSecond }}
             title={`Export ${which} (drag, Shift to not snap; double-click to reset)`}
             data-testid={`range-${which}`}
+            data-time={range[which]}
             onPointerDown={(e) => {
               if (e.button !== 0) return
               // Keep the timeline from scrubbing under the handle.
