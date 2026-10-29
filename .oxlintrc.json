@@ -30,6 +30,22 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/components/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^\\.\\./\\.\\./",
+                "message": "Shared components can't import from outside src/components. Pass app-specific data and behavior in as props."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

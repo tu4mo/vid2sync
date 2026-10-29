@@ -8,6 +8,7 @@ import {
 import { Group, Panel, Separator } from 'react-resizable-panels'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
+import { FileDrop } from './components/FileDrop/FileDrop'
 import {
   TRACK_KINDS,
   clipSpan,
@@ -60,7 +61,6 @@ export default function App() {
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
-  const [dragging, setDragging] = useState(false)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
 
   const end = Math.max(
@@ -199,6 +199,29 @@ export default function App() {
     }
   }
 
+  function dropFiles(files: File[], target: Element) {
+    if (files.length === 0) {
+      setError(
+        'The drop didn’t contain a file. If you’re dragging from Photos, try Safari, ' +
+          'or drag the video to the Desktop first and drop it from there.',
+      )
+      return
+    }
+    // A single file dropped onto a track goes to that track (e.g. a video's sound onto Audio).
+    const track = target.closest<HTMLElement>('[data-track]')?.dataset.track
+    for (const file of files) {
+      const kind =
+        files.length === 1 && (track === 'video' || track === 'audio')
+          ? track
+          : kindForFile(file)
+      if (kind) {
+        void importFile(file, kind)
+      } else {
+        setError(`“${file.name}” doesn’t look like a video or audio file.`)
+      }
+    }
+  }
+
   async function exportVideo() {
     const video = clips.video
     if (!video) {
@@ -298,51 +321,11 @@ export default function App() {
   }, [])
 
   return (
-    <div
-      className="relative h-full select-none"
-      onDragOver={(e) => {
-        e.preventDefault()
-        e.dataTransfer.dropEffect = 'copy'
-        setDragging(true)
-      }}
-      onDragLeave={(e) => {
-        if (!e.relatedTarget) {
-          setDragging(false)
-        }
-      }}
-      onDrop={(e) => {
-        e.preventDefault()
-        setDragging(false)
-        const files = [...e.dataTransfer.files]
-        if (files.length === 0) {
-          setError(
-            'The drop didn’t contain a file. If you’re dragging from Photos, try Safari, ' +
-              'or drag the video to the Desktop first and drop it from there.',
-          )
-          return
-        }
-        // A single file dropped onto a track goes to that track (e.g. a video's sound onto Audio).
-        const target = (e.target as Element).closest<HTMLElement>(
-          '[data-track]',
-        )?.dataset.track
-        for (const file of files) {
-          const kind =
-            files.length === 1 && (target === 'video' || target === 'audio')
-              ? target
-              : kindForFile(file)
-          if (kind) {
-            void importFile(file, kind)
-          } else {
-            setError(`“${file.name}” doesn’t look like a video or audio file.`)
-          }
-        }
-      }}
+    <FileDrop
+      className="h-full select-none"
+      label="Drop video or audio to import"
+      onDrop={dropFiles}
     >
-      {dragging && (
-        <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-xl border-2 border-dashed border-accent bg-bg/70 text-lg font-semibold text-accent">
-          Drop video or audio to import
-        </div>
-      )}
       <Group orientation="vertical">
         <Panel minSize={80}>
           <Video
@@ -406,6 +389,6 @@ export default function App() {
       </Group>
 
       <ErrorDialog message={error} onClose={() => setError(null)} />
-    </div>
+    </FileDrop>
   )
 }
