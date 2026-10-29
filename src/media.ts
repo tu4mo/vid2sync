@@ -60,8 +60,10 @@ function readDuration(url: string, kind: TrackKind): Promise<number> {
   return new Promise((resolve) => {
     const el = document.createElement(kind)
     el.preload = 'metadata'
-    el.onloadedmetadata = () => resolve(Number.isFinite(el.duration) ? el.duration : 0)
-    el.onerror = () => resolve(0)
+    el.addEventListener('loadedmetadata', () =>
+      resolve(Number.isFinite(el.duration) ? el.duration : 0),
+    )
+    el.addEventListener('error', () => resolve(0))
     el.src = url
   })
 }

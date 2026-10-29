@@ -35,6 +35,7 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
 
   useLayoutEffect(() => {
     setLabelWidth(labelRef.current?.offsetWidth ?? 0)
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- the label's text changes with these, so they trigger the re-measure
   }, [delta, draft])
 
   if (!video || !audio || delta === null) {

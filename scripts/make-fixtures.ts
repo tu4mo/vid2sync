@@ -40,10 +40,11 @@ try {
       return ctx.startRendering()
     }
 
+    // oxlint-disable-next-line unicorn/consistent-function-scoping -- runs in the page, so it can't move out of evaluate()
     const toBase64 = (buffer: ArrayBuffer) =>
       new Promise<string>((resolve) => {
         const reader = new FileReader()
-        reader.onload = () => resolve((reader.result as string).split(',')[1])
+        reader.addEventListener('load', () => resolve((reader.result as string).split(',')[1]))
         reader.readAsDataURL(new Blob([buffer]))
       })
 
