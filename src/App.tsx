@@ -252,7 +252,7 @@ export default function App() {
 
   return (
     <div
-      className="relative grid h-full grid-rows-[auto_minmax(0,1fr)_auto_auto] select-none"
+      className="relative grid h-full grid-rows-[minmax(0,1fr)_auto_auto] select-none"
       onDragOver={(e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'
@@ -289,13 +289,6 @@ export default function App() {
           Drop video or audio to import
         </div>
       )}
-      <header className="flex items-center gap-4 border-b border-line px-4 py-2.5">
-        <h1 className="flex items-center gap-2 text-lg font-bold tracking-[0.02em]">
-          <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="" className="size-7" />
-          vid2sync
-        </h1>
-      </header>
-
       <main className="relative flex min-h-0 items-center justify-center bg-black">
         {videoClip && (
           <video

@@ -36,55 +36,64 @@ export function Toolbar(props: Props) {
       Math.min(MAX_PIXELS_PER_SECOND, Math.max(MIN_PIXELS_PER_SECOND, pixelsPerSecond * factor)),
     )
   return (
-    <div className="flex items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
-      <Button
-        variant="primary"
-        aria-label={playing ? 'Pause' : 'Play'}
-        title={playing ? 'Pause (Space)' : 'Play (Space)'}
-        onClick={playing ? onPause : onPlay}
-        disabled={end === 0}
-      >
-        <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} size={16} />
-      </Button>
-      <Button aria-label="Go to start" title="Go to start (Home)" onClick={() => onSeek(0)}>
-        <HugeiconsIcon icon={PreviousIcon} size={16} />
-      </Button>
-      <Button
-        className="ml-auto tabular-nums"
-        aria-label="Export MP4"
-        onClick={onExport}
-        disabled={!canExport || exportProgress !== null}
-        title="Save the video with the synced audio as MP4"
-      >
-        <HugeiconsIcon icon={Download01Icon} size={16} />
-        {exportProgress !== null && `${Math.round(exportProgress * 100)}%`}
-      </Button>
-      <div className="ml-3 flex items-center gap-2">
+    // Three columns, so the transport buttons stay centred whatever sits either side.
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
+      <h1 className="flex items-center gap-2 text-base font-bold tracking-[0.02em]">
+        <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="" className="size-6" />
+        vid2sync
+      </h1>
+      <div className="flex items-center gap-2.5">
         <Button
-          aria-label="Zoom out"
-          title="Zoom out"
-          onClick={() => zoomBy(1 / ZOOM_STEP)}
-          disabled={pixelsPerSecond <= MIN_PIXELS_PER_SECOND}
+          variant="primary"
+          aria-label={playing ? 'Pause' : 'Play'}
+          title={playing ? 'Pause (Space)' : 'Play (Space)'}
+          onClick={playing ? onPause : onPlay}
+          disabled={end === 0}
         >
-          <HugeiconsIcon icon={ZoomOutIcon} size={16} />
+          <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} size={16} />
         </Button>
-        <Slider
-          className="w-32"
-          aria-label="Zoom"
-          min={Math.log(MIN_PIXELS_PER_SECOND)}
-          max={Math.log(MAX_PIXELS_PER_SECOND)}
-          step={0.01}
-          value={Math.log(pixelsPerSecond)}
-          onChange={(e) => onZoom(Math.exp(Number(e.target.value)))}
-        />
+        <Button aria-label="Go to start" title="Go to start (Home)" onClick={() => onSeek(0)}>
+          <HugeiconsIcon icon={PreviousIcon} size={16} />
+        </Button>
+      </div>
+      <div className="flex items-center justify-end gap-2.5">
         <Button
-          aria-label="Zoom in"
-          title="Zoom in"
-          onClick={() => zoomBy(ZOOM_STEP)}
-          disabled={pixelsPerSecond >= MAX_PIXELS_PER_SECOND}
+          className="tabular-nums"
+          aria-label="Export MP4"
+          onClick={onExport}
+          disabled={!canExport || exportProgress !== null}
+          title="Save the video with the synced audio as MP4"
         >
-          <HugeiconsIcon icon={ZoomInIcon} size={16} />
+          <HugeiconsIcon icon={Download01Icon} size={16} />
+          {exportProgress !== null && `${Math.round(exportProgress * 100)}%`}
         </Button>
+        <div className="ml-3 flex items-center gap-2">
+          <Button
+            aria-label="Zoom out"
+            title="Zoom out"
+            onClick={() => zoomBy(1 / ZOOM_STEP)}
+            disabled={pixelsPerSecond <= MIN_PIXELS_PER_SECOND}
+          >
+            <HugeiconsIcon icon={ZoomOutIcon} size={16} />
+          </Button>
+          <Slider
+            className="w-32"
+            aria-label="Zoom"
+            min={Math.log(MIN_PIXELS_PER_SECOND)}
+            max={Math.log(MAX_PIXELS_PER_SECOND)}
+            step={0.01}
+            value={Math.log(pixelsPerSecond)}
+            onChange={(e) => onZoom(Math.exp(Number(e.target.value)))}
+          />
+          <Button
+            aria-label="Zoom in"
+            title="Zoom in"
+            onClick={() => zoomBy(ZOOM_STEP)}
+            disabled={pixelsPerSecond >= MAX_PIXELS_PER_SECOND}
+          >
+            <HugeiconsIcon icon={ZoomInIcon} size={16} />
+          </Button>
+        </div>
       </div>
     </div>
   )
