@@ -15,7 +15,10 @@ import {
   RULER_HEIGHT,
   SYNC_LANE_HEIGHT,
 } from './components/Timeline/layout'
-import { Timeline } from './components/Timeline/Timeline'
+import {
+  MIN_PIXELS_PER_SECOND,
+  Timeline,
+} from './components/Timeline/Timeline'
 import { Toolbar } from './components/Toolbar/Toolbar'
 import { Engine } from './engine'
 import {
@@ -79,7 +82,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [pixelsPerSecond, setPixelsPerSecond] = useState(50)
+  const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
   const [dragging, setDragging] = useState(false)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
   /** In/out points on the timeline; null exports the whole video. */
