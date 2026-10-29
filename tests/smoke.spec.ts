@@ -22,8 +22,13 @@ test('import, sync, play, set range and export', async ({ page }) => {
   // Import both tracks.
   const videoHead = page.getByTestId('head-video')
   const audioHead = page.getByTestId('head-audio')
-  await videoHead.locator('input[type=file]').setInputFiles(fixture('clip.mp4'))
-  await audioHead.locator('input[type=file]').setInputFiles(fixture('tone.wav'))
+  const videoLane = page.getByTestId('lane-video')
+  const audioLane = page.getByTestId('lane-audio')
+  // The video through the file chooser, so a click on Import opens it rather than scrubbing.
+  const chooser = page.waitForEvent('filechooser')
+  await videoLane.getByText('Import').click()
+  await (await chooser).setFiles(fixture('clip.mp4'))
+  await audioLane.locator('input[type=file]').setInputFiles(fixture('tone.wav'))
   const videoClip = page.getByTestId('clip-video')
   const audioClip = page.getByTestId('clip-audio')
   await expect(videoClip).toContainText('clip.mp4')
@@ -154,11 +159,11 @@ test('import, sync, play, set range and export', async ({ page }) => {
   // A file that isn't media shows the error dialog; OK and Esc both close it.
   const notMedia = { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not a video') }
   const dialog = page.getByRole('dialog')
-  await audioHead.locator('input[type=file]').setInputFiles(notMedia)
+  await audioLane.locator('input[type=file]').setInputFiles(notMedia)
   await expect(dialog).toContainText('Could not read “notes.txt”')
   await dialog.getByRole('button', { name: 'OK' }).click()
   await expect(dialog).toBeHidden()
-  await audioHead.locator('input[type=file]').setInputFiles(notMedia)
+  await audioLane.locator('input[type=file]').setInputFiles(notMedia)
   await expect(dialog).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()

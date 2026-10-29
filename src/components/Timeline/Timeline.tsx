@@ -121,7 +121,6 @@ export function Timeline(props: Props) {
               loading={props.loading === kind}
               onToggleMute={() => props.onToggleMute(kind)}
               onVolumeChange={(v) => props.onVolumeChange(kind, v)}
-              onImport={(file) => props.onImport(file, kind)}
               onRemove={() => props.onRemove(kind)}
             />
             {kind === 'video' && (
@@ -188,7 +187,24 @@ export function Timeline(props: Props) {
                     />
                   ) : (
                     <div className="sticky left-0 inline-block px-4 py-[26px] text-xs text-dim">
-                      Import or drop {kind === 'video' ? 'a video' : 'an audio'} file
+                      <label
+                        className="cursor-pointer text-accent hover:underline"
+                        // Keep the lane from scrubbing (and capturing the pointer, which eats the click).
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        Import
+                        <input
+                          className="hidden"
+                          type="file"
+                          accept={`${kind}/*`}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) props.onImport(file, kind)
+                            e.target.value = ''
+                          }}
+                        />
+                      </label>{' '}
+                      or drop {kind === 'video' ? 'a video' : 'an audio'} file
                     </div>
                   )}
                 </div>

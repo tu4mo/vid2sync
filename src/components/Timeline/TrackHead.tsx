@@ -15,13 +15,11 @@ interface Props {
   loading: boolean
   onToggleMute: () => void
   onVolumeChange: (volume: number) => void
-  onImport: (file: File) => void
   onRemove: () => void
 }
 
 export function TrackHead(props: Props) {
-  const { kind, clip, muted, volume, loading, onToggleMute, onVolumeChange, onImport, onRemove } =
-    props
+  const { kind, clip, muted, volume, loading, onToggleMute, onVolumeChange, onRemove } = props
   return (
     <div
       className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}
@@ -70,19 +68,6 @@ export function TrackHead(props: Props) {
           {Math.round(volume * 100)}%
         </span>
       </div>
-      <label className="cursor-pointer self-start text-xs text-accent">
-        {clip ? 'Replace…' : 'Import…'}
-        <input
-          className="hidden"
-          type="file"
-          accept={`${kind}/*`}
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) onImport(file)
-            e.target.value = ''
-          }}
-        />
-      </label>
     </div>
   )
 }
