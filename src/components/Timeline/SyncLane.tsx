@@ -7,8 +7,8 @@ const EDGE_GAP = 4
 
 // Full class names, so Tailwind finds them in the source.
 const ELBOW_CLASSES = {
-  right: ['border-b border-l rounded-bl-sm', 'border-t border-r rounded-tr-sm'],
-  left: ['border-b border-r rounded-br-sm', 'border-t border-l rounded-tl-sm'],
+  right: ['border-b border-l rounded-bl-md', 'border-t border-r rounded-tr-md'],
+  left: ['border-b border-r rounded-br-md', 'border-t border-l rounded-tl-md'],
 }
 
 interface Props {
@@ -21,7 +21,7 @@ interface Props {
 }
 
 /**
- * A rounded elbow from the video clip's start down to the audio clip's start, labelled with the gap between them.
+ * A rounded-md elbow from the video clip's start down to the audio clip's start, labelled with the gap between them.
  * Clicking the label lets you type the gap.
  */
 export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
@@ -107,7 +107,7 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
       />
       <div
         ref={labelRef}
-        className="pointer-events-auto absolute top-1/2 flex -translate-y-1/2 items-center gap-1 rounded bg-panel px-1 text-2xs font-semibold text-accent tabular-nums"
+        className="pointer-events-auto absolute top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md bg-panel px-1 text-2xs font-semibold text-accent tabular-nums"
         style={{ left: labelLeft }}
         // Keep the timeline from scrubbing (and deselecting) under the label.
         onPointerDown={(e) => e.stopPropagation()}
@@ -115,7 +115,7 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
         {editing ? (
           <>
             <input
-              className="field-sizing-content h-5 min-w-[4ch] rounded border border-accent bg-bg px-1 text-right outline-none not-supports-[field-sizing:content]:w-16"
+              className="field-sizing-content h-5 min-w-[4ch] rounded-md border border-accent bg-bg px-1 text-right outline-none not-supports-[field-sizing:content]:w-16"
               aria-label="Audio offset (ms)"
               inputMode="numeric"
               autoFocus
@@ -136,7 +136,7 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
         ) : (
           <button
             type="button"
-            className="cursor-pointer rounded-sm px-0.5 py-1 whitespace-nowrap [text-box:trim-both_cap_alphabetic] hover:underline"
+            className="cursor-pointer rounded-md px-0.5 py-1 whitespace-nowrap [text-box:trim-both_cap_alphabetic] hover:underline"
             data-testid="sync"
             title={`Audio is ${Math.abs(delta)} ms ${delta >= 0 ? 'after' : 'before'} the video (click to edit)`}
             onClick={() => setEditing({ draft: String(delta), original: delta })}

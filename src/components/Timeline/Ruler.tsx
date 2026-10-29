@@ -7,8 +7,8 @@ const SNAP_PX = 6
 
 // Full class names, so Tailwind finds them in the source.
 const HANDLE_CLASSES: Record<keyof TimeRange, string> = {
-  start: 'rounded-r',
-  end: '-translate-x-full rounded-l',
+  start: 'rounded-r-md',
+  end: '-translate-x-full rounded-l-md',
 }
 
 interface Props {
@@ -96,7 +96,7 @@ export function Ruler({ pps, seconds, range, snapTimes, onRangeChange, onRangeRe
 
       {range && dragging && (
         <div
-          className={`pointer-events-none absolute top-full z-2 mt-1 rounded border border-line-strong bg-panel-2 px-1.5 py-0.5 text-2xs whitespace-nowrap tabular-nums ${
+          className={`pointer-events-none absolute top-full z-2 mt-1 rounded-md border border-line-strong bg-panel-2 px-1.5 py-0.5 text-2xs whitespace-nowrap tabular-nums ${
             dragging === 'end' ? '-translate-x-full' : ''
           }`}
           style={{ left: range[dragging] * pps }}
