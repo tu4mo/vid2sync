@@ -25,9 +25,14 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
 
   return (
     <div
-      className={`absolute inset-y-1 cursor-grab touch-none overflow-hidden rounded-md border active:cursor-grabbing ${
+      className={`absolute inset-y-1 cursor-grab touch-none overflow-hidden rounded-md active:cursor-grabbing ${
         CLIP_BACKGROUNDS[kind]
-      } ${selected ? 'border-accent ring-1 ring-accent' : 'border-transparent'} ${muted ? 'opacity-45' : ''}`}
+      } ${
+        // An overlay draws the border inside the clip, on top of the waveform.
+        selected
+          ? 'after:pointer-events-none after:absolute after:inset-0 after:rounded-md after:border-2 after:border-accent'
+          : ''
+      } ${muted ? 'opacity-45' : ''}`}
       data-testid={`clip-${kind}`}
       style={{ left: clip.offset * pps, width }}
       onPointerDown={(e) => {
