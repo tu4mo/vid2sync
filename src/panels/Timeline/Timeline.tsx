@@ -15,6 +15,7 @@ import {
   type TrackKind,
 } from '../../lib/media'
 import { snapTo } from '../../lib/time'
+import { clampZoom } from '../../lib/zoom'
 import { ClipView } from './ClipView'
 import { ROWS } from './layout'
 import { Playhead } from './Playhead'
@@ -22,11 +23,10 @@ import { Ruler } from './Ruler'
 import { SyncLane } from './SyncLane'
 import { TrackHead } from './TrackHead'
 
-export const MIN_PIXELS_PER_SECOND = 5
-export const MAX_PIXELS_PER_SECOND = 2000
-
 const TAIL_SECONDS = 10
 const SNAP_PX = 6
+// How far from the left edge a playhead scrolled back into view lands.
+const REVEAL_MARGIN_PX = 40
 
 type Props = {
   clips: Clips
@@ -109,10 +109,7 @@ export function Timeline({
       // Wheel events can outpace renders, so work from the zoom and scroll
       // the last event asked for, not what's been rendered yet.
       const current = pixelsPerSecondRef.current
-      const next = Math.min(
-        MAX_PIXELS_PER_SECOND,
-        Math.max(MIN_PIXELS_PER_SECOND, current * Math.exp(-e.deltaY * 0.01)),
-      )
+      const next = clampZoom(current * Math.exp(-e.deltaY * 0.01))
       if (next === current) {
         return
       }
@@ -157,24 +154,32 @@ export function Timeline({
     zoomAnchor.current = null
   }, [pixelsPerSecond])
 
+  /** Scrolls time `t` into view, if it's off screen. */
+  const reveal = useCallback(
+    (t: number) => {
+      const el = scrollRef.current
+      const x = t * pixelsPerSecond
+      if (
+        el &&
+        (x > el.scrollLeft + el.clientWidth - REVEAL_MARGIN_PX ||
+          x < el.scrollLeft)
+      ) {
+        el.scrollLeft = x - REVEAL_MARGIN_PX
+      }
+    },
+    [pixelsPerSecond],
+  )
+
   // Keep the playhead in view during playback.
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el || !playing) {
-      return
+    if (playing) {
+      reveal(time)
     }
-    const x = time * pixelsPerSecond
-    if (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft) {
-      el.scrollLeft = x - 40
-    }
-  }, [time, pixelsPerSecond, playing])
+  }, [time, playing, reveal])
 
-  function timeAt(clientX: number) {
-    const rect = contentRef.current?.getBoundingClientRect()
-    return rect ? (clientX - rect.left) / pixelsPerSecond : 0
-  }
   function seekToPointer(clientX: number) {
-    onSeek(timeAt(clientX))
+    const rect = contentRef.current?.getBoundingClientRect()
+    onSeek(rect ? (clientX - rect.left) / pixelsPerSecond : 0)
   }
 
   const visibleSeconds = Math.max(
@@ -337,14 +342,7 @@ export function Timeline({
             onSeek={(t) => {
               onSeek(t)
               // Bring a typed time into view.
-              const el = scrollRef.current
-              const x = t * pixelsPerSecond
-              if (
-                el &&
-                (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft)
-              ) {
-                el.scrollLeft = x - 40
-              }
+              reveal(t)
             }}
           />
         </div>

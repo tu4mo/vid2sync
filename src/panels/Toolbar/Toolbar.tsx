@@ -8,12 +8,13 @@ import {
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
-import { Button } from '../Button/Button'
-import { Slider } from '../Slider/Slider'
+import { Button } from '../../components/Button/Button'
+import { Slider } from '../../components/Slider/Slider'
 import {
   MAX_PIXELS_PER_SECOND,
   MIN_PIXELS_PER_SECOND,
-} from '../Timeline/Timeline'
+  clampZoom,
+} from '../../lib/zoom'
 
 /** How much one press of a zoom button zooms. */
 const ZOOM_STEP = 1.5
@@ -44,12 +45,7 @@ export function Toolbar({
   onZoom,
 }: Props) {
   function zoomBy(factor: number) {
-    onZoom(
-      Math.min(
-        MAX_PIXELS_PER_SECOND,
-        Math.max(MIN_PIXELS_PER_SECOND, pixelsPerSecond * factor),
-      ),
-    )
+    onZoom(clampZoom(pixelsPerSecond * factor))
   }
   return (
     // Three columns, so the transport buttons stay centred whatever sits either side.

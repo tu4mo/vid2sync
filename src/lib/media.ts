@@ -48,6 +48,11 @@ export function clipSpan(clip: Clip): TimeRange {
   }
 }
 
+/** The earliest offset a clip can have: its trimmed part can't start before 0:00. */
+export function minOffset(clip: Clip): number {
+  return -clip.trim.start
+}
+
 const PEAKS_PER_SECOND = 200
 
 /**

@@ -10,24 +10,26 @@ import { Group, Panel, Separator } from 'react-resizable-panels'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import {
-  LANE_DEFAULT_HEIGHT,
-  LANE_MIN_HEIGHT,
-  RULER_HEIGHT,
-  SYNC_LANE_HEIGHT,
-} from './components/Timeline/layout'
-import { MIN_PIXELS_PER_SECOND, Timeline } from './components/Timeline/Timeline'
-import { Toolbar } from './components/Toolbar/Toolbar'
-import {
   TRACK_KINDS,
   clipSpan,
   kindForFile,
   loadClip,
+  minOffset,
   type Clip,
   type Clips,
   type TimeRange,
   type TrackKind,
 } from './lib/media'
 import { Playback } from './lib/playback'
+import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
+import {
+  LANE_DEFAULT_HEIGHT,
+  LANE_MIN_HEIGHT,
+  RULER_HEIGHT,
+  SYNC_LANE_HEIGHT,
+} from './panels/Timeline/layout'
+import { Timeline } from './panels/Timeline/Timeline'
+import { Toolbar } from './panels/Toolbar/Toolbar'
 
 const playback = new Playback()
 
@@ -144,13 +146,12 @@ export default function App() {
   const setOffset = useCallback((kind: TrackKind, offset: number) => {
     setClips((prev) => {
       const clip = prev[kind]
-      // The trimmed part can't start before 0:00.
       return clip
         ? {
             ...prev,
             [kind]: {
               ...clip,
-              offset: roundMs(Math.max(-clip.trim.start, offset)),
+              offset: roundMs(Math.max(minOffset(clip), offset)),
             },
           }
         : prev

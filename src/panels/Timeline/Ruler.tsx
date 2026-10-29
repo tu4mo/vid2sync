@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 const TICK_STEPS = [
   0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600,
 ]
@@ -8,7 +10,8 @@ type Props = {
   seconds: number
 }
 
-export function Ruler({ pixelsPerSecond, seconds }: Props) {
+// Memoized, so it doesn't rebuild every tick on each playback frame.
+export const Ruler = memo(function Ruler({ pixelsPerSecond, seconds }: Props) {
   const step =
     TICK_STEPS.find((s) => s * pixelsPerSecond >= 80) ??
     TICK_STEPS[TICK_STEPS.length - 1]
@@ -35,7 +38,7 @@ export function Ruler({ pixelsPerSecond, seconds }: Props) {
       </div>
     </div>
   )
-}
+})
 
 function formatTick(t: number, step: number): string {
   if (step >= 1) {

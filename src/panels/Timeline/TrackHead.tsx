@@ -5,9 +5,9 @@ import {
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
+import { Button } from '../../components/Button/Button'
+import { Slider } from '../../components/Slider/Slider'
 import type { Clip, TrackKind } from '../../lib/media'
-import { Button } from '../Button/Button'
-import { Slider } from '../Slider/Slider'
 
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 // Full class names, so Tailwind finds them in the source.
@@ -37,6 +37,7 @@ export function TrackHead({
   onVolumeChange,
   onRemove,
 }: Props) {
+  const percent = Math.round(volume * 100)
   return (
     <div
       className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}
@@ -83,10 +84,10 @@ export function TrackHead({
           disabled={muted}
           onChange={(e) => onVolumeChange(Number(e.target.value))}
           onDoubleClick={() => onVolumeChange(1)}
-          title={`Volume ${Math.round(volume * 100)}% (double-click to reset)`}
+          title={`Volume ${percent}% (double-click to reset)`}
         />
         <span className="w-[34px] text-right text-2xs text-dim tabular-nums">
-          {Math.round(volume * 100)}%
+          {percent}%
         </span>
       </div>
     </div>

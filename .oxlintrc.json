@@ -13,5 +13,23 @@
     "react/rules-of-hooks": "error",
     "typescript/consistent-type-definitions": ["error", "type"],
     "react/only-export-components": ["error", { "allowConstantExport": true }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/panels/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^\\.\\./[^.]|panels/",
+                "message": "Panels can't import from other panels. Move shared code to src/lib or src/components."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

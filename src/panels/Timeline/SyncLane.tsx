@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 
-import { clipSpan, type Clip, type TrackKind } from '../../lib/media'
+import { clipSpan, minOffset, type Clip, type TrackKind } from '../../lib/media'
 
 const EDGE_GAP = 4
 
@@ -22,8 +22,7 @@ function syncTo(video: Clip, audio: Clip, ms: number): Sync {
     Math.max(ms, -Math.floor(audio.duration * 1000)),
     Math.floor(video.duration * 1000),
   )
-  // The earliest the audio can go, with its trimmed part starting at 0:00.
-  const audioMin = -audio.trim.start
+  const audioMin = minOffset(audio)
   const target = video.offset + delta / 1000
   return target >= audioMin
     ? { delta, audio: target }
