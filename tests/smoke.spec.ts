@@ -61,13 +61,13 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await page.mouse.move(box.x + 120, box.y + box.height / 2, { steps: 5 })
   await page.mouse.up()
   const sync = page.getByTestId('sync')
-  await expect(sync).toContainText(/^\+[1-9]\d* ms$/)
+  await expect(sync).toContainText(/^[1-9]\d* ms ahead of audio$/)
   await sync.click()
   const offset = page.getByLabel('Audio offset (ms)')
   await offset.fill('1400')
   await offset.press('Enter')
   await page.keyboard.press('Shift+ArrowRight')
-  await expect(sync).toContainText('+1500 ms')
+  await expect(sync).toContainText('1500 ms ahead of audio')
   await expect(audioClip).toContainText('@ 0:01.500')
   await expect(videoClip).toContainText('@ 0:00.000')
 
@@ -76,7 +76,7 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await offset.press('ArrowUp')
   await expect(audioClip).toContainText('@ 0:01.501')
   await offset.press('Escape')
-  await expect(sync).toContainText('+1500 ms')
+  await expect(sync).toContainText('1500 ms ahead of audio')
 
   // Mute the video's own sound and halve the audio track.
   const mute = videoHead.getByRole('button', { name: 'Mute' })
@@ -131,7 +131,7 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await expect.poll(trim).toBe('1 – 2')
   expect(await clockSeconds(page)).toBe(1) // dragging a handle doesn't scrub
   // Trimming the start doesn't move the rest of the video, so the sync holds.
-  await expect(sync).toContainText('+1500 ms')
+  await expect(sync).toContainText('1500 ms ahead of audio')
   await expect(videoClip).toContainText('@ 0:01.000')
 
   // Double-click puts a handle back at the file's edge. Grabbing a handle selects the clip,
