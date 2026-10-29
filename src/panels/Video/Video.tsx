@@ -36,7 +36,7 @@ export function Video({ clip, time, playing, muted, volume }: Props) {
 
   return (
     <main className="relative flex h-full items-center justify-center bg-black">
-      {clip && (
+      {clip ? (
         <video
           ref={ref}
           src={clip.url}
@@ -45,6 +45,15 @@ export function Video({ clip, time, playing, muted, volume }: Props) {
           preload="auto"
           style={{ visibility: inside ? 'visible' : 'hidden' }}
         />
+      ) : (
+        <h1 className="flex items-center gap-3 font-logo text-2xl tracking-[0.02em] text-dim">
+          <img
+            src={`${import.meta.env.BASE_URL}favicon.png`}
+            alt=""
+            className="size-10"
+          />
+          vid2sync
+        </h1>
       )}
     </main>
   )

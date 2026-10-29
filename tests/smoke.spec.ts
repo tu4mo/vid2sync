@@ -56,8 +56,8 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await (await chooser).setFiles([fixture('clip.mp4'), fixture('tone.wav')])
   const videoClip = page.getByTestId('clip-video')
   const audioClip = page.getByTestId('clip-audio')
-  await expect(videoClip).toContainText('Video')
-  await expect(audioClip).toContainText('Audio')
+  await expect(videoClip.getByRole('img', { name: 'Video' })).toBeVisible()
+  await expect(audioClip.getByRole('img', { name: 'Audio' })).toBeVisible()
   await expect(videoClip.locator('canvas')).toBeVisible()
   await expect(audioClip.locator('canvas')).toBeVisible()
   // Zoom in from the zoomed-out start, once there's a clip to zoom.

@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useRef,
   useState,
@@ -14,6 +15,11 @@ import { clampZoom } from '../../../lib/zoom'
 const REVEAL_MARGIN_PX = 40
 /** Room before 0:00 and after the end, so clips don't run into the viewport's edges. */
 export const EDGE_PX = 16
+
+/** Where time `t` sits in the scroll container's content, at the given zoom. */
+function timeToX(t: number, pixelsPerSecond: number) {
+  return t * pixelsPerSecond + EDGE_PX
+}
 
 type Options = {
   time: number
@@ -72,7 +78,7 @@ export function useTimelineScroll({
       }
       const pending = zoomAnchor.current
       const from = pending
-        ? Math.max(0, pending.t * current + EDGE_PX - pending.x)
+        ? Math.max(0, timeToX(pending.t, current) - pending.x)
         : el.scrollLeft
       const x = e.clientX - el.getBoundingClientRect().left
       zoomAnchor.current = { t: (from + x - EDGE_PX) / current, x }
@@ -83,11 +89,17 @@ export function useTimelineScroll({
     return () => el.removeEventListener('wheel', onWheel)
   }, [onZoom])
 
-  // Read through a ref, so the zoom effect doesn't rerun as the playhead moves.
-  const timeRef = useRef(time)
-  useEffect(() => {
-    timeRef.current = time
-  }, [time])
+  // The toolbar zooms around the playhead, pulled into view if it's scrolled off. An effect event,
+  // so the zoom effect doesn't rerun as the playhead moves.
+  const playheadAnchor = useEffectEvent(
+    (el: HTMLElement, previous: number) => ({
+      t: time,
+      x: Math.min(
+        el.clientWidth,
+        Math.max(0, timeToX(time, previous) - el.scrollLeft),
+      ),
+    }),
+  )
 
   // Sync the ref before paint, so the next wheel event can't pair the new
   // scroll position with the old zoom.
@@ -98,16 +110,9 @@ export function useTimelineScroll({
     if (!el) {
       return
     }
-    // The wheel zooms around the cursor; the toolbar around the playhead,
-    // pulled into view if it's scrolled off.
-    const anchor = zoomAnchor.current ?? {
-      t: timeRef.current,
-      x: Math.min(
-        el.clientWidth,
-        Math.max(0, timeRef.current * previous + EDGE_PX - el.scrollLeft),
-      ),
-    }
-    el.scrollLeft = anchor.t * pixelsPerSecond + EDGE_PX - anchor.x
+    // The wheel zooms around the cursor; the toolbar around the playhead.
+    const anchor = zoomAnchor.current ?? playheadAnchor(el, previous)
+    el.scrollLeft = timeToX(anchor.t, pixelsPerSecond) - anchor.x
     zoomAnchor.current = null
   }, [pixelsPerSecond])
 
@@ -115,7 +120,7 @@ export function useTimelineScroll({
   const reveal = useCallback(
     (t: number) => {
       const el = scrollRef.current
-      const x = t * pixelsPerSecond + EDGE_PX
+      const x = timeToX(t, pixelsPerSecond)
       if (
         el &&
         (x > el.scrollLeft + el.clientWidth - REVEAL_MARGIN_PX ||
@@ -134,7 +139,7 @@ export function useTimelineScroll({
     if (!el || !playing || !followPlayhead) {
       return
     }
-    const x = time * pixelsPerSecond + EDGE_PX
+    const x = timeToX(time, pixelsPerSecond)
     const right = el.scrollLeft + el.clientWidth
     if (x > right - REVEAL_MARGIN_PX && x <= right) {
       el.scrollLeft = x - el.clientWidth + REVEAL_MARGIN_PX
@@ -150,29 +155,31 @@ export function useTimelineScroll({
   // screen. Only on a move, so pausing or zooming doesn't scroll back to it.
   const pausedTime = useRef(time)
   useEffect(() => {
-    if (playing || time === pausedTime.current) {
-      pausedTime.current = time
-      return
-    }
+    const moved = !playing && time !== pausedTime.current
     pausedTime.current = time
-    if (time !== scrubbedTo.current) {
+    if (moved && time !== scrubbedTo.current) {
       reveal(time)
     }
   }, [time, playing, reveal])
+
+  const onScroll = useCallback(
+    (e: UIEvent<HTMLElement>) => setScrollLeft(e.currentTarget.scrollLeft),
+    [],
+  )
+  const scrubTo = useCallback((t: number) => {
+    scrubbedTo.current = t
+    return t
+  }, [])
 
   return {
     /** For the scroll container. */
     scrollRef,
     /** For the scroll container. */
-    onScroll: (e: UIEvent<HTMLElement>) =>
-      setScrollLeft(e.currentTarget.scrollLeft),
+    onScroll,
     /** The scroll container's width. */
     viewport,
     scrollLeft,
     /** Marks a seek to `t` as coming from the pointer, so the view doesn't scroll for it. Returns `t`. */
-    scrubTo(t: number) {
-      scrubbedTo.current = t
-      return t
-    },
+    scrubTo,
   }
 }

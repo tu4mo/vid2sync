@@ -55,9 +55,12 @@ async function loaded(el: HTMLVideoElement) {
 }
 
 describe('Video', () => {
-  it('shows nothing without a clip', async () => {
-    const { el } = await mount({ shown: null })
+  it('shows the logo instead of a video without a clip', async () => {
+    const { screen, el } = await mount({ shown: null })
     expect(el).toBeNull()
+    await expect
+      .element(screen.getByRole('heading', { name: 'vid2sync' }))
+      .toBeVisible()
   })
 
   it('shows the video only while the playhead is on its trimmed part', async () => {

@@ -73,16 +73,7 @@ export function Toolbar({
     onZoom(clampZoom(pixelsPerSecond * factor))
   }
   return (
-    // Three columns, so the transport buttons stay centred whatever sits either side.
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2.5 bg-panel px-4 py-2">
-      <h1 className="flex items-center gap-2 font-logo text-base tracking-[0.02em] text-dim">
-        <img
-          src={`${import.meta.env.BASE_URL}favicon.png`}
-          alt=""
-          className="size-6"
-        />
-        vid2sync
-      </h1>
+    <div className="flex items-center justify-between gap-2.5 bg-panel px-4 py-2">
       <div className="flex items-center gap-2.5">
         <Button
           variant="primary"
@@ -101,10 +92,8 @@ export function Toolbar({
         >
           <HugeiconsIcon icon={PreviousIcon} size={16} />
         </Button>
-      </div>
-      <div className="flex items-center justify-end gap-2.5">
         <Button
-          className="tabular-nums"
+          className="ml-3 tabular-nums"
           aria-label="Export MP4"
           onClick={onExport}
           disabled={!canExport || exportProgress !== null}
@@ -113,43 +102,43 @@ export function Toolbar({
           <HugeiconsIcon icon={Download01Icon} size={16} />
           {exportProgress !== null && `${Math.round(exportProgress * 100)}%`}
         </Button>
-        <div className="ml-3 flex items-center gap-2">
-          <Button
-            className="aria-pressed:text-accent"
-            aria-label="Follow playhead"
-            aria-pressed={followPlayhead}
-            title="Follow playhead"
-            onClick={onToggleFollowPlayhead}
-            disabled={empty}
-          >
-            <HugeiconsIcon icon={CenterFocusIcon} size={16} />
-          </Button>
-          <Button
-            aria-label="Zoom out"
-            title="Zoom out"
-            onClick={() => zoomBy(1 / ZOOM_STEP)}
-            disabled={empty || pixelsPerSecond <= MIN_PIXELS_PER_SECOND}
-          >
-            <HugeiconsIcon icon={ZoomOutIcon} size={16} />
-          </Button>
-          <Slider
-            className="w-32"
-            aria-label="Zoom"
-            min={0}
-            max={100}
-            value={zoomToSlider(pixelsPerSecond)}
-            disabled={empty}
-            onChange={(e) => onZoom(sliderToZoom(Number(e.target.value)))}
-          />
-          <Button
-            aria-label="Zoom in"
-            title="Zoom in"
-            onClick={() => zoomBy(ZOOM_STEP)}
-            disabled={empty || pixelsPerSecond >= MAX_PIXELS_PER_SECOND}
-          >
-            <HugeiconsIcon icon={ZoomInIcon} size={16} />
-          </Button>
-        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          className="aria-pressed:text-accent"
+          aria-label="Follow playhead"
+          aria-pressed={followPlayhead}
+          title="Follow playhead"
+          onClick={onToggleFollowPlayhead}
+          disabled={empty}
+        >
+          <HugeiconsIcon icon={CenterFocusIcon} size={16} />
+        </Button>
+        <Button
+          aria-label="Zoom out"
+          title="Zoom out"
+          onClick={() => zoomBy(1 / ZOOM_STEP)}
+          disabled={empty || pixelsPerSecond <= MIN_PIXELS_PER_SECOND}
+        >
+          <HugeiconsIcon icon={ZoomOutIcon} size={16} />
+        </Button>
+        <Slider
+          className="w-32"
+          aria-label="Zoom"
+          min={0}
+          max={100}
+          value={zoomToSlider(pixelsPerSecond)}
+          disabled={empty}
+          onChange={(e) => onZoom(sliderToZoom(Number(e.target.value)))}
+        />
+        <Button
+          aria-label="Zoom in"
+          title="Zoom in"
+          onClick={() => zoomBy(ZOOM_STEP)}
+          disabled={empty || pixelsPerSecond >= MAX_PIXELS_PER_SECOND}
+        >
+          <HugeiconsIcon icon={ZoomInIcon} size={16} />
+        </Button>
       </div>
     </div>
   )

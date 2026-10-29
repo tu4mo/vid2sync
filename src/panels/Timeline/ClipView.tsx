@@ -174,7 +174,7 @@ export const ClipView = memo(function ClipView({
             />
           </div>
         ) : (
-          <div className="px-1.5 py-1 text-2xs text-white/50">
+          <div className="absolute bottom-1 left-8 px-1.5 text-2xs text-white/50">
             no audio track
           </div>
         )}

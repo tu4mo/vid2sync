@@ -12,12 +12,17 @@ import { snapTo } from '../../lib/time'
 import { ClipView } from './ClipView'
 import { useDrag } from './hooks/useDrag'
 import { EDGE_PX, useTimelineScroll } from './hooks/useTimelineScroll'
+import { ImportPrompt } from './ImportPrompt'
 import { ROWS } from './layout'
 import { Playhead } from './Playhead'
 import { SyncLane } from './SyncLane'
 
 const TAIL_SECONDS = 10
 const SNAP_PX = 6
+const DROP_WHAT: Record<TrackKind, string> = {
+  video: 'a video file',
+  audio: 'an audio file',
+}
 type Props = {
   clips: Clips
   muted: Record<TrackKind, boolean>
@@ -141,23 +146,12 @@ export function Timeline({
   return (
     <div className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel">
       {!clips.video && !clips.audio && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center text-sm text-dim">
-          <span>
-            <label className="pointer-events-auto cursor-pointer text-accent hover:underline">
-              Import
-              <input
-                className="hidden"
-                type="file"
-                accept="video/*,audio/*"
-                multiple
-                onChange={(e) => {
-                  onImport([...(e.target.files ?? [])])
-                  e.target.value = ''
-                }}
-              />
-            </label>{' '}
-            or drop a video and an audio file
-          </span>
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <ImportPrompt
+            accept="video/*,audio/*"
+            what="a video and an audio file"
+            onImport={onImport}
+          />
         </div>
       )}
       <div
@@ -183,6 +177,20 @@ export function Timeline({
                   data-track={kind}
                   data-testid={`lane-${kind}`}
                 >
+                  {/* With both tracks empty, the timeline-wide prompt covers it. */}
+                  {!clip && (clips.video || clips.audio) && (
+                    // Kept to the scrolled-into-view part of the lane.
+                    <div
+                      className="pointer-events-none absolute inset-y-0 flex items-center justify-center"
+                      style={{ left: scrollLeft - EDGE_PX, width: viewport }}
+                    >
+                      <ImportPrompt
+                        accept={`${kind}/*`}
+                        what={DROP_WHAT[kind]}
+                        onImport={onImport}
+                      />
+                    </div>
+                  )}
                   {clip && (
                     <ClipView
                       kind={kind}
