@@ -12,7 +12,7 @@ const blur = (page: Page) =>
 const clockToPx = (seconds: number) => seconds * 50
 
 const clockSeconds = async (page: Page) => {
-  const [m, s] = (await page.getByTestId('clock').innerText()).split(':')
+  const [m, s] = (await page.getByTestId('clock').inputValue()).split(':')
   return Number(m) * 60 + Number(s)
 }
 
@@ -92,6 +92,17 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.waitForTimeout(200)
   expect(await clockSeconds(page)).toBe(paused)
 
+  // Type a time into the playhead to jump there; Escape leaves it where it was.
+  const clockField = page.getByTestId('clock')
+  await clockField.click()
+  await clockField.fill('1.5')
+  await clockField.press('Enter')
+  expect(await clockSeconds(page)).toBe(1.5)
+  await clockField.click()
+  await clockField.fill('0:00.250')
+  await clockField.press('Escape')
+  expect(await clockSeconds(page)).toBe(1.5)
+
   // Export range 1–2 s: the end with the keyboard, the start by dragging its handle onto the playhead.
   const range = () => rangeSeconds(page)
   const startHandle = page.getByTestId('range-start')
@@ -129,7 +140,8 @@ test('import, sync, play, set range and export', async ({ page }) => {
   await page.mouse.up()
   await expect.poll(range).toBe('1.06 – 2')
 
-  // Double-clicking the range itself resets both ends.
+  // Double-clicking the range itself resets both ends (away from the playhead's time, which sits on top).
+  await page.keyboard.press('Home')
   await page.mouse.dblclick(start.x + clockToPx(0.5), start.y + start.height / 2)
   await expect.poll(range).toMatch(/^0 – 3\.0\d*$/)
   await page.keyboard.press('Home')

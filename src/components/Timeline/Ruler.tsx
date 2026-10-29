@@ -80,10 +80,16 @@ export function Ruler({
       ))}
 
       {range &&
-        (['start', 'end'] as const).map((which) => (
+        (['start', 'end'] as const).flatMap((which) => [
+          // Drawn under the playhead's time, but grabbed above it (the transparent twin below).
+          <div
+            key={`${which}-look`}
+            className={`pointer-events-none absolute top-0 z-1 h-7 w-2.5 bg-accent ${HANDLE_CLASSES[which]}`}
+            style={{ left: range[which] * pixelsPerSecond }}
+          />,
           <div
             key={which}
-            className={`absolute top-0 z-1 h-7 w-2.5 cursor-ew-resize touch-none bg-accent ${HANDLE_CLASSES[which]}`}
+            className={`absolute top-0 z-4 h-7 w-2.5 cursor-ew-resize touch-none ${HANDLE_CLASSES[which]}`}
             style={{ left: range[which] * pixelsPerSecond }}
             title={`Export ${which} (drag, Shift to not snap; double-click to reset)`}
             data-testid={`range-${which}`}
@@ -102,8 +108,8 @@ export function Ruler({
             }}
             onLostPointerCapture={() => setDragging(null)}
             onDoubleClick={() => onRangeReset(which)}
-          />
-        ))}
+          />,
+        ])}
 
       {range && dragging && (
         <div

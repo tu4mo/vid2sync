@@ -258,7 +258,19 @@ export function Timeline(props: Props) {
             </>
           )}
 
-          <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
+          <Playhead
+            time={time}
+            pixelsPerSecond={pixelsPerSecond}
+            max={visibleSeconds}
+            onSeek={(t) => {
+              onSeek(t)
+              // Bring a typed time into view.
+              const el = scrollRef.current
+              const x = t * pixelsPerSecond
+              if (el && (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft))
+                el.scrollLeft = x - 40
+            }}
+          />
         </div>
       </div>
     </div>
