@@ -3,7 +3,6 @@ import {
   useEffect,
   useEffectEvent,
   useMemo,
-  useRef,
   useState,
 } from 'react'
 import { Group, Panel, Separator } from 'react-resizable-panels'
@@ -15,7 +14,6 @@ import {
   kindForFile,
   loadClip,
   minOffset,
-  type Clip,
   type Clips,
   type TimeRange,
   type TrackKind,
@@ -30,44 +28,9 @@ import {
 } from './panels/Timeline/layout'
 import { Timeline } from './panels/Timeline/Timeline'
 import { Toolbar } from './panels/Toolbar/Toolbar'
+import { Video } from './panels/Video/Video'
 
 const playback = new Playback()
-
-function syncVideo(
-  el: HTMLVideoElement | null,
-  clip: Clip | null,
-  t: number,
-  playing: boolean,
-) {
-  if (!el || !clip) {
-    return
-  }
-  const local = t - clip.offset
-  const inside = local >= clip.trim.start && local < clip.trim.end
-
-  if (!playing || !inside) {
-    if (!el.paused) {
-      el.pause()
-    }
-    el.playbackRate = 1
-    const target = Math.min(Math.max(local, clip.trim.start), clip.trim.end)
-    if (Math.abs(el.currentTime - target) > 0.005) {
-      el.currentTime = target
-    }
-    return
-  }
-
-  // Audio is the master clock; nudge the video's rate to follow it, and hard-seek on big jumps.
-  const drift = el.currentTime - local
-  if (Math.abs(drift) > 0.3) {
-    el.currentTime = local
-  } else {
-    el.playbackRate = Math.min(1.1, Math.max(0.9, 1 - drift * 2))
-  }
-  if (el.paused) {
-    void el.play().catch(() => {})
-  }
-}
 
 // The shortest a clip can be trimmed to.
 const MIN_CLIP = 0.05
@@ -99,7 +62,6 @@ export default function App() {
   const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
   const [dragging, setDragging] = useState(false)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
 
   const end = Math.max(
     0,
@@ -259,7 +221,7 @@ export default function App() {
     }
   }
 
-  // Playback loop: read the audio clock, drive the playhead and the video element.
+  // Playback loop: read the audio clock and drive the playhead.
   useEffect(() => {
     if (!playing) {
       return
@@ -273,38 +235,21 @@ export default function App() {
         return
       }
       setTime(t)
-      syncVideo(videoRef.current, clips.video, t, true)
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [playing, end, clips.video, stopAt])
+  }, [playing, end, stopAt])
 
   useEffect(() => {
     playback.setClips(clips)
   }, [clips])
 
   useEffect(() => {
-    if (!playing) {
-      syncVideo(videoRef.current, clips.video, time, false)
-    }
-  }, [time, playing, clips.video])
-
-  useEffect(() => {
     for (const kind of TRACK_KINDS) {
       playback.setGain(kind, gains[kind])
     }
   }, [gains])
-
-  // The video element only plays its own sound when Web Audio couldn't decode it.
-  useEffect(() => {
-    const el = videoRef.current
-    if (!el) {
-      return
-    }
-    el.muted = muted.video || !!clips.video?.buffer
-    el.volume = Math.min(1, volume.video)
-  }, [muted.video, volume.video, clips.video])
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     // Leave text fields, browser/OS shortcuts and the error dialog alone.
@@ -351,11 +296,6 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-
-  const videoClip = clips.video
-  const videoSpan = videoClip && clipSpan(videoClip)
-  const videoVisible =
-    !!videoSpan && time >= videoSpan.start && time < videoSpan.end
 
   return (
     <div
@@ -405,21 +345,13 @@ export default function App() {
       )}
       <Group orientation="vertical">
         <Panel minSize={80}>
-          <main className="relative flex h-full items-center justify-center bg-black">
-            {videoClip && (
-              <video
-                ref={videoRef}
-                src={videoClip.url}
-                className="max-h-full max-w-full"
-                playsInline
-                preload="auto"
-                style={{ visibility: videoVisible ? 'visible' : 'hidden' }}
-              />
-            )}
-            {!videoClip && (
-              <div className="text-dim">Import a video to preview it here</div>
-            )}
-          </main>
+          <Video
+            clip={clips.video}
+            time={time}
+            playing={playing}
+            muted={muted.video}
+            volume={volume.video}
+          />
         </Panel>
 
         <Separator className="h-px bg-line transition-colors data-[separator=active]:bg-accent data-[separator=focus]:bg-line-strong data-[separator=hover]:bg-line-strong" />
