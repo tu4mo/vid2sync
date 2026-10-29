@@ -1,6 +1,6 @@
 import { fadeGain } from '../../lib/fade'
 import type { FadeSpan, TimeRange } from '../../lib/media'
-import { useDrag } from './useDrag'
+import { useDrag } from './hooks/useDrag'
 
 const CURVE_POINTS = 32
 // Puts the dot on the border's corner when there's no fade, centered on the 2px border like it is vertically.
