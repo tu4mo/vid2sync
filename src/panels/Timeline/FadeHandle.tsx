@@ -3,8 +3,8 @@ import type { FadeSpan, TimeRange } from '../../lib/media'
 import { useDrag } from './useDrag'
 
 const CURVE_POINTS = 32
-// Keeps the dot inside the clip when there's no fade, as far from the side as it is from the top.
-const DOT_INSET_PX = 8
+// Puts the dot on the border's corner when there's no fade, centered on the 2px border like it is vertically.
+const DOT_INSET_PX = 1
 
 const LABELS: Record<keyof TimeRange, string> = {
   start: 'Fade in',
@@ -89,11 +89,12 @@ function Dot({
   return (
     <div
       className={`absolute z-30 flex size-4 cursor-ew-resize items-center justify-center transition-opacity ${
-        point === 'full' ? 'top-0' : 'bottom-0'
+        // Centered on the 2px border.
+        point === 'full' ? 'top-px' : 'bottom-px'
       } ${active ? '' : 'opacity-0 group-hover:opacity-100'}`}
       style={{
         [which === 'start' ? 'left' : 'right']: x,
-        translate: which === 'start' ? '-50%' : '50%',
+        translate: `${which === 'start' ? '-50%' : '50%'} ${point === 'full' ? '-50%' : '50%'}`,
       }}
       title={title}
       data-testid={`fade-${which}${point === 'silent' ? '-silent' : ''}`}
@@ -143,7 +144,10 @@ export function FadeHandle({
     <>
       {span.full > 0 && (
         <svg
-          className="pointer-events-none absolute inset-y-0 z-10 h-full"
+          // Rounded like the clip's corners, since the clip no longer clips it.
+          className={`pointer-events-none absolute inset-y-0 z-10 h-full ${
+            which === 'start' ? 'rounded-l-md' : 'rounded-r-md'
+          }`}
           style={{
             [which === 'start' ? 'left' : 'right']: 0,
             width: span.full * pixelsPerSecond,

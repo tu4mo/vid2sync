@@ -125,9 +125,9 @@ export const ClipView = memo(function ClipView({
 
   return (
     <div
-      className={`group absolute inset-y-1 cursor-grab touch-none overflow-hidden rounded-md select-none active:cursor-grabbing ${
-        CLIP_BACKGROUNDS[kind]
-      } ${
+      // Isolated, so the z-indexes inside stay under the playhead. Not clipped, so the fade dots
+      // can sit on the border; the box inside clips the rest.
+      className={`group absolute inset-y-1 isolate cursor-grab touch-none rounded-md select-none active:cursor-grabbing ${
         // An overlay draws the border inside the clip, on top of the waveform.
         selected
           ? 'after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-md after:border-2 after:border-accent'
@@ -137,28 +137,37 @@ export const ClipView = memo(function ClipView({
       style={{ left: span.start * pixelsPerSecond, width }}
       {...drag}
     >
-      <div className="pointer-events-none sticky left-1 z-10 mt-1 ml-1 inline-block max-w-[calc(100%-0.5rem)] truncate rounded bg-black/60 px-1.5 py-0.5 text-2xs">
-        {clip.file.name}{' '}
-        <span className="text-white/60 tabular-nums">
-          @ {formatTime(span.start)}
-        </span>
-      </div>
-      {clip.peaks ? (
-        // The whole file's waveform, shifted so the trimmed part shows.
-        <div
-          className="absolute inset-y-0"
-          style={{ left: -clip.trim.start * pixelsPerSecond, width: fileWidth }}
-        >
-          <Waveform
-            peaks={clip.peaks}
-            duration={clip.duration}
-            width={fileWidth}
-            color={WAVE_COLORS[kind]}
-          />
+      <div
+        className={`absolute inset-0 overflow-hidden rounded-md ${CLIP_BACKGROUNDS[kind]}`}
+      >
+        <div className="pointer-events-none sticky left-1 z-10 mt-1 ml-1 inline-block max-w-[calc(100%-0.5rem)] truncate rounded bg-black/60 px-1.5 py-0.5 text-2xs">
+          {clip.file.name}{' '}
+          <span className="text-white/60 tabular-nums">
+            @ {formatTime(span.start)}
+          </span>
         </div>
-      ) : (
-        <div className="px-1.5 py-1 text-2xs text-white/50">no audio track</div>
-      )}
+        {clip.peaks ? (
+          // The whole file's waveform, shifted so the trimmed part shows.
+          <div
+            className="absolute inset-y-0"
+            style={{
+              left: -clip.trim.start * pixelsPerSecond,
+              width: fileWidth,
+            }}
+          >
+            <Waveform
+              peaks={clip.peaks}
+              duration={clip.duration}
+              width={fileWidth}
+              color={WAVE_COLORS[kind]}
+            />
+          </div>
+        ) : (
+          <div className="px-1.5 py-1 text-2xs text-white/50">
+            no audio track
+          </div>
+        )}
+      </div>
       {(['start', 'end'] as const).map((which) => (
         <FadeHandle
           key={which}
