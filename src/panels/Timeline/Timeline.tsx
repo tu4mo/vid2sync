@@ -39,6 +39,8 @@ type Props = {
   end: number
   pixelsPerSecond: number
   playing: boolean
+  /** Scrolls to keep the playhead in view during playback. */
+  followPlayhead: boolean
   onSelect: (kind: TrackKind | null) => void
   onOffsetChange: (kind: TrackKind, offset: number) => void
   onSeek: (t: number) => void
@@ -71,6 +73,7 @@ export function Timeline({
   end,
   pixelsPerSecond,
   playing,
+  followPlayhead,
   onSelect,
   onOffsetChange,
   onSeek,
@@ -179,10 +182,10 @@ export function Timeline({
 
   // Keep the playhead in view during playback.
   useEffect(() => {
-    if (playing) {
+    if (playing && followPlayhead) {
       reveal(time)
     }
-  }, [time, playing, reveal])
+  }, [time, playing, followPlayhead, reveal])
 
   function seekToPointer(clientX: number) {
     const rect = contentRef.current?.getBoundingClientRect()

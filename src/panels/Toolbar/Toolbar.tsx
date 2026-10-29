@@ -1,4 +1,5 @@
 import {
+  CenterFocusIcon,
   Download01Icon,
   PauseIcon,
   PlayIcon,
@@ -42,11 +43,13 @@ type Props = {
   canExport: boolean
   exportProgress: number | null
   pixelsPerSecond: number
+  followPlayhead: boolean
   onPlay: () => void
   onPause: () => void
   onSeek: (t: number) => void
   onExport: () => void
   onZoom: (pixelsPerSecond: number) => void
+  onToggleFollowPlayhead: () => void
 }
 
 export function Toolbar({
@@ -55,11 +58,13 @@ export function Toolbar({
   canExport,
   exportProgress,
   pixelsPerSecond,
+  followPlayhead,
   onPlay,
   onPause,
   onSeek,
   onExport,
   onZoom,
+  onToggleFollowPlayhead,
 }: Props) {
   // Nothing imported yet, so there's nothing to play or zoom.
   const empty = end === 0
@@ -109,6 +114,16 @@ export function Toolbar({
           {exportProgress !== null && `${Math.round(exportProgress * 100)}%`}
         </Button>
         <div className="ml-3 flex items-center gap-2">
+          <Button
+            className="aria-pressed:text-accent"
+            aria-label="Follow playhead"
+            aria-pressed={followPlayhead}
+            title="Follow playhead"
+            onClick={onToggleFollowPlayhead}
+            disabled={empty}
+          >
+            <HugeiconsIcon icon={CenterFocusIcon} size={16} />
+          </Button>
           <Button
             aria-label="Zoom out"
             title="Zoom out"

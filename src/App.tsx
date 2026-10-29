@@ -63,6 +63,7 @@ export default function App() {
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
+  const [followPlayhead, setFollowPlayhead] = useState(true)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
 
   const end = Math.max(
@@ -388,11 +389,13 @@ export default function App() {
               canExport={!!clips.video}
               exportProgress={exportProgress}
               pixelsPerSecond={pixelsPerSecond}
+              followPlayhead={followPlayhead}
               onPlay={play}
               onPause={pause}
               onSeek={seek}
               onExport={() => void exportVideo()}
               onZoom={setPixelsPerSecond}
+              onToggleFollowPlayhead={() => setFollowPlayhead((f) => !f)}
             />
 
             <Timeline
@@ -405,6 +408,7 @@ export default function App() {
               end={end}
               pixelsPerSecond={pixelsPerSecond}
               playing={playing}
+              followPlayhead={followPlayhead}
               onSelect={setSelected}
               onOffsetChange={setOffset}
               onSeek={seek}
