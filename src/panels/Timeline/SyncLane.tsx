@@ -68,7 +68,7 @@ export function SyncLane({
   }, [delta, draft])
 
   if (!video || !audio || delta === null) {
-    return <div className="border-b border-line" />
+    return <div />
   }
 
   function applySync(sync: Sync) {
@@ -89,7 +89,7 @@ export function SyncLane({
   )
 
   return (
-    <div className="pointer-events-none relative border-b border-line">
+    <div className="pointer-events-none relative">
       <div
         ref={labelRef}
         className="pointer-events-auto absolute top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md bg-panel px-1 text-2xs font-semibold text-accent tabular-nums"

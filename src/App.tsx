@@ -27,6 +27,7 @@ import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import {
   LANE_DEFAULT_HEIGHT,
   LANE_MIN_HEIGHT,
+  SCRUB_STRIP_HEIGHT,
   SYNC_LANE_HEIGHT,
 } from './panels/Timeline/layout'
 import { Timeline } from './panels/Timeline/Timeline'
@@ -38,8 +39,8 @@ const playback = new Playback()
 // The shortest a clip can be trimmed to.
 const MIN_CLIP = 0.05
 
-// The toolbar and the timeline's top border, then the timeline's fixed rows.
-const TIMELINE_CHROME_HEIGHT = 42 + 1 + SYNC_LANE_HEIGHT
+// The toolbar, then the timeline's fixed rows.
+const TIMELINE_CHROME_HEIGHT = 42 + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
 const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
 const TIMELINE_MIN_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_MIN_HEIGHT
 

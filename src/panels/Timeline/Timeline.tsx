@@ -234,11 +234,12 @@ export function Timeline({
   )
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[170px_minmax(0,1fr)] border-t border-line bg-panel">
+    <div className="grid min-h-0 flex-1 grid-cols-[170px_minmax(0,1fr)] bg-panel">
       <div
-        className="grid grid-cols-[minmax(0,1fr)] border-r border-line"
+        className="grid grid-cols-[minmax(0,1fr)]"
         style={{ gridTemplateRows: ROWS }}
       >
+        <div />
         {TRACK_KINDS.map((kind) => (
           <Fragment key={kind}>
             <TrackHead
@@ -251,16 +252,10 @@ export function Timeline({
               onVolumeChange={(v) => onVolumeChange(kind, v)}
               onRemove={() => onRemove(kind)}
             />
-            {kind === 'video' && (
-              <div className="flex items-center border-b border-line px-3 text-2xs font-bold tracking-[0.08em] text-dim uppercase">
-                {/* Trim to cap height so the caps, not the line box, are centred. */}
-                <span className="[text-box:trim-both_cap_alphabetic]">
-                  Sync
-                </span>
-              </div>
-            )}
+            {kind === 'video' && <div />}
           </Fragment>
         ))}
+        <div />
       </div>
 
       <div
@@ -274,12 +269,14 @@ export function Timeline({
           style={{ width, gridTemplateRows: ROWS }}
           {...scrub}
         >
+          <div />
+
           {TRACK_KINDS.map((kind) => {
             const clip = clips[kind]
             return (
               <Fragment key={kind}>
                 <div
-                  className="relative flex items-center border-b border-line"
+                  className="relative flex items-center"
                   data-track={kind}
                   data-testid={`lane-${kind}`}
                 >
@@ -334,6 +331,7 @@ export function Timeline({
               </Fragment>
             )
           })}
+          <div />
 
           <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
         </div>

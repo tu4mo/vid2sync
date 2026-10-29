@@ -10,12 +10,6 @@ import { Slider } from '../../components/Slider/Slider'
 import type { Clip, TrackKind } from '../../lib/media'
 
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
-// Full class names, so Tailwind finds them in the source.
-const HEAD_BORDERS: Record<TrackKind, string> = {
-  video: 'border-l-video',
-  audio: 'border-l-audio',
-}
-
 type Props = {
   kind: TrackKind
   clip: Clip | null
@@ -40,7 +34,7 @@ export function TrackHead({
   const percent = Math.round(volume * 100)
   return (
     <div
-      className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}
+      className="flex flex-col justify-center gap-[3px] px-2.5"
       data-track={kind}
       data-testid={`head-${kind}`}
     >

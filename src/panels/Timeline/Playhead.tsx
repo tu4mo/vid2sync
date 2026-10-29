@@ -7,7 +7,7 @@ type Props = {
 export function Playhead({ time, pixelsPerSecond }: Props) {
   return (
     <div
-      className="pointer-events-none absolute inset-y-0 z-3 w-0 -translate-x-px border-l-2 border-accent"
+      className="pointer-events-none absolute inset-y-0 z-3 w-0.5 -translate-x-px rounded-t-full bg-accent"
       style={{ left: time * pixelsPerSecond }}
       data-testid="playhead"
       data-time={time}
