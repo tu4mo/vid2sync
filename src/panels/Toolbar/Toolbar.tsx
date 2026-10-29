@@ -89,6 +89,7 @@ export function Toolbar({
           aria-label="Go to start"
           title="Go to start (Home)"
           onClick={() => onSeek(0)}
+          disabled={end === 0}
         >
           <HugeiconsIcon icon={PreviousIcon} size={16} />
         </Button>

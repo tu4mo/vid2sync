@@ -332,7 +332,9 @@ export function Timeline({
           })}
           <div />
 
-          <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
+          {(clips.video || clips.audio) && (
+            <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
+          )}
         </div>
       </div>
     </div>
