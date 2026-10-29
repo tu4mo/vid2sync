@@ -101,7 +101,8 @@ export function Timeline(props: Props) {
   }
   const seekToPointer = (clientX: number) => onSeek(timeAt(clientX))
 
-  const visibleSeconds = Math.max(end + TAIL_SECONDS, viewport / pixelsPerSecond)
+  // Grow with the playhead, so playing past the end doesn't run it off the timeline.
+  const visibleSeconds = Math.max(Math.max(end, time) + TAIL_SECONDS, viewport / pixelsPerSecond)
   const width = visibleSeconds * pixelsPerSecond
   const snapTimes = [
     time,

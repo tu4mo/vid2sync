@@ -77,7 +77,7 @@ export default function App() {
 
   const play = () => {
     if (end === 0) return
-    engine.play(time >= end ? 0 : time)
+    engine.play(time)
     setPlaying(true)
   }
 
@@ -170,7 +170,8 @@ export default function App() {
     let raf = 0
     const tick = () => {
       const t = engine.now()
-      if (t >= end) {
+      // Stop when playback runs off the end, but not when it was started past the end.
+      if (t >= end && engine.startedFrom() < end) {
         engine.pause()
         engine.seek(end)
         setTime(end)

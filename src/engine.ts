@@ -27,6 +27,11 @@ export class Engine {
     return this.anchorTime + Math.max(0, this.ctx.currentTime - this.anchorCtx)
   }
 
+  /** Where the current playback started: the last play, seek or clip change. */
+  startedFrom(): number {
+    return this.anchorTime
+  }
+
   /** Updates the clips, re-scheduling audio if they change during playback. */
   setClips(clips: Clips) {
     this.clips = clips
