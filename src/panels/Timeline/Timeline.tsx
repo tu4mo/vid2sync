@@ -34,7 +34,6 @@ type Props = {
   muted: Record<TrackKind, boolean>
   volume: Record<TrackKind, number>
   selected: TrackKind | null
-  loading: TrackKind | null
   time: number
   end: number
   pixelsPerSecond: number
@@ -66,7 +65,6 @@ export function Timeline({
   muted,
   volume,
   selected,
-  loading,
   time,
   end,
   pixelsPerSecond,
@@ -246,7 +244,6 @@ export function Timeline({
               kind={kind}
               muted={muted[kind]}
               volume={volume[kind]}
-              loading={loading === kind}
               onVolumeChange={(v) => onVolumeChange(kind, v)}
             />
             {kind === 'video' && <div />}

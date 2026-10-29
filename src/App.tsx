@@ -59,7 +59,6 @@ export default function App() {
     audio: 1,
   })
   const [selected, setSelected] = useState<TrackKind | null>(null)
-  const [loading, setLoading] = useState<TrackKind | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -212,7 +211,6 @@ export default function App() {
     pause()
     // The new clip starts at the playhead.
     const offset = roundMs(playback.now())
-    setLoading(kind)
     setError(null)
     try {
       const clip = await loadClip(file, kind, playback.ctx)
@@ -226,8 +224,6 @@ export default function App() {
       setSelected(kind)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setLoading(null)
     }
   }
 
@@ -399,7 +395,6 @@ export default function App() {
                 setVolume((prev) => ({ ...prev, [kind]: v }))
               }
               selected={selected}
-              loading={loading}
               time={time}
               end={end}
               pixelsPerSecond={pixelsPerSecond}

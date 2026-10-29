@@ -5,17 +5,10 @@ type Props = {
   kind: TrackKind
   muted: boolean
   volume: number
-  loading: boolean
   onVolumeChange: (volume: number) => void
 }
 
-export function TrackHead({
-  kind,
-  muted,
-  volume,
-  loading,
-  onVolumeChange,
-}: Props) {
+export function TrackHead({ kind, muted, volume, onVolumeChange }: Props) {
   const percent = Math.round(volume * 100)
   return (
     <div
@@ -23,7 +16,6 @@ export function TrackHead({
       data-track={kind}
       data-testid={`head-${kind}`}
     >
-      {loading && <span className="truncate text-xs text-dim">Loading…</span>}
       <div className="flex items-center gap-1.5">
         <Slider
           className="min-w-0 flex-1"
