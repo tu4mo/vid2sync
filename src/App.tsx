@@ -27,7 +27,6 @@ import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import {
   LANE_DEFAULT_HEIGHT,
   LANE_MIN_HEIGHT,
-  RULER_HEIGHT,
   SYNC_LANE_HEIGHT,
 } from './panels/Timeline/layout'
 import { Timeline } from './panels/Timeline/Timeline'
@@ -40,7 +39,7 @@ const playback = new Playback()
 const MIN_CLIP = 0.05
 
 // The toolbar and the timeline's top border, then the timeline's fixed rows.
-const TIMELINE_CHROME_HEIGHT = 42 + 1 + RULER_HEIGHT + SYNC_LANE_HEIGHT
+const TIMELINE_CHROME_HEIGHT = 42 + 1 + SYNC_LANE_HEIGHT
 const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
 const TIMELINE_MIN_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_MIN_HEIGHT
 

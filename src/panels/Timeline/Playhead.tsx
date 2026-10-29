@@ -37,8 +37,8 @@ export function Playhead({ time, pixelsPerSecond, max, onSeek }: Props) {
       style={{ left: time * pixelsPerSecond }}
     >
       {/* The flag sits against the line, but the field inside starts a little away from it, so
-          the second click of a double-click on the ruler (after the first moved the playhead
-          under the cursor) still lands on the ruler. */}
+          the second click of a double-click on the timeline (after the first moved the playhead
+          under the cursor) still lands on the timeline. */}
       <div
         className={`absolute top-0 flex bg-accent px-0.5 ${flip ? 'right-0.5 rounded-l-sm' : 'left-0 rounded-r-sm'}`}
       >

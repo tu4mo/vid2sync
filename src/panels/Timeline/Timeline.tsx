@@ -20,7 +20,6 @@ import { clampZoom } from '../../lib/zoom'
 import { ClipView } from './ClipView'
 import { ROWS } from './layout'
 import { Playhead } from './Playhead'
-import { Ruler } from './Ruler'
 import { SyncLane } from './SyncLane'
 import { TrackHead } from './TrackHead'
 import { useDrag } from './useDrag'
@@ -240,7 +239,6 @@ export function Timeline({
         className="grid grid-cols-[minmax(0,1fr)] border-r border-line"
         style={{ gridTemplateRows: ROWS }}
       >
-        <div className="border-b border-line" />
         {TRACK_KINDS.map((kind) => (
           <Fragment key={kind}>
             <TrackHead
@@ -276,8 +274,6 @@ export function Timeline({
           style={{ width, gridTemplateRows: ROWS }}
           {...scrub}
         >
-          <Ruler pixelsPerSecond={pixelsPerSecond} seconds={visibleSeconds} />
-
           {TRACK_KINDS.map((kind) => {
             const clip = clips[kind]
             return (
