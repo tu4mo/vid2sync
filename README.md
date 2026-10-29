@@ -13,7 +13,7 @@ Line up a video with separately recorded audio, then export them together as one
 ## How it works
 
 - **Playback.** Both tracks' audio plays through Web Audio, on a single shared clock. The video element is muted and follows that clock, so what you hear stays in sync even when the video stutters.
-- **Export.** [Mediabunny](https://mediabunny.dev) copies and trims the video stream. The audio mix is rendered offline, using the same clip placement as playback (`scheduleClips` in `src/media.ts`), so the export matches the preview. The encoder adds about 44 ms of silence at the start of AAC audio. vid2sync measures that once and cancels it with an MP4 edit list.
+- **Export.** [Mediabunny](https://mediabunny.dev) copies and trims the video stream. The audio mix is rendered offline, using the same clip placement as playback (`scheduleClips` in `src/lib/playback.ts`), so the export matches the preview. The encoder adds about 44 ms of silence at the start of AAC audio. vid2sync measures that once and cancels it with an MP4 edit list.
 
 ## Development
 

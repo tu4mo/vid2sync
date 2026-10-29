@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 
-import { formatTime, type TimeRange } from '../../media'
+import type { TimeRange } from '../../lib/media'
+import { formatTime } from '../../lib/time'
 
 const TICK_STEPS = [
   0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600,
@@ -13,7 +14,7 @@ const HANDLE_CLASSES: Record<keyof TimeRange, string> = {
   end: '-translate-x-full rounded-l-md',
 }
 
-interface Props {
+type Props = {
   pixelsPerSecond: number
   /** How many seconds of timeline to label. */
   seconds: number

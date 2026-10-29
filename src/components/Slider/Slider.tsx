@@ -12,14 +12,11 @@ const CLASSES =
   '[&::-moz-range-progress]:h-1.5 [&::-moz-range-progress]:rounded-full [&::-moz-range-progress]:bg-dim ' +
   '[&::-moz-range-thumb]:size-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-fg'
 
-interface Props extends Omit<
-  ComponentProps<'input'>,
-  'type' | 'min' | 'max' | 'value'
-> {
+type Props = {
   min: number
   max: number
   value: number
-}
+} & Omit<ComponentProps<'input'>, 'type' | 'min' | 'max' | 'value'>
 
 export function Slider({
   min,

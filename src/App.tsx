@@ -17,7 +17,6 @@ import {
 } from './components/Timeline/layout'
 import { MIN_PIXELS_PER_SECOND, Timeline } from './components/Timeline/Timeline'
 import { Toolbar } from './components/Toolbar/Toolbar'
-import { Engine } from './engine'
 import {
   TRACK_KINDS,
   kindForFile,
@@ -26,9 +25,10 @@ import {
   type Clips,
   type TimeRange,
   type TrackKind,
-} from './media'
+} from './lib/media'
+import { Playback } from './lib/playback'
 
-const engine = new Engine()
+const playback = new Playback()
 
 function syncVideo(
   el: HTMLVideoElement | null,
@@ -102,28 +102,28 @@ export default function App() {
   )
 
   const pause = useCallback(() => {
-    engine.pause()
-    setTime(engine.now())
+    playback.pause()
+    setTime(playback.now())
     setPlaying(false)
   }, [])
 
   /** Stops playback with the playhead parked at `t`. */
   const stopAt = useCallback((t: number) => {
-    engine.pause()
-    engine.seek(t)
+    playback.pause()
+    playback.seek(t)
     setTime(t)
     setPlaying(false)
   }, [])
 
   const play = () => {
     if (end === 0) return
-    engine.play(time)
+    playback.play(time)
     setPlaying(true)
   }
 
   const seek = (t: number) => {
     const clamped = Math.max(0, t)
-    engine.seek(clamped)
+    playback.seek(clamped)
     setTime(clamped)
   }
 
@@ -178,11 +178,11 @@ export default function App() {
   const importFile = async (file: File, kind: TrackKind) => {
     pause()
     // The new clip starts at the playhead.
-    const offset = roundMs(engine.now())
+    const offset = roundMs(playback.now())
     setLoading(kind)
     setError(null)
     try {
-      const clip = await loadClip(file, kind, engine.ctx)
+      const clip = await loadClip(file, kind, playback.ctx)
       setClips((prev) => {
         const old = prev[kind]
         if (old) URL.revokeObjectURL(old.url)
@@ -203,7 +203,7 @@ export default function App() {
     setError(null)
     setExportProgress(0)
     try {
-      const { downloadBlob, exportSynced } = await import('./export')
+      const { downloadBlob, exportSynced } = await import('./lib/export')
       const blob = await exportSynced(clips, gains, range, setExportProgress)
       downloadBlob(
         blob,
@@ -221,9 +221,9 @@ export default function App() {
     if (!playing) return
     let raf = 0
     const tick = () => {
-      const t = engine.now()
+      const t = playback.now()
       // Stop when playback runs off the end, but not when it was started past the end.
-      if (t >= end && engine.startedFrom() < end) {
+      if (t >= end && playback.startedFrom() < end) {
         stopAt(end)
         return
       }
@@ -236,7 +236,7 @@ export default function App() {
   }, [playing, end, clips.video, stopAt])
 
   useEffect(() => {
-    engine.setClips(clips)
+    playback.setClips(clips)
   }, [clips])
 
   useEffect(() => {
@@ -244,7 +244,7 @@ export default function App() {
   }, [time, playing, clips.video])
 
   useEffect(() => {
-    for (const kind of TRACK_KINDS) engine.setGain(kind, gains[kind])
+    for (const kind of TRACK_KINDS) playback.setGain(kind, gains[kind])
   }, [gains])
 
   // The video element only plays its own sound when Web Audio couldn't decode it.

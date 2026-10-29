@@ -5,7 +5,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
-import type { Clip, TrackKind } from '../../media'
+import type { Clip, TrackKind } from '../../lib/media'
 import { Button } from '../Button/Button'
 import { Slider } from '../Slider/Slider'
 
@@ -16,7 +16,7 @@ const HEAD_BORDERS: Record<TrackKind, string> = {
   audio: 'border-l-audio',
 }
 
-interface Props {
+type Props = {
   kind: TrackKind
   clip: Clip | null
   muted: boolean

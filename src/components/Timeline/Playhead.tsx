@@ -1,11 +1,11 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 
-import { formatTime, parseTime } from '../../media'
+import { formatTime, parseTime } from '../../lib/time'
 
 // Room the time needs to the right of the line before it flips to the left, so it doesn't widen the scroll area.
 const FLAG_WIDTH = 80
 
-interface Props {
+type Props = {
   time: number
   pixelsPerSecond: number
   /** The latest time you can type in. */

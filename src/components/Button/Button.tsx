@@ -14,10 +14,10 @@ const SIZES = {
   sm: 'h-4.5 gap-1 px-1.5 text-2xs font-bold',
 }
 
-interface Props extends ComponentProps<'button'> {
+type Props = {
   variant?: keyof typeof VARIANTS
   size?: keyof typeof SIZES
-}
+} & ComponentProps<'button'>
 
 export function Button({
   variant = 'default',

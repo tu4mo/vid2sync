@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import { Button } from '../Button/Button'
 
-interface Props {
+type Props = {
   message: string | null
   onClose: () => void
 }

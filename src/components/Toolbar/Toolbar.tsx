@@ -18,7 +18,7 @@ import {
 /** How much one press of a zoom button zooms. */
 const ZOOM_STEP = 1.5
 
-interface Props {
+type Props = {
   playing: boolean
   end: number
   canExport: boolean

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 
-import type { Clip, TrackKind } from '../../media'
+import type { Clip, TrackKind } from '../../lib/media'
 
 const EDGE_GAP = 4
 
@@ -10,7 +10,7 @@ const ELBOW_CLASSES = {
   left: ['border-b border-r rounded-br-md', 'border-t border-l rounded-tl-md'],
 }
 
-interface Props {
+type Props = {
   video: Clip | null
   audio: Clip | null
   pixelsPerSecond: number

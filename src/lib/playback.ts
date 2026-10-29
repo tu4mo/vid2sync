@@ -1,4 +1,35 @@
-import { scheduleClips, type Clips, type TrackKind } from './media'
+import { TRACK_KINDS, type Clips, type TrackKind } from './media'
+
+/**
+ * Starts every clip's audio so that timeline time `from` sounds at context time `at`.
+ * Live playback and the export mix both use this, so they place audio identically.
+ * `output` returns where a track's audio goes, or null to leave the track out.
+ */
+export function scheduleClips(
+  ctx: BaseAudioContext,
+  clips: Clips,
+  from: number,
+  at: number,
+  output: (kind: TrackKind) => AudioNode | null,
+): AudioBufferSourceNode[] {
+  const sources: AudioBufferSourceNode[] = []
+  for (const kind of TRACK_KINDS) {
+    const clip = clips[kind]
+    if (!clip?.buffer) continue
+    const delay = clip.offset - from
+    const into = Math.max(0, -delay)
+    if (into >= clip.buffer.duration) continue
+    const destination = output(kind)
+    if (!destination) continue
+
+    const source = ctx.createBufferSource()
+    source.buffer = clip.buffer
+    source.connect(destination)
+    source.start(at + Math.max(0, delay), into)
+    sources.push(source)
+  }
+  return sources
+}
 
 // Small scheduling lead so every source starts on the same audio-clock tick.
 const LEAD = 0.05
@@ -8,7 +39,7 @@ const LEAD = 0.05
  * AudioContext clock, so the two tracks stay sample-accurately in sync.
  * The timeline position is derived from that same clock.
  */
-export class Engine {
+export class Playback {
   readonly ctx = new AudioContext()
   playing = false
   private clips: Clips = { video: null, audio: null }

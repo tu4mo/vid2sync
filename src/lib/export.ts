@@ -7,17 +7,13 @@ import {
   Input,
   Mp4OutputFormat,
   Output,
-  QUALITY_HIGH,
+  Quality,
   getFirstEncodableAudioCodec,
   type AudioCodec,
 } from 'mediabunny'
 
-import {
-  scheduleClips,
-  type Clips,
-  type TimeRange,
-  type TrackKind,
-} from './media'
+import type { Clips, TimeRange, TrackKind } from './media'
+import { scheduleClips } from './playback'
 
 const SAMPLE_RATE = 48000
 
@@ -73,7 +69,7 @@ async function measureEncoderDelay(codec: AudioCodec): Promise<number> {
   osc.start(onset)
 
   const { output, target } = createMp4Output()
-  const source = new AudioBufferSource({ codec, quality: QUALITY_HIGH })
+  const source = new AudioBufferSource({ codec, quality: new Quality('high') })
   output.addAudioTrack(source)
   await output.start()
   await source.add(await tone.startRendering())
@@ -150,7 +146,7 @@ export async function exportSynced(
     conversion.onProgress = (p) => onProgress(p * 0.9)
 
     const audioSource = new AudioBufferSource(
-      { codec: audioCodec, quality: QUALITY_HIGH },
+      { codec: audioCodec, quality: new Quality('high') },
       { startTimestamp: -encoderDelay },
     )
     output.addAudioTrack(audioSource)

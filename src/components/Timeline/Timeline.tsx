@@ -5,7 +5,7 @@ import {
   type Clips,
   type TimeRange,
   type TrackKind,
-} from '../../media'
+} from '../../lib/media'
 import { ClipView } from './ClipView'
 import { ROWS } from './layout'
 import { Playhead } from './Playhead'
@@ -18,7 +18,7 @@ export const MAX_PIXELS_PER_SECOND = 2000
 
 const TAIL_SECONDS = 10
 
-interface Props {
+type Props = {
   clips: Clips
   muted: Record<TrackKind, boolean>
   volume: Record<TrackKind, number>

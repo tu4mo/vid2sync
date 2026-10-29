@@ -1,33 +1,49 @@
+/** The timeline's two tracks: the video (with its own audio) and the separate audio. */
 export type TrackKind = 'video' | 'audio'
 
+/** Every track, in the order they're shown and scheduled. */
 export const TRACK_KINDS: readonly TrackKind[] = ['video', 'audio']
 
-export interface Peaks {
+/** A clip's waveform, as the sample range of each short bucket of audio. */
+export type Peaks = {
+  /** Buckets per second of audio, for mapping a bucket to its time. */
   perSecond: number
+  /** Lowest sample of each bucket, at most 0. */
   min: Float32Array
+  /** Highest sample of each bucket, at least 0. */
   max: Float32Array
 }
 
-export interface Clip {
+/** A loaded media file and where it sits on the timeline. */
+export type Clip = {
   file: File
+  /** Blob URL of the file, for the video element. */
   url: string
+  /** Length in seconds. */
   duration: number
   /** Position of the clip's start on the timeline, in seconds. */
   offset: number
   /** Decoded audio, or null when the file has no decodable audio track. */
   buffer: AudioBuffer | null
+  /** Waveform of `buffer`, or null when there's no audio. */
   peaks: Peaks | null
 }
 
+/** The clip on each track, or null for an empty track. */
 export type Clips = Record<TrackKind, Clip | null>
 
-export interface TimeRange {
+/** A span of the timeline, in seconds. */
+export type TimeRange = {
   start: number
   end: number
 }
 
 const PEAKS_PER_SECOND = 200
 
+/**
+ * Reduces decoded audio to the lowest and highest sample of each ~1/200 s bucket, across
+ * all channels, for drawing the waveform.
+ */
 function computePeaks(buffer: AudioBuffer): Peaks {
   const bucket = Math.max(1, Math.floor(buffer.sampleRate / PEAKS_PER_SECOND))
   const count = Math.ceil(buffer.length / bucket)
@@ -56,6 +72,7 @@ function computePeaks(buffer: AudioBuffer): Peaks {
   return { perSecond: buffer.sampleRate / bucket, min, max }
 }
 
+/** Reads the file's duration from its metadata; 0 when the browser can't tell. */
 function readDuration(url: string, kind: TrackKind): Promise<number> {
   return new Promise((resolve) => {
     const el = document.createElement(kind)
@@ -68,6 +85,10 @@ function readDuration(url: string, kind: TrackKind): Promise<number> {
   })
 }
 
+/**
+ * Loads a dropped file as a clip at the start of the timeline, decoding its audio when it
+ * has any. Throws when neither the metadata nor the audio gives a duration.
+ */
 export async function loadClip(
   file: File,
   kind: TrackKind,
@@ -114,37 +135,7 @@ const AUDIO_EXTENSIONS = [
   'caf',
 ]
 
-/**
- * Starts every clip's audio so that timeline time `from` sounds at context time `at`.
- * Live playback and the export mix both use this, so they place audio identically.
- * `output` returns where a track's audio goes, or null to leave the track out.
- */
-export function scheduleClips(
-  ctx: BaseAudioContext,
-  clips: Clips,
-  from: number,
-  at: number,
-  output: (kind: TrackKind) => AudioNode | null,
-): AudioBufferSourceNode[] {
-  const sources: AudioBufferSourceNode[] = []
-  for (const kind of TRACK_KINDS) {
-    const clip = clips[kind]
-    if (!clip?.buffer) continue
-    const delay = clip.offset - from
-    const into = Math.max(0, -delay)
-    if (into >= clip.buffer.duration) continue
-    const destination = output(kind)
-    if (!destination) continue
-
-    const source = ctx.createBufferSource()
-    source.buffer = clip.buffer
-    source.connect(destination)
-    source.start(at + Math.max(0, delay), into)
-    sources.push(source)
-  }
-  return sources
-}
-
+/** Picks the track a file belongs on, by MIME type or else extension; null if neither. */
 export function kindForFile(file: File): TrackKind | null {
   if (file.type.startsWith('video/')) return 'video'
   if (file.type.startsWith('audio/')) return 'audio'
@@ -153,19 +144,4 @@ export function kindForFile(file: File): TrackKind | null {
   if (VIDEO_EXTENSIONS.includes(ext)) return 'video'
   if (AUDIO_EXTENSIONS.includes(ext)) return 'audio'
   return null
-}
-
-export function formatTime(t: number): string {
-  const sign = t < 0 ? '-' : ''
-  const abs = Math.abs(t)
-  const m = Math.floor(abs / 60)
-  const s = abs - m * 60
-  return `${sign}${m}:${s.toFixed(3).padStart(6, '0')}`
-}
-
-/** Reads a typed time such as `1:02.5`, `62.5` or `0:01:02.5`; null if it isn't one. */
-export function parseTime(text: string): number | null {
-  const parts = text.trim().split(':')
-  if (parts.some((p) => !/^\d*\.?\d+$|^\d+\.$/.test(p.trim()))) return null
-  return parts.reduce((t, p) => t * 60 + Number(p), 0)
 }

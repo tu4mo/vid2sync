@@ -1,6 +1,7 @@
 import { memo, useRef } from 'react'
 
-import { formatTime, type Clip, type TrackKind } from '../../media'
+import type { Clip, TrackKind } from '../../lib/media'
+import { formatTime } from '../../lib/time'
 import { Waveform } from './Waveform'
 
 const WAVE_COLORS: Record<TrackKind, string> = {
@@ -13,7 +14,7 @@ const CLIP_BACKGROUNDS: Record<TrackKind, string> = {
   audio: 'bg-audio/45',
 }
 
-interface ClipViewProps {
+type ClipViewProps = {
   kind: TrackKind
   clip: Clip
   pixelsPerSecond: number
