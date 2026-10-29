@@ -85,8 +85,9 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
         // Shift slows the drag down 10× for fine alignment.
         const dx = (e.clientX - d.lastX) * (e.shiftKey ? 0.1 : 1)
         d.lastX = e.clientX
-        d.offset = Math.max(-clip.trim.start, d.offset + dx / pixelsPerSecond)
-        onOffsetChange(kind, d.offset)
+        // Unclamped, so after pushing past 0:00 the clip waits for the pointer to come back to it.
+        d.offset += dx / pixelsPerSecond
+        onOffsetChange(kind, Math.max(-clip.trim.start, d.offset))
       }}
       onPointerUp={() => (drag.current = null)}
       onPointerCancel={() => (drag.current = null)}
