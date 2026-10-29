@@ -55,11 +55,8 @@ async function loaded(el: HTMLVideoElement) {
 }
 
 describe('Video', () => {
-  it('shows a placeholder without a clip', async () => {
-    const { screen, el } = await mount({ shown: null })
-    await expect
-      .element(screen.getByText('Import a video to preview it here'))
-      .toBeVisible()
+  it('shows nothing without a clip', async () => {
+    const { el } = await mount({ shown: null })
     expect(el).toBeNull()
   })
 

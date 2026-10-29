@@ -36,7 +36,7 @@ export function Video({ clip, time, playing, muted, volume }: Props) {
 
   return (
     <main className="relative flex h-full items-center justify-center bg-black">
-      {clip ? (
+      {clip && (
         <video
           ref={ref}
           src={clip.url}
@@ -45,8 +45,6 @@ export function Video({ clip, time, playing, muted, volume }: Props) {
           preload="auto"
           style={{ visibility: inside ? 'visible' : 'hidden' }}
         />
-      ) : (
-        <div className="text-dim">Import a video to preview it here</div>
       )}
     </main>
   )

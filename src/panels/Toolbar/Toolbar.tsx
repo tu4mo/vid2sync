@@ -61,6 +61,9 @@ export function Toolbar({
   onExport,
   onZoom,
 }: Props) {
+  // Nothing imported yet, so there's nothing to play or zoom.
+  const empty = end === 0
+
   function zoomBy(factor: number) {
     onZoom(clampZoom(pixelsPerSecond * factor))
   }
@@ -81,7 +84,7 @@ export function Toolbar({
           aria-label={playing ? 'Pause' : 'Play'}
           title={playing ? 'Pause (Space)' : 'Play (Space)'}
           onClick={playing ? onPause : onPlay}
-          disabled={end === 0}
+          disabled={empty}
         >
           <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} size={16} />
         </Button>
@@ -89,7 +92,7 @@ export function Toolbar({
           aria-label="Go to start"
           title="Go to start (Home)"
           onClick={() => onSeek(0)}
-          disabled={end === 0}
+          disabled={empty}
         >
           <HugeiconsIcon icon={PreviousIcon} size={16} />
         </Button>
@@ -110,7 +113,7 @@ export function Toolbar({
             aria-label="Zoom out"
             title="Zoom out"
             onClick={() => zoomBy(1 / ZOOM_STEP)}
-            disabled={pixelsPerSecond <= MIN_PIXELS_PER_SECOND}
+            disabled={empty || pixelsPerSecond <= MIN_PIXELS_PER_SECOND}
           >
             <HugeiconsIcon icon={ZoomOutIcon} size={16} />
           </Button>
@@ -120,13 +123,14 @@ export function Toolbar({
             min={0}
             max={100}
             value={zoomToSlider(pixelsPerSecond)}
+            disabled={empty}
             onChange={(e) => onZoom(sliderToZoom(Number(e.target.value)))}
           />
           <Button
             aria-label="Zoom in"
             title="Zoom in"
             onClick={() => zoomBy(ZOOM_STEP)}
-            disabled={pixelsPerSecond >= MAX_PIXELS_PER_SECOND}
+            disabled={empty || pixelsPerSecond >= MAX_PIXELS_PER_SECOND}
           >
             <HugeiconsIcon icon={ZoomInIcon} size={16} />
           </Button>

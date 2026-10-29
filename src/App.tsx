@@ -241,6 +241,10 @@ export default function App() {
     }
     // A single file dropped onto a track goes to that track (e.g. a video's sound onto Audio).
     const track = target.closest<HTMLElement>('[data-track]')?.dataset.track
+    importFiles(files, track)
+  }
+
+  function importFiles(files: File[], track?: string) {
     for (const file of files) {
       const kind =
         files.length === 1 && (track === 'video' || track === 'audio')
@@ -409,7 +413,7 @@ export default function App() {
               onTrimReset={resetTrim}
               onFadeChange={setFade}
               onToggleMute={toggleMute}
-              onImport={(file, kind) => void importFile(file, kind)}
+              onImport={importFiles}
               onRemove={removeClip}
               onZoom={setPixelsPerSecond}
             />

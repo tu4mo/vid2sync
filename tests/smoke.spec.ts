@@ -50,14 +50,10 @@ async function trimSeconds(page: Page, kind = 'video') {
 test('import, sync, play, trim and export', async ({ page }) => {
   await page.goto('/')
 
-  // Import both tracks.
-  const videoLane = page.getByTestId('lane-video')
-  const audioLane = page.getByTestId('lane-audio')
-  // The video through the file chooser, so a click on Import opens it rather than scrubbing.
+  // Import both tracks at once, through the file chooser, so a click on Import opens it.
   const chooser = page.waitForEvent('filechooser')
-  await videoLane.getByText('Import').click()
-  await (await chooser).setFiles(fixture('clip.mp4'))
-  await audioLane.locator('input[type=file]').setInputFiles(fixture('tone.wav'))
+  await page.getByText('Import', { exact: true }).click()
+  await (await chooser).setFiles([fixture('clip.mp4'), fixture('tone.wav')])
   const videoClip = page.getByTestId('clip-video')
   const audioClip = page.getByTestId('clip-audio')
   await expect(videoClip).toContainText('Video')
@@ -270,19 +266,30 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await expect(audioClip).toHaveCount(0)
   await expect(page.getByTestId('sync')).toHaveCount(0)
 
-  // A file that isn't media shows the error dialog; OK and Esc both close it.
-  const notMedia = {
+  // Remove the video with the keyboard, which brings back the empty timeline.
+  await videoClip.click()
+  await page.keyboard.press('Delete')
+  await expect(videoClip).toHaveCount(0)
+
+  // A file that isn't media, or that only looks like it, shows the error dialog; OK and Esc both close it.
+  const dialog = page.getByRole('dialog')
+  const importInput = page.locator('input[type=file]')
+  await importInput.setInputFiles({
     name: 'notes.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('not a video'),
-  }
-  const dialog = page.getByRole('dialog')
-  await audioLane.locator('input[type=file]').setInputFiles(notMedia)
-  await expect(dialog).toContainText('Could not read “notes.txt”')
+  })
+  await expect(dialog).toContainText(
+    '“notes.txt” doesn’t look like a video or audio file',
+  )
   await dialog.getByRole('button', { name: 'OK' }).click()
   await expect(dialog).toBeHidden()
-  await audioLane.locator('input[type=file]').setInputFiles(notMedia)
-  await expect(dialog).toBeVisible()
+  await importInput.setInputFiles({
+    name: 'notes.mp4',
+    mimeType: 'video/mp4',
+    buffer: Buffer.from('not a video'),
+  })
+  await expect(dialog).toContainText('Could not read “notes.mp4”')
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
 })

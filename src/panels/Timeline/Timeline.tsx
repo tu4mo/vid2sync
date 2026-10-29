@@ -56,7 +56,8 @@ type Props = {
   ) => void
   onToggleMute: (kind: TrackKind) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
-  onImport: (file: File, kind: TrackKind) => void
+  /** Imports each file onto the track its type belongs on. */
+  onImport: (files: File[]) => void
   onRemove: (kind: TrackKind) => void
   onZoom: (pixelsPerSecond: number) => void
 }
@@ -233,7 +234,27 @@ export function Timeline({
   )
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel">
+    <div className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel">
+      {!clips.video && !clips.audio && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center text-sm text-dim">
+          <span>
+            <label className="pointer-events-auto cursor-pointer text-accent hover:underline">
+              Import
+              <input
+                className="hidden"
+                type="file"
+                accept="video/*,audio/*"
+                multiple
+                onChange={(e) => {
+                  onImport([...(e.target.files ?? [])])
+                  e.target.value = ''
+                }}
+              />
+            </label>{' '}
+            or drop a video and an audio file
+          </span>
+        </div>
+      )}
       <div
         className="overflow-x-auto overflow-y-hidden"
         style={{ paddingInline: EDGE_PX }}
@@ -257,7 +278,7 @@ export function Timeline({
                   data-track={kind}
                   data-testid={`lane-${kind}`}
                 >
-                  {clip ? (
+                  {clip && (
                     <ClipView
                       kind={kind}
                       clip={clip}
@@ -275,29 +296,6 @@ export function Timeline({
                       onVolumeChange={onVolumeChange}
                       onRemove={onRemove}
                     />
-                  ) : (
-                    <div className="sticky left-0 px-4 text-xs text-dim">
-                      <label
-                        className="cursor-pointer text-accent hover:underline"
-                        // Keep the lane from scrubbing (and capturing the pointer, which eats the click).
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        Import
-                        <input
-                          className="hidden"
-                          type="file"
-                          accept={`${kind}/*`}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) {
-                              onImport(file, kind)
-                            }
-                            e.target.value = ''
-                          }}
-                        />
-                      </label>{' '}
-                      or drop {kind === 'video' ? 'a video' : 'an audio'} file
-                    </div>
                   )}
                 </div>
                 {kind === 'video' && (
