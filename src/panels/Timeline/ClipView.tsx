@@ -1,12 +1,5 @@
-import {
-  Delete02Icon,
-  VolumeHighIcon,
-  VolumeOffIcon,
-} from '@hugeicons/core-free-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
 import { memo } from 'react'
 
-import { Slider } from '../../components/Slider/Slider'
 import {
   clipFade,
   clipSpan,
@@ -15,12 +8,11 @@ import {
   type TimeRange,
   type TrackKind,
 } from '../../lib/media'
-import { ClipButton } from './ClipButton'
+import { ClipToolbar } from './ClipToolbar'
 import { FadeHandle } from './FadeHandle'
 import { useDrag } from './useDrag'
 import { Waveform } from './Waveform'
 
-const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 const WAVE_COLORS: Record<TrackKind, string> = {
   video: '#9cc4ff',
   audio: '#8ef0b8',
@@ -138,7 +130,6 @@ export const ClipView = memo(function ClipView({
   const fade = clipFade(clip)
   const width = (span.end - span.start) * pixelsPerSecond
   const fileWidth = clip.duration * pixelsPerSecond
-  const percent = Math.round(volume * 100)
 
   return (
     <div
@@ -158,52 +149,14 @@ export const ClipView = memo(function ClipView({
         // Clip, not hidden: hidden would make this the scroll container the label sticks to.
         className={`absolute inset-0 overflow-clip rounded-md ${CLIP_BACKGROUNDS[kind]}`}
       >
-        <div
-          className="sticky left-1 z-10 mt-1 ml-1 inline-flex max-w-[calc(100%-0.5rem)] items-center gap-1"
-          // Keep the buttons from dragging the clip (and capturing the pointer, which eats the click).
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <div className="pointer-events-none h-4.5 shrink-0 rounded bg-black/60 px-1.5 text-2xs leading-4.5">
-            {LABELS[kind]}
-          </div>
-          <ClipButton
-            className="aria-pressed:border-danger aria-pressed:bg-danger aria-pressed:text-white"
-            aria-label="Mute"
-            aria-pressed={muted}
-            onClick={() => onToggleMute(kind)}
-            title={muted ? 'Unmute' : 'Mute'}
-          >
-            <HugeiconsIcon
-              icon={muted ? VolumeOffIcon : VolumeHighIcon}
-              size={12}
-            />
-          </ClipButton>
-          <ClipButton
-            variant="danger"
-            aria-label="Remove clip"
-            onClick={() => onRemove(kind)}
-            title="Remove clip (Delete)"
-          >
-            <HugeiconsIcon icon={Delete02Icon} size={12} />
-          </ClipButton>
-          <div className="flex h-4.5 shrink-0 items-center gap-1 rounded bg-black/60 px-1.5">
-            <Slider
-              className="w-16"
-              aria-label="Volume"
-              min={0}
-              max={2}
-              step={0.01}
-              value={volume}
-              disabled={muted}
-              onChange={(e) => onVolumeChange(kind, Number(e.target.value))}
-              onDoubleClick={() => onVolumeChange(kind, 1)}
-              title={`Volume ${percent}% (double-click to reset)`}
-            />
-            <span className="w-[4ch] text-right text-2xs tabular-nums">
-              {percent}%
-            </span>
-          </div>
-        </div>
+        <ClipToolbar
+          kind={kind}
+          muted={muted}
+          volume={volume}
+          onToggleMute={onToggleMute}
+          onVolumeChange={onVolumeChange}
+          onRemove={onRemove}
+        />
         {clip.peaks ? (
           // The whole file's waveform, shifted so the trimmed part shows.
           <div
