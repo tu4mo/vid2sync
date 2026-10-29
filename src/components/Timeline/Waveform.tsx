@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 
 import type { Peaks } from '../../media'
 
@@ -9,7 +9,6 @@ interface Props {
   peaks: Peaks
   duration: number
   width: number
-  height: number
   color: string
 }
 
@@ -17,10 +16,19 @@ export const Waveform = memo(function Waveform({
   peaks,
   duration,
   width,
-  height,
   color,
 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
+  // The canvas stretches with its lane; redraw at the height it ends up.
+  const [height, setHeight] = useState(0)
+
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const observer = new ResizeObserver(() => setHeight(canvas.clientHeight))
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const canvas = ref.current
@@ -61,8 +69,8 @@ export const Waveform = memo(function Waveform({
   return (
     <canvas
       ref={ref}
-      className="pointer-events-none absolute top-1 left-0 block"
-      style={{ width, height }}
+      className="pointer-events-none absolute top-1 left-0 block h-[calc(100%-0.5rem)]"
+      style={{ width }}
     />
   )
 })

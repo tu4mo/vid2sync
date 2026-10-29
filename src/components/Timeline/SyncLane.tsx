@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 import type { Clip, TrackKind } from '../../media'
-import { SYNC_LANE_HEIGHT } from './layout'
 
 const EDGE_GAP = 4
 
@@ -49,12 +48,7 @@ export function SyncLane({
   }, [delta, draft])
 
   if (!video || !audio || delta === null) {
-    return (
-      <div
-        className="border-b border-line"
-        style={{ height: SYNC_LANE_HEIGHT }}
-      />
-    )
+    return <div className="border-b border-line" />
   }
 
   // Moves the audio; if that would put it before 0:00, the video moves the other way instead.
@@ -110,10 +104,7 @@ export function SyncLane({
   )
 
   return (
-    <div
-      className="pointer-events-none relative border-b border-line"
-      style={{ height: SYNC_LANE_HEIGHT }}
-    >
+    <div className="pointer-events-none relative border-b border-line">
       {/* Each half is a box whose two borders draw one corner; +1 px so the far border lands on the clip's start. */}
       <div
         className={`absolute top-0 h-1/2 border-fg/60 ${down}`}

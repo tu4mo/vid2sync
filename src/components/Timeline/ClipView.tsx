@@ -1,12 +1,8 @@
 import { memo, useRef } from 'react'
 
 import { formatTime, type Clip, type TrackKind } from '../../media'
-import { LANE_HEIGHT } from './layout'
 import { Waveform } from './Waveform'
 
-// The clip is inset 4px top and bottom (inset-y-1) within its lane, and the
-// waveform is inset a further 4px within the clip.
-const WAVE_HEIGHT = LANE_HEIGHT - 16
 const WAVE_COLORS: Record<TrackKind, string> = {
   video: '#9cc4ff',
   audio: '#8ef0b8',
@@ -82,7 +78,6 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
           peaks={clip.peaks}
           duration={clip.duration}
           width={width}
-          height={WAVE_HEIGHT}
           color={WAVE_COLORS[kind]}
         />
       ) : (

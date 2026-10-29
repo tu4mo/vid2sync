@@ -6,8 +6,15 @@ import {
   useRef,
   useState,
 } from 'react'
+import { Group, Panel, Separator } from 'react-resizable-panels'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
+import {
+  LANE_DEFAULT_HEIGHT,
+  LANE_MIN_HEIGHT,
+  RULER_HEIGHT,
+  SYNC_LANE_HEIGHT,
+} from './components/Timeline/layout'
 import { Timeline } from './components/Timeline/Timeline'
 import { Toolbar } from './components/Toolbar/Toolbar'
 import { Engine } from './engine'
@@ -49,6 +56,11 @@ function syncVideo(
 }
 
 const MIN_RANGE = 0.05
+
+// The toolbar and the timeline's top border, then the timeline's fixed rows.
+const TIMELINE_CHROME_HEIGHT = 42 + 1 + RULER_HEIGHT + SYNC_LANE_HEIGHT
+const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
+const TIMELINE_MIN_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_MIN_HEIGHT
 
 const roundMs = (t: number) => Math.round(t * 1000) / 1000
 
@@ -286,7 +298,7 @@ export default function App() {
 
   return (
     <div
-      className="relative grid h-full grid-rows-[minmax(0,1fr)_auto_auto] select-none"
+      className="relative h-full select-none"
       onDragOver={(e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'
@@ -326,60 +338,76 @@ export default function App() {
           Drop video or audio to import
         </div>
       )}
-      <main className="relative flex min-h-0 items-center justify-center bg-black">
-        {videoClip && (
-          <video
-            ref={videoRef}
-            src={videoClip.url}
-            className="max-h-full max-w-full"
-            playsInline
-            preload="auto"
-            style={{ visibility: videoVisible ? 'visible' : 'hidden' }}
-          />
-        )}
-        {!videoClip && (
-          <div className="text-dim">Import a video to preview it here</div>
-        )}
-      </main>
+      <Group orientation="vertical">
+        <Panel minSize={80}>
+          <main className="relative flex h-full items-center justify-center bg-black">
+            {videoClip && (
+              <video
+                ref={videoRef}
+                src={videoClip.url}
+                className="max-h-full max-w-full"
+                playsInline
+                preload="auto"
+                style={{ visibility: videoVisible ? 'visible' : 'hidden' }}
+              />
+            )}
+            {!videoClip && (
+              <div className="text-dim">Import a video to preview it here</div>
+            )}
+          </main>
+        </Panel>
 
-      <Toolbar
-        playing={playing}
-        end={end}
-        canExport={!!clips.video}
-        exportProgress={exportProgress}
-        pixelsPerSecond={pixelsPerSecond}
-        onPlay={play}
-        onPause={pause}
-        onSeek={seek}
-        onExport={() => void exportVideo()}
-        onZoom={setPixelsPerSecond}
-      />
+        <Separator className="h-1 bg-line transition-colors hover:bg-line-strong data-[separator=active]:bg-accent" />
 
-      <Timeline
-        clips={clips}
-        muted={muted}
-        volume={volume}
-        onVolumeChange={(kind, v) =>
-          setVolume((prev) => ({ ...prev, [kind]: v }))
-        }
-        selected={selected}
-        loading={loading}
-        time={time}
-        end={end}
-        pixelsPerSecond={pixelsPerSecond}
-        playing={playing}
-        onSelect={setSelected}
-        onOffsetChange={setOffset}
-        onSeek={seek}
-        onReachEnd={stopAt}
-        range={range ?? wholeVideo}
-        onRangeChange={setRangePoint}
-        onRangeReset={resetRange}
-        onToggleMute={(kind) => setMuted((m) => ({ ...m, [kind]: !m[kind] }))}
-        onImport={(file, kind) => void importFile(file, kind)}
-        onRemove={removeClip}
-        onZoom={setPixelsPerSecond}
-      />
+        <Panel
+          defaultSize={TIMELINE_HEIGHT}
+          minSize={TIMELINE_MIN_HEIGHT}
+          groupResizeBehavior="preserve-pixel-size"
+        >
+          <div className="flex h-full flex-col bg-panel">
+            <Toolbar
+              playing={playing}
+              end={end}
+              canExport={!!clips.video}
+              exportProgress={exportProgress}
+              pixelsPerSecond={pixelsPerSecond}
+              onPlay={play}
+              onPause={pause}
+              onSeek={seek}
+              onExport={() => void exportVideo()}
+              onZoom={setPixelsPerSecond}
+            />
+
+            <Timeline
+              clips={clips}
+              muted={muted}
+              volume={volume}
+              onVolumeChange={(kind, v) =>
+                setVolume((prev) => ({ ...prev, [kind]: v }))
+              }
+              selected={selected}
+              loading={loading}
+              time={time}
+              end={end}
+              pixelsPerSecond={pixelsPerSecond}
+              playing={playing}
+              onSelect={setSelected}
+              onOffsetChange={setOffset}
+              onSeek={seek}
+              onReachEnd={stopAt}
+              range={range ?? wholeVideo}
+              onRangeChange={setRangePoint}
+              onRangeReset={resetRange}
+              onToggleMute={(kind) =>
+                setMuted((m) => ({ ...m, [kind]: !m[kind] }))
+              }
+              onImport={(file, kind) => void importFile(file, kind)}
+              onRemove={removeClip}
+              onZoom={setPixelsPerSecond}
+            />
+          </div>
+        </Panel>
+      </Group>
 
       <ErrorDialog message={error} onClose={() => setError(null)} />
     </div>

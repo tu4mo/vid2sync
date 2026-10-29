@@ -7,7 +7,7 @@ import {
   type TrackKind,
 } from '../../media'
 import { ClipView } from './ClipView'
-import { LANE_HEIGHT, SYNC_LANE_HEIGHT } from './layout'
+import { ROWS } from './layout'
 import { Playhead } from './Playhead'
 import { Ruler } from './Ruler'
 import { SyncLane } from './SyncLane'
@@ -140,9 +140,12 @@ export function Timeline(props: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-[170px_minmax(0,1fr)] border-t border-line bg-panel">
-      <div className="border-r border-line">
-        <div className="h-7 border-b border-line" />
+    <div className="grid min-h-0 flex-1 grid-cols-[170px_minmax(0,1fr)] border-t border-line bg-panel">
+      <div
+        className="grid grid-cols-[minmax(0,1fr)] border-r border-line"
+        style={{ gridTemplateRows: ROWS }}
+      >
+        <div className="border-b border-line" />
         {TRACK_KINDS.map((kind) => (
           <Fragment key={kind}>
             <TrackHead
@@ -156,10 +159,7 @@ export function Timeline(props: Props) {
               onRemove={() => props.onRemove(kind)}
             />
             {kind === 'video' && (
-              <div
-                className="flex items-center border-b border-line px-3 text-2xs font-bold tracking-[0.08em] text-dim uppercase"
-                style={{ height: SYNC_LANE_HEIGHT }}
-              >
+              <div className="flex items-center border-b border-line px-3 text-2xs font-bold tracking-[0.08em] text-dim uppercase">
                 {/* Trim to cap height so the caps, not the line box, are centred. */}
                 <span className="[text-box:trim-both_cap_alphabetic]">
                   Sync
@@ -176,9 +176,9 @@ export function Timeline(props: Props) {
         onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
       >
         <div
-          className="relative min-w-full cursor-text"
+          className="relative grid h-full min-w-full cursor-text"
           ref={contentRef}
-          style={{ width }}
+          style={{ width, gridTemplateRows: ROWS }}
           onPointerDown={(e) => {
             if (e.button !== 0) return
             e.currentTarget.setPointerCapture(e.pointerId)
@@ -204,10 +204,9 @@ export function Timeline(props: Props) {
             return (
               <Fragment key={kind}>
                 <div
-                  className="relative border-b border-line"
+                  className="relative flex items-center border-b border-line"
                   data-track={kind}
                   data-testid={`lane-${kind}`}
-                  style={{ height: LANE_HEIGHT }}
                 >
                   {clip ? (
                     <ClipView
@@ -220,7 +219,7 @@ export function Timeline(props: Props) {
                       onOffsetChange={props.onOffsetChange}
                     />
                   ) : (
-                    <div className="sticky left-0 inline-block px-4 py-[26px] text-xs text-dim">
+                    <div className="sticky left-0 px-4 text-xs text-dim">
                       <label
                         className="cursor-pointer text-accent hover:underline"
                         // Keep the lane from scrubbing (and capturing the pointer, which eats the click).

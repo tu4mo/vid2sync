@@ -56,7 +56,7 @@ export function Ruler({
   }
 
   return (
-    <div className="relative h-7 border-b border-line bg-panel-2">
+    <div className="relative border-b border-line bg-panel-2">
       {range && (
         <div
           className="absolute inset-y-0 bg-accent/15"

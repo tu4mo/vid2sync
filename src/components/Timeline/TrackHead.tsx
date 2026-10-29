@@ -8,7 +8,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import type { Clip, TrackKind } from '../../media'
 import { Button } from '../Button/Button'
 import { Slider } from '../Slider/Slider'
-import { LANE_HEIGHT } from './layout'
 
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 // Full class names, so Tailwind finds them in the source.
@@ -44,7 +43,6 @@ export function TrackHead(props: Props) {
       className={`flex flex-col justify-center gap-[3px] border-b border-l-3 border-b-line px-2.5 ${HEAD_BORDERS[kind]}`}
       data-track={kind}
       data-testid={`head-${kind}`}
-      style={{ height: LANE_HEIGHT }}
     >
       <div className="flex items-center justify-between gap-1.5">
         <span className="font-semibold">{LABELS[kind]}</span>
