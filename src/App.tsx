@@ -357,7 +357,7 @@ export default function App() {
           </main>
         </Panel>
 
-        <Separator className="h-1 bg-line transition-colors hover:bg-line-strong data-[separator=active]:bg-accent" />
+        <Separator className="h-px bg-line transition-colors data-[separator=active]:bg-accent data-[separator=focus]:bg-line-strong data-[separator=hover]:bg-line-strong" />
 
         <Panel
           defaultSize={TIMELINE_HEIGHT}
