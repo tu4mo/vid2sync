@@ -75,6 +75,14 @@ export default function App() {
     setPlaying(false)
   }, [])
 
+  /** Stops playback with the playhead parked at `t`. */
+  const stopAt = useCallback((t: number) => {
+    engine.pause()
+    engine.seek(t)
+    setTime(t)
+    setPlaying(false)
+  }, [])
+
   const play = () => {
     if (end === 0) return
     engine.play(time)
@@ -172,10 +180,7 @@ export default function App() {
       const t = engine.now()
       // Stop when playback runs off the end, but not when it was started past the end.
       if (t >= end && engine.startedFrom() < end) {
-        engine.pause()
-        engine.seek(end)
-        setTime(end)
-        setPlaying(false)
+        stopAt(end)
         return
       }
       setTime(t)
@@ -184,7 +189,7 @@ export default function App() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [playing, end, clips.video])
+  }, [playing, end, clips.video, stopAt])
 
   useEffect(() => {
     engine.setClips(clips)
@@ -332,6 +337,7 @@ export default function App() {
         onSelect={setSelected}
         onOffsetChange={setOffset}
         onSeek={seek}
+        onReachEnd={stopAt}
         range={range ?? wholeVideo}
         onRangeChange={setRangePoint}
         onRangeReset={resetRange}

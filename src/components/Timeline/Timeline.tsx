@@ -26,6 +26,8 @@ interface Props {
   onSelect: (kind: TrackKind | null) => void
   onOffsetChange: (kind: TrackKind, offset: number) => void
   onSeek: (t: number) => void
+  /** Called with the timeline's length when playback reaches the end of it. */
+  onReachEnd: (t: number) => void
   /** The export range, or null when there's no video. */
   range: TimeRange | null
   onRangeChange: (which: keyof TimeRange, t: number) => void
@@ -38,7 +40,18 @@ interface Props {
 }
 
 export function Timeline(props: Props) {
-  const { clips, time, end, pixelsPerSecond, playing, range, onSeek, onSelect, onZoom } = props
+  const {
+    clips,
+    time,
+    end,
+    pixelsPerSecond,
+    playing,
+    range,
+    onSeek,
+    onReachEnd,
+    onSelect,
+    onZoom,
+  } = props
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const scrubbing = useRef(false)
@@ -101,8 +114,13 @@ export function Timeline(props: Props) {
   }
   const seekToPointer = (clientX: number) => onSeek(timeAt(clientX))
 
-  // Grow with the playhead, so playing past the end doesn't run it off the timeline.
-  const visibleSeconds = Math.max(Math.max(end, time) + TAIL_SECONDS, viewport / pixelsPerSecond)
+  const visibleSeconds = Math.max(end + TAIL_SECONDS, viewport / pixelsPerSecond)
+
+  // Playing past the clips runs into empty timeline; stop at the end of it.
+  useEffect(() => {
+    if (playing && time >= visibleSeconds) onReachEnd(visibleSeconds)
+  }, [playing, time, visibleSeconds, onReachEnd])
+
   const width = visibleSeconds * pixelsPerSecond
   const snapTimes = [
     time,
