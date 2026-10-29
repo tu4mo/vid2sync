@@ -11,7 +11,7 @@ const CLIP_BACKGROUNDS: Record<TrackKind, string> = { video: 'bg-video/45', audi
 interface ClipViewProps {
   kind: TrackKind
   clip: Clip
-  pps: number
+  pixelsPerSecond: number
   selected: boolean
   muted: boolean
   onSelect: (kind: TrackKind) => void
@@ -19,9 +19,9 @@ interface ClipViewProps {
 }
 
 export const ClipView = memo(function ClipView(props: ClipViewProps) {
-  const { kind, clip, pps, selected, muted, onSelect, onOffsetChange } = props
+  const { kind, clip, pixelsPerSecond, selected, muted, onSelect, onOffsetChange } = props
   const drag = useRef<{ lastX: number; offset: number } | null>(null)
-  const width = clip.duration * pps
+  const width = clip.duration * pixelsPerSecond
 
   return (
     <div
@@ -34,7 +34,7 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
           : ''
       } ${muted ? 'opacity-45' : ''}`}
       data-testid={`clip-${kind}`}
-      style={{ left: clip.offset * pps, width }}
+      style={{ left: clip.offset * pixelsPerSecond, width }}
       onPointerDown={(e) => {
         if (e.button !== 0) return
         e.stopPropagation()
@@ -48,7 +48,7 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
         // Shift slows the drag down 10× for fine alignment.
         const dx = (e.clientX - d.lastX) * (e.shiftKey ? 0.1 : 1)
         d.lastX = e.clientX
-        d.offset = Math.max(0, d.offset + dx / pps)
+        d.offset = Math.max(0, d.offset + dx / pixelsPerSecond)
         onOffsetChange(kind, d.offset)
       }}
       onPointerUp={() => (drag.current = null)}

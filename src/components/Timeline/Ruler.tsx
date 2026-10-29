@@ -12,7 +12,7 @@ const HANDLE_CLASSES: Record<keyof TimeRange, string> = {
 }
 
 interface Props {
-  pps: number
+  pixelsPerSecond: number
   /** How many seconds of timeline to label. */
   seconds: number
   /** The export range, or null when there's nothing to export. */
@@ -24,17 +24,25 @@ interface Props {
   onRangeReset: (which?: keyof TimeRange) => void
 }
 
-export function Ruler({ pps, seconds, range, snapTimes, onRangeChange, onRangeReset }: Props) {
+export function Ruler({
+  pixelsPerSecond,
+  seconds,
+  range,
+  snapTimes,
+  onRangeChange,
+  onRangeReset,
+}: Props) {
   const [dragging, setDragging] = useState<keyof TimeRange | null>(null)
   // Where on the handle it was grabbed, so it doesn't jump under the pointer.
   const grabOffset = useRef(0)
-  const step = TICK_STEPS.find((s) => s * pps >= 80) ?? TICK_STEPS[TICK_STEPS.length - 1]
+  const step =
+    TICK_STEPS.find((s) => s * pixelsPerSecond >= 80) ?? TICK_STEPS[TICK_STEPS.length - 1]
   const ticks: number[] = []
   for (let t = 0; t <= seconds; t += step) ticks.push(t)
 
   const snap = (t: number) => {
     let best = t
-    let distance = SNAP_PX / pps
+    let distance = SNAP_PX / pixelsPerSecond
     for (const target of snapTimes) {
       if (Math.abs(target - t) <= distance) {
         best = target
@@ -49,7 +57,10 @@ export function Ruler({ pps, seconds, range, snapTimes, onRangeChange, onRangeRe
       {range && (
         <div
           className="absolute inset-y-0 bg-accent/15"
-          style={{ left: range.start * pps, width: (range.end - range.start) * pps }}
+          style={{
+            left: range.start * pixelsPerSecond,
+            width: (range.end - range.start) * pixelsPerSecond,
+          }}
           title="Export range (double-click to reset)"
           // Not onDoubleClick: the timeline captures the pointer to scrub, which sends clicks to it instead.
           onMouseDown={(e) => e.detail === 2 && onRangeReset()}
@@ -60,7 +71,7 @@ export function Ruler({ pps, seconds, range, snapTimes, onRangeChange, onRangeRe
         <div
           key={t}
           className="pointer-events-none absolute top-3.5 bottom-0 border-l border-line-strong"
-          style={{ left: t * pps }}
+          style={{ left: t * pixelsPerSecond }}
         >
           <span className="absolute -top-[13px] left-1 text-2xs whitespace-nowrap text-dim tabular-nums">
             {formatTick(t, step)}
@@ -73,7 +84,7 @@ export function Ruler({ pps, seconds, range, snapTimes, onRangeChange, onRangeRe
           <div
             key={which}
             className={`absolute top-0 z-1 h-7 w-2.5 cursor-ew-resize touch-none bg-accent ${HANDLE_CLASSES[which]}`}
-            style={{ left: range[which] * pps }}
+            style={{ left: range[which] * pixelsPerSecond }}
             title={`Export ${which} (drag, Shift to not snap; double-click to reset)`}
             data-testid={`range-${which}`}
             onPointerDown={(e) => {
@@ -81,12 +92,12 @@ export function Ruler({ pps, seconds, range, snapTimes, onRangeChange, onRangeRe
               // Keep the timeline from scrubbing under the handle.
               e.stopPropagation()
               e.currentTarget.setPointerCapture(e.pointerId)
-              grabOffset.current = e.clientX - range[which] * pps
+              grabOffset.current = e.clientX - range[which] * pixelsPerSecond
               setDragging(which)
             }}
             onPointerMove={(e) => {
               if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
-              const t = (e.clientX - grabOffset.current) / pps
+              const t = (e.clientX - grabOffset.current) / pixelsPerSecond
               onRangeChange(which, e.shiftKey ? t : snap(t))
             }}
             onLostPointerCapture={() => setDragging(null)}
@@ -99,7 +110,7 @@ export function Ruler({ pps, seconds, range, snapTimes, onRangeChange, onRangeRe
           className={`pointer-events-none absolute top-full z-2 mt-1 rounded-md border border-line-strong bg-panel-2 px-1.5 py-0.5 text-2xs whitespace-nowrap tabular-nums ${
             dragging === 'end' ? '-translate-x-full' : ''
           }`}
-          style={{ left: range[dragging] * pps }}
+          style={{ left: range[dragging] * pixelsPerSecond }}
         >
           {formatTime(range[dragging])}{' '}
           <span className="text-dim">({(range.end - range.start).toFixed(2)} s)</span>

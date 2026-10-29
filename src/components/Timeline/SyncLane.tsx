@@ -14,7 +14,7 @@ const ELBOW_CLASSES = {
 interface Props {
   video: Clip | null
   audio: Clip | null
-  pps: number
+  pixelsPerSecond: number
   /** The scrolled-into-view part of the lane, in px. */
   view: { start: number; width: number }
   onOffsetChange: (kind: TrackKind, offset: number) => void
@@ -24,7 +24,7 @@ interface Props {
  * A rounded-md elbow from the video clip's start down to the audio clip's start, labelled with the gap between them.
  * Clicking the label lets you type the gap.
  */
-export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
+export function SyncLane({ video, audio, pixelsPerSecond, view, onOffsetChange }: Props) {
   const labelRef = useRef<HTMLDivElement>(null)
   const [labelWidth, setLabelWidth] = useState(0)
   const [editing, setEditing] = useState<{ draft: string; original: number } | null>(null)
@@ -78,8 +78,8 @@ export function SyncLane({ video, audio, pps, view, onOffsetChange }: Props) {
     }
   }
 
-  const from = video.offset * pps
-  const to = audio.offset * pps
+  const from = video.offset * pixelsPerSecond
+  const to = audio.offset * pixelsPerSecond
   const mid = (from + to) / 2
   const width = Math.abs(to - from)
   const [down, up] = ELBOW_CLASSES[to >= from ? 'right' : 'left']

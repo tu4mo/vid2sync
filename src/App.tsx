@@ -49,7 +49,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [pps, setPps] = useState(50)
+  const [pixelsPerSecond, setPixelsPerSecond] = useState(50)
   const [dragging, setDragging] = useState(false)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
   /** In/out points on the timeline; null exports the whole video. */
@@ -309,12 +309,12 @@ export default function App() {
         range={range}
         canExport={!!clips.video}
         exportProgress={exportProgress}
-        pps={pps}
+        pixelsPerSecond={pixelsPerSecond}
         onPlay={play}
         onPause={pause}
         onSeek={seek}
         onExport={() => void exportVideo()}
-        onZoom={setPps}
+        onZoom={setPixelsPerSecond}
       />
 
       <Timeline
@@ -326,7 +326,7 @@ export default function App() {
         loading={loading}
         time={time}
         end={end}
-        pps={pps}
+        pixelsPerSecond={pixelsPerSecond}
         playing={playing}
         onSelect={setSelected}
         onOffsetChange={setOffset}
@@ -337,7 +337,7 @@ export default function App() {
         onToggleMute={(kind) => setMuted((m) => ({ ...m, [kind]: !m[kind] }))}
         onImport={(file, kind) => void importFile(file, kind)}
         onRemove={removeClip}
-        onZoom={setPps}
+        onZoom={setPixelsPerSecond}
       />
 
       <ErrorDialog message={error} onClose={() => setError(null)} />

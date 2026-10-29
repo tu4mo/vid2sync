@@ -3,12 +3,13 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { TRACK_KINDS, type Clips, type TimeRange, type TrackKind } from '../../media'
 import { ClipView } from './ClipView'
 import { LANE_HEIGHT, SYNC_LANE_HEIGHT } from './layout'
+import { Playhead } from './Playhead'
 import { Ruler } from './Ruler'
 import { SyncLane } from './SyncLane'
 import { TrackHead } from './TrackHead'
 
-export const MIN_PPS = 5
-export const MAX_PPS = 2000
+export const MIN_PIXELS_PER_SECOND = 5
+export const MAX_PIXELS_PER_SECOND = 2000
 
 const TAIL_SECONDS = 10
 
@@ -20,7 +21,7 @@ interface Props {
   loading: TrackKind | null
   time: number
   end: number
-  pps: number
+  pixelsPerSecond: number
   playing: boolean
   onSelect: (kind: TrackKind | null) => void
   onOffsetChange: (kind: TrackKind, offset: number) => void
@@ -33,22 +34,22 @@ interface Props {
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onImport: (file: File, kind: TrackKind) => void
   onRemove: (kind: TrackKind) => void
-  onZoom: (pps: number) => void
+  onZoom: (pixelsPerSecond: number) => void
 }
 
 export function Timeline(props: Props) {
-  const { clips, time, end, pps, playing, range, onSeek, onSelect, onZoom } = props
+  const { clips, time, end, pixelsPerSecond, playing, range, onSeek, onSelect, onZoom } = props
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const scrubbing = useRef(false)
   const zoomAnchor = useRef<{ t: number; x: number } | null>(null)
-  const ppsRef = useRef(pps)
+  const pixelsPerSecondRef = useRef(pixelsPerSecond)
   const [viewport, setViewport] = useState(800)
   const [scrollLeft, setScrollLeft] = useState(0)
 
   useEffect(() => {
-    ppsRef.current = pps
-  }, [pps])
+    pixelsPerSecondRef.current = pixelsPerSecond
+  }, [pixelsPerSecond])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -65,8 +66,11 @@ export function Timeline(props: Props) {
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return
       e.preventDefault()
-      const current = ppsRef.current
-      const next = Math.min(MAX_PPS, Math.max(MIN_PPS, current * Math.exp(-e.deltaY * 0.01)))
+      const current = pixelsPerSecondRef.current
+      const next = Math.min(
+        MAX_PIXELS_PER_SECOND,
+        Math.max(MIN_PIXELS_PER_SECOND, current * Math.exp(-e.deltaY * 0.01)),
+      )
       const x = e.clientX - el.getBoundingClientRect().left
       zoomAnchor.current = { t: (el.scrollLeft + x) / current, x }
       onZoom(next)
@@ -79,26 +83,26 @@ export function Timeline(props: Props) {
     const el = scrollRef.current
     const anchor = zoomAnchor.current
     if (!el || !anchor) return
-    el.scrollLeft = anchor.t * pps - anchor.x
+    el.scrollLeft = anchor.t * pixelsPerSecond - anchor.x
     zoomAnchor.current = null
-  }, [pps])
+  }, [pixelsPerSecond])
 
   // Keep the playhead in view during playback.
   useEffect(() => {
     const el = scrollRef.current
     if (!el || !playing) return
-    const x = time * pps
+    const x = time * pixelsPerSecond
     if (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft) el.scrollLeft = x - 40
-  }, [time, pps, playing])
+  }, [time, pixelsPerSecond, playing])
 
   const timeAt = (clientX: number) => {
     const rect = contentRef.current?.getBoundingClientRect()
-    return rect ? (clientX - rect.left) / pps : 0
+    return rect ? (clientX - rect.left) / pixelsPerSecond : 0
   }
   const seekToPointer = (clientX: number) => onSeek(timeAt(clientX))
 
-  const visibleSeconds = Math.max(end + TAIL_SECONDS, viewport / pps)
-  const width = visibleSeconds * pps
+  const visibleSeconds = Math.max(end + TAIL_SECONDS, viewport / pixelsPerSecond)
+  const width = visibleSeconds * pixelsPerSecond
   const snapTimes = [
     time,
     ...TRACK_KINDS.flatMap((k) => {
@@ -157,7 +161,7 @@ export function Timeline(props: Props) {
           onPointerCancel={() => (scrubbing.current = false)}
         >
           <Ruler
-            pps={pps}
+            pixelsPerSecond={pixelsPerSecond}
             seconds={visibleSeconds}
             range={range}
             snapTimes={snapTimes}
@@ -179,7 +183,7 @@ export function Timeline(props: Props) {
                     <ClipView
                       kind={kind}
                       clip={clip}
-                      pps={pps}
+                      pixelsPerSecond={pixelsPerSecond}
                       selected={props.selected === kind}
                       muted={props.muted[kind]}
                       onSelect={onSelect}
@@ -212,7 +216,7 @@ export function Timeline(props: Props) {
                   <SyncLane
                     video={clips.video}
                     audio={clips.audio}
-                    pps={pps}
+                    pixelsPerSecond={pixelsPerSecond}
                     view={{ start: scrollLeft, width: viewport }}
                     onOffsetChange={props.onOffsetChange}
                   />
@@ -226,19 +230,16 @@ export function Timeline(props: Props) {
             <>
               <div
                 className="pointer-events-none absolute top-7 bottom-0 left-0 bg-bg/60"
-                style={{ width: range.start * pps }}
+                style={{ width: range.start * pixelsPerSecond }}
               />
               <div
                 className="pointer-events-none absolute top-7 right-0 bottom-0 bg-bg/60"
-                style={{ left: range.end * pps }}
+                style={{ left: range.end * pixelsPerSecond }}
               />
             </>
           )}
 
-          <div
-            className="pointer-events-none absolute inset-y-0 w-0 -translate-x-px border-l-2 border-accent before:absolute before:top-0 before:-left-[7px] before:border-6 before:border-t-8 before:border-transparent before:border-t-accent"
-            style={{ left: time * pps }}
-          />
+          <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
         </div>
       </div>
     </div>

@@ -11,7 +11,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { formatTime, type TimeRange } from '../../media'
 import { Button } from '../Button/Button'
 import { Slider } from '../Slider/Slider'
-import { MAX_PPS, MIN_PPS } from '../Timeline/Timeline'
+import { MAX_PIXELS_PER_SECOND, MIN_PIXELS_PER_SECOND } from '../Timeline/Timeline'
 
 /** How much one press of a zoom button zooms. */
 const ZOOM_STEP = 1.5
@@ -23,18 +23,21 @@ interface Props {
   range: TimeRange | null
   canExport: boolean
   exportProgress: number | null
-  pps: number
+  pixelsPerSecond: number
   onPlay: () => void
   onPause: () => void
   onSeek: (t: number) => void
   onExport: () => void
-  onZoom: (pps: number) => void
+  onZoom: (pixelsPerSecond: number) => void
 }
 
 export function Toolbar(props: Props) {
-  const { playing, time, end, range, canExport, exportProgress, pps } = props
+  const { playing, time, end, range, canExport, exportProgress, pixelsPerSecond } = props
   const { onPlay, onPause, onSeek, onExport, onZoom } = props
-  const zoomBy = (factor: number) => onZoom(Math.min(MAX_PPS, Math.max(MIN_PPS, pps * factor)))
+  const zoomBy = (factor: number) =>
+    onZoom(
+      Math.min(MAX_PIXELS_PER_SECOND, Math.max(MIN_PIXELS_PER_SECOND, pixelsPerSecond * factor)),
+    )
   return (
     <div className="flex items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
       <Button
@@ -77,24 +80,24 @@ export function Toolbar(props: Props) {
           aria-label="Zoom out"
           title="Zoom out"
           onClick={() => zoomBy(1 / ZOOM_STEP)}
-          disabled={pps <= MIN_PPS}
+          disabled={pixelsPerSecond <= MIN_PIXELS_PER_SECOND}
         >
           <HugeiconsIcon icon={ZoomOutIcon} size={16} />
         </Button>
         <Slider
           className="w-32"
           aria-label="Zoom"
-          min={Math.log(MIN_PPS)}
-          max={Math.log(MAX_PPS)}
+          min={Math.log(MIN_PIXELS_PER_SECOND)}
+          max={Math.log(MAX_PIXELS_PER_SECOND)}
           step={0.01}
-          value={Math.log(pps)}
+          value={Math.log(pixelsPerSecond)}
           onChange={(e) => onZoom(Math.exp(Number(e.target.value)))}
         />
         <Button
           aria-label="Zoom in"
           title="Zoom in"
           onClick={() => zoomBy(ZOOM_STEP)}
-          disabled={pps >= MAX_PPS}
+          disabled={pixelsPerSecond >= MAX_PIXELS_PER_SECOND}
         >
           <HugeiconsIcon icon={ZoomInIcon} size={16} />
         </Button>
