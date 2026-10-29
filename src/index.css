@@ -31,8 +31,4 @@
   body {
     @apply bg-bg font-sans text-sm text-fg;
   }
-
-  button {
-    @apply cursor-pointer rounded-md border border-line bg-panel-2 px-2.5 py-1 enabled:hover:border-line-strong disabled:cursor-default disabled:opacity-40;
-  }
 }

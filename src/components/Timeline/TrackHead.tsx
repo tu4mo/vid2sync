@@ -1,4 +1,6 @@
 import type { Clip, TrackKind } from '../../media'
+import { Button } from '../Button/Button'
+import { Slider } from '../Slider/Slider'
 import { LANE_HEIGHT } from './layout'
 
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
@@ -30,30 +32,31 @@ export function TrackHead(props: Props) {
       <div className="flex items-center justify-between gap-1.5">
         <span className="font-semibold">{LABELS[kind]}</span>
         <span className="min-w-0 flex-1 truncate text-xs text-dim">{loading && 'Loading…'}</span>
-        <button
-          className="px-1.5 py-0 text-2xs font-bold aria-pressed:border-danger aria-pressed:bg-danger aria-pressed:text-white"
+        <Button
+          size="sm"
+          className="aria-pressed:border-danger aria-pressed:bg-danger aria-pressed:text-white"
           aria-label="Mute"
           aria-pressed={muted}
           onClick={onToggleMute}
           title={muted ? 'Unmute' : 'Mute'}
         >
           M
-        </button>
+        </Button>
         {clip && (
-          <button
-            className="px-1.5 py-0 text-2xs font-bold enabled:hover:border-danger enabled:hover:text-danger"
+          <Button
+            variant="danger"
+            size="sm"
             aria-label="Remove clip"
             onClick={onRemove}
             title="Remove clip (Delete)"
           >
             ×
-          </button>
+          </Button>
         )}
       </div>
       <div className="flex items-center gap-1.5">
-        <input
-          className="h-3.5 min-w-0 flex-1 accent-accent"
-          type="range"
+        <Slider
+          className="min-w-0 flex-1"
           min={0}
           max={2}
           step={0.01}

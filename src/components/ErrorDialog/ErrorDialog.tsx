@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 
+import { Button } from '../Button/Button'
+
 interface Props {
   message: string | null
   onClose: () => void
@@ -28,7 +30,9 @@ export function ErrorDialog({ message, onClose }: Props) {
         <h2 className="mb-2 font-semibold text-danger">Something went wrong</h2>
         <p className="mb-4 select-text">{message}</p>
         <form method="dialog" className="flex justify-end">
-          <button autoFocus>OK</button>
+          <Button type="submit" autoFocus>
+            OK
+          </Button>
         </form>
       </div>
     </dialog>

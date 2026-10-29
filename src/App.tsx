@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
-import { Timeline, MAX_PPS, MIN_PPS } from './components/Timeline/Timeline'
+import { Timeline } from './components/Timeline/Timeline'
+import { Toolbar } from './components/Toolbar/Toolbar'
 import { Engine } from './engine'
 import {
   TRACK_KINDS,
-  formatTime,
   kindForFile,
   loadClip,
   type Clip,
@@ -302,52 +302,20 @@ export default function App() {
         {!videoClip && <div className="text-dim">Import a video to preview it here</div>}
       </main>
 
-      <div className="flex items-center gap-2.5 border-t border-line bg-panel px-4 py-2">
-        <button
-          className="min-w-[70px] border-accent bg-accent font-semibold text-[#1a1206]"
-          onClick={playing ? pause : play}
-          disabled={end === 0}
-        >
-          {playing ? 'Pause' : 'Play'}
-        </button>
-        <button onClick={() => seek(0)} title="Go to start">
-          ⏮
-        </button>
-        <span className="font-mono tabular-nums" data-testid="clock">
-          {formatTime(time)} <span className="text-dim">/ {formatTime(end)}</span>
-        </span>
-        <span className="ml-auto font-mono text-xs whitespace-nowrap" data-testid="range">
-          {range ? (
-            <>
-              {formatTime(range.start)} – {formatTime(range.end)}{' '}
-              <span className="text-dim">({(range.end - range.start).toFixed(2)} s)</span>
-            </>
-          ) : (
-            <span className="text-dim">Whole video</span>
-          )}
-        </span>
-        <button
-          className="tabular-nums"
-          onClick={() => void exportVideo()}
-          disabled={!clips.video || exportProgress !== null}
-          title="Save the video with the synced audio as MP4"
-        >
-          {exportProgress === null
-            ? 'Export MP4'
-            : `Exporting… ${Math.round(exportProgress * 100)}%`}
-        </button>
-        <label className="ml-3 flex items-center gap-2 text-dim">
-          Zoom
-          <input
-            type="range"
-            min={Math.log(MIN_PPS)}
-            max={Math.log(MAX_PPS)}
-            step={0.01}
-            value={Math.log(pps)}
-            onChange={(e) => setPps(Math.exp(Number(e.target.value)))}
-          />
-        </label>
-      </div>
+      <Toolbar
+        playing={playing}
+        time={time}
+        end={end}
+        range={range}
+        canExport={!!clips.video}
+        exportProgress={exportProgress}
+        pps={pps}
+        onPlay={play}
+        onPause={pause}
+        onSeek={seek}
+        onExport={() => void exportVideo()}
+        onZoom={setPps}
+      />
 
       <Timeline
         clips={clips}
