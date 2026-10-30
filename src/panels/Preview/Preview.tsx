@@ -35,12 +35,12 @@ export function Preview({ clip, time, playing, muted, volume }: Props) {
   }, [muted, volume, clip])
 
   return (
-    <main className="relative flex h-full items-center justify-center bg-black">
+    <main className="relative flex h-full items-center justify-center bg-black p-3">
       {clip ? (
         <video
           ref={ref}
           src={clip.url}
-          className="max-h-full max-w-full"
+          className="max-h-full max-w-full rounded-md"
           playsInline
           preload="auto"
           style={{ visibility: inside ? 'visible' : 'hidden' }}
