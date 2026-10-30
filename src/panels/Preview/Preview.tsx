@@ -46,7 +46,7 @@ export function Preview({ clip, time, playing, muted, volume }: Props) {
           style={{ visibility: inside ? 'visible' : 'hidden' }}
         />
       ) : (
-        <h1 className="flex items-center gap-3 font-logo text-2xl tracking-[0.02em] text-dim">
+        <h1 className="flex items-center gap-3 font-logo text-2xl tracking-[0.02em] text-white">
           <img
             src={`${import.meta.env.BASE_URL}favicon.png`}
             alt=""
