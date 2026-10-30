@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useEffectEvent, useState } from 'react'
 import { Group, Panel, Separator } from 'react-resizable-panels'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
@@ -50,10 +44,6 @@ function roundMs(t: number) {
 
 export default function App() {
   const [clips, setClips] = useState<Clips>({ video: null, audio: null })
-  const [muted, setMuted] = useState<Record<TrackKind, boolean>>({
-    video: false,
-    audio: false,
-  })
   const [volume, setVolume] = useState<Record<TrackKind, number>>({
     video: 1,
     audio: 1,
@@ -69,14 +59,6 @@ export default function App() {
   const end = Math.max(
     0,
     ...TRACK_KINDS.map((k) => (clips[k] ? clipSpan(clips[k]).end : 0)),
-  )
-
-  const gains = useMemo(
-    () => ({
-      video: muted.video ? 0 : volume.video,
-      audio: muted.audio ? 0 : volume.audio,
-    }),
-    [muted, volume],
   )
 
   const pause = useCallback(() => {
@@ -190,10 +172,6 @@ export default function App() {
     [],
   )
 
-  const toggleMute = useCallback((kind: TrackKind) => {
-    setMuted((m) => ({ ...m, [kind]: !m[kind] }))
-  }, [])
-
   const changeVolume = useCallback((kind: TrackKind, v: number) => {
     setVolume((prev) => ({ ...prev, [kind]: v }))
   }, [])
@@ -269,7 +247,7 @@ export default function App() {
     setExportProgress(0)
     try {
       const { downloadBlob, exportSynced } = await import('./lib/export')
-      const blob = await exportSynced(clips, gains, setExportProgress)
+      const blob = await exportSynced(clips, volume, setExportProgress)
       downloadBlob(
         blob,
         `${video.file.name.replace(/\.[^.]+$/, '')}-synced.mp4`,
@@ -307,9 +285,9 @@ export default function App() {
 
   useEffect(() => {
     for (const kind of TRACK_KINDS) {
-      playback.setGain(kind, gains[kind])
+      playback.setGain(kind, volume[kind])
     }
-  }, [gains])
+  }, [volume])
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     // Leave text fields, browser/OS shortcuts and the error dialog alone.
@@ -370,7 +348,6 @@ export default function App() {
             clip={clips.video}
             time={time}
             playing={playing}
-            muted={muted.video}
             volume={volume.video}
           />
         </Panel>
@@ -400,7 +377,6 @@ export default function App() {
 
             <Timeline
               clips={clips}
-              muted={muted}
               volume={volume}
               onVolumeChange={changeVolume}
               selected={selected}
@@ -416,7 +392,6 @@ export default function App() {
               onTrimChange={setTrim}
               onTrimReset={resetTrim}
               onFadeChange={setFade}
-              onToggleMute={toggleMute}
               onImport={importFiles}
               onRemove={removeClip}
               onZoom={setPixelsPerSecond}

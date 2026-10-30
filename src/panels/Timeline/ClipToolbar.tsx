@@ -21,22 +21,13 @@ const KIND_BACKGROUNDS: Record<TrackKind, string> = {
 
 type Props = {
   kind: TrackKind
-  muted: boolean
   volume: number
-  onToggleMute: (kind: TrackKind) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onRemove: (kind: TrackKind) => void
 }
 
-/** The kind strip down a clip's left side, and the buttons and volume slider next to it. Sticks to the left as the timeline scrolls. */
-export function ClipToolbar({
-  kind,
-  muted,
-  volume,
-  onToggleMute,
-  onVolumeChange,
-  onRemove,
-}: Props) {
+/** The kind strip down a clip's left side, and the buttons next to it, the volume icon opening a slider on hover. Sticks to the left as the timeline scrolls. */
+export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
   const percent = Math.round(volume * 100)
 
   return (
@@ -54,18 +45,6 @@ export function ClipToolbar({
         onPointerDown={(e) => e.stopPropagation()}
       >
         <ClipButton
-          className="aria-pressed:border-danger aria-pressed:bg-danger aria-pressed:text-white"
-          aria-label="Mute"
-          aria-pressed={muted}
-          onClick={() => onToggleMute(kind)}
-          title={muted ? 'Unmute' : 'Mute'}
-        >
-          <HugeiconsIcon
-            icon={muted ? VolumeOffIcon : VolumeHighIcon}
-            size={12}
-          />
-        </ClipButton>
-        <ClipButton
           variant="danger"
           aria-label="Remove clip"
           onClick={() => onRemove(kind)}
@@ -73,22 +52,35 @@ export function ClipToolbar({
         >
           <HugeiconsIcon icon={Delete02Icon} size={12} />
         </ClipButton>
-        <div className="flex h-4.5 shrink-0 items-center gap-1 rounded bg-black/60 px-1.5">
-          <Slider
-            className="w-16"
-            aria-label="Volume"
-            min={0}
-            max={2}
-            step={0.01}
-            value={volume}
-            disabled={muted}
-            onChange={(e) => onVolumeChange(kind, Number(e.target.value))}
-            onDoubleClick={() => onVolumeChange(kind, 1)}
-            title={`Volume ${percent}% (double-click to reset)`}
-          />
-          <span className="w-[4ch] text-right text-2xs tabular-nums">
-            {percent}%
+        {/* The volume icon and slider share one block. The slider slides out on hover or focus, and stays out while it has focus, so dragging past it doesn't close it. */}
+        <div className="group flex h-4.5 min-w-0 shrink-0 items-center overflow-hidden rounded border border-line bg-panel-2 hover:border-line-strong has-[:focus-visible]:border-line-strong">
+          <span className="inline-flex h-full shrink-0 items-center px-1.5">
+            <HugeiconsIcon
+              icon={volume === 0 ? VolumeOffIcon : VolumeHighIcon}
+              size={12}
+            />
           </span>
+          {/* Grid columns animate from 0fr to 1fr, so the slider slides to its natural width. */}
+          <div className="grid h-full grid-cols-[0fr] transition-[grid-template-columns] duration-200 ease-out group-hover:grid-cols-[1fr] group-has-[input:focus]:grid-cols-[1fr] motion-reduce:transition-none">
+            <div className="min-w-0 overflow-hidden">
+              <div className="flex h-full w-max items-center gap-1 pr-1.5 pl-1">
+                <Slider
+                  className="w-16"
+                  aria-label="Volume"
+                  min={0}
+                  max={2}
+                  step={0.01}
+                  value={volume}
+                  onChange={(e) => onVolumeChange(kind, Number(e.target.value))}
+                  onDoubleClick={() => onVolumeChange(kind, 1)}
+                  title={`Volume ${percent}% (double-click to reset)`}
+                />
+                <span className="w-[4ch] text-right text-2xs tabular-nums">
+                  {percent}%
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

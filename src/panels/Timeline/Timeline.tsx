@@ -25,7 +25,6 @@ const DROP_WHAT: Record<TrackKind, string> = {
 }
 type Props = {
   clips: Clips
-  muted: Record<TrackKind, boolean>
   volume: Record<TrackKind, number>
   selected: TrackKind | null
   time: number
@@ -49,7 +48,6 @@ type Props = {
     which: keyof TimeRange,
     span: FadeSpan,
   ) => void
-  onToggleMute: (kind: TrackKind) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   /** Imports each file onto the track its type belongs on. */
   onImport: (files: File[]) => void
@@ -59,7 +57,6 @@ type Props = {
 
 export function Timeline({
   clips,
-  muted,
   volume,
   selected,
   time,
@@ -74,7 +71,6 @@ export function Timeline({
   onTrimChange,
   onTrimReset,
   onFadeChange,
-  onToggleMute,
   onVolumeChange,
   onImport,
   onRemove,
@@ -197,7 +193,6 @@ export function Timeline({
                       clip={clip}
                       pixelsPerSecond={pixelsPerSecond}
                       selected={selected === kind}
-                      muted={muted[kind]}
                       volume={volume[kind]}
                       onSelect={onSelect}
                       onOffsetChange={onOffsetChange}
@@ -205,7 +200,6 @@ export function Timeline({
                       onTrimChange={onTrimChange}
                       onTrimReset={onTrimReset}
                       onFadeChange={onFadeChange}
-                      onToggleMute={onToggleMute}
                       onVolumeChange={onVolumeChange}
                       onRemove={onRemove}
                     />

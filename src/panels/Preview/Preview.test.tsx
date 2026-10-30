@@ -21,7 +21,6 @@ type Options = {
   shown?: Clip | null
   time?: number
   playing?: boolean
-  muted?: boolean
   volume?: number
 }
 
@@ -29,18 +28,9 @@ function preview({
   shown = clip,
   time = 11,
   playing = false,
-  muted = false,
   volume = 1,
 }: Options) {
-  return (
-    <Preview
-      clip={shown}
-      time={time}
-      playing={playing}
-      muted={muted}
-      volume={volume}
-    />
-  )
+  return <Preview clip={shown} time={time} playing={playing} volume={volume} />
 }
 
 async function mount(options: Options = {}) {
@@ -116,14 +106,6 @@ describe('Preview', () => {
     const decoded = { ...clip, buffer: {} as AudioBuffer }
     const { el } = await mount({ shown: decoded })
     expect(el!.muted).toBe(true)
-  })
-
-  it('follows mute', async () => {
-    const { screen, el } = await mount({ muted: true })
-    expect(el!.muted).toBe(true)
-
-    await screen.rerender(preview({ muted: false }))
-    expect(el!.muted).toBe(false)
   })
 
   it('caps the volume at full', async () => {

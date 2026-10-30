@@ -7,12 +7,11 @@ type Props = {
   clip: Clip | null
   time: number
   playing: boolean
-  muted: boolean
   volume: number
 }
 
 /** The video preview, kept in step with the playhead. */
-export function Preview({ clip, time, playing, muted, volume }: Props) {
+export function Preview({ clip, time, playing, volume }: Props) {
   const ref = useRef<HTMLVideoElement>(null)
   const span = clip && clipSpan(clip)
   // Whether the playhead is on the clip's trimmed part.
@@ -30,9 +29,9 @@ export function Preview({ clip, time, playing, muted, volume }: Props) {
     if (!el) {
       return
     }
-    el.muted = muted || !!clip?.buffer
+    el.muted = !!clip?.buffer
     el.volume = Math.min(1, volume)
-  }, [muted, volume, clip])
+  }, [volume, clip])
 
   return (
     <main className="relative flex h-full items-center justify-center bg-black p-3">

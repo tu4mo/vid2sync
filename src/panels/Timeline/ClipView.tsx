@@ -77,7 +77,6 @@ type ClipViewProps = {
   clip: Clip
   pixelsPerSecond: number
   selected: boolean
-  muted: boolean
   volume: number
   onSelect: (kind: TrackKind) => void
   onOffsetChange: (kind: TrackKind, offset: number) => void
@@ -90,7 +89,6 @@ type ClipViewProps = {
     which: keyof TimeRange,
     span: FadeSpan,
   ) => void
-  onToggleMute: (kind: TrackKind) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onRemove: (kind: TrackKind) => void
 }
@@ -100,7 +98,6 @@ export const ClipView = memo(function ClipView({
   clip,
   pixelsPerSecond,
   selected,
-  muted,
   volume,
   onSelect,
   onOffsetChange,
@@ -108,7 +105,6 @@ export const ClipView = memo(function ClipView({
   onTrimChange,
   onTrimReset,
   onFadeChange,
-  onToggleMute,
   onVolumeChange,
   onRemove,
 }: ClipViewProps) {
@@ -140,7 +136,7 @@ export const ClipView = memo(function ClipView({
         selected
           ? 'after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-md after:border-2 after:border-accent'
           : ''
-      } ${muted ? 'opacity-45' : ''}`}
+      } ${volume === 0 ? 'opacity-45' : ''}`}
       data-testid={`clip-${kind}`}
       style={{ left: span.start * pixelsPerSecond, width }}
       {...drag}
@@ -151,9 +147,7 @@ export const ClipView = memo(function ClipView({
       >
         <ClipToolbar
           kind={kind}
-          muted={muted}
           volume={volume}
-          onToggleMute={onToggleMute}
           onVolumeChange={onVolumeChange}
           onRemove={onRemove}
         />

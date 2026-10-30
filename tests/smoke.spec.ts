@@ -96,11 +96,14 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await offset.press('Escape')
   await expect(sync).toContainText('1500 ms ahead of audio')
 
-  // Mute the video's own sound and halve the audio track.
-  const mute = videoClip.getByRole('button', { name: 'Mute' })
-  await mute.click()
-  await expect(mute).toHaveAttribute('aria-pressed', 'true')
-  await audioClip.getByRole('slider', { name: 'Volume' }).fill('0.5')
+  // Silence the video's own sound and halve the audio track. Each slider slides out on focus.
+  const videoVolume = videoClip.getByRole('slider', { name: 'Volume' })
+  await videoVolume.focus()
+  await videoVolume.fill('0')
+  await expect(videoClip).toContainText('0%')
+  const audioVolume = audioClip.getByRole('slider', { name: 'Volume' })
+  await audioVolume.focus()
+  await audioVolume.fill('0.5')
   await expect(audioClip).toContainText('50%')
 
   // Play, let the clock run, pause.
@@ -201,7 +204,7 @@ test('import, sync, play, trim and export', async ({ page }) => {
   expect(result.videoDuration).toBeCloseTo(1, 2)
   // Audio sits at 1.5 s on the timeline, the trimmed video starts at 1 s → it starts 0.5 s in.
   expect(Math.abs(result.onset - 0.5)).toBeLessThan(0.005)
-  // Only the WAV's 880 Hz tone: the video's 440 Hz sound is muted.
+  // Only the WAV's 880 Hz tone: the video's 440 Hz sound is at 0%.
   expect(Math.abs(result.frequency - 880)).toBeLessThan(10)
   // The WAV is at 0.5, the track volume at 50%.
   expect(Math.abs(result.peak - 0.25)).toBeLessThan(0.03)
