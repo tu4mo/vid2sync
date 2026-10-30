@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 
 import clipUrl from '../../../tests/fixtures/clip.mp4?url'
 import { NO_FADE, type Clip } from '../../lib/media'
-import { Video } from './Video'
+import { Preview } from './Preview'
 
 // The 3 s fixture at 10 s on the timeline, using 0.5–2.5 s of it, so it shows from 10.5 s to 12.5 s.
 const clip: Clip = {
@@ -33,7 +33,7 @@ function preview({
   volume = 1,
 }: Options) {
   return (
-    <Video
+    <Preview
       clip={shown}
       time={time}
       playing={playing}
@@ -54,7 +54,7 @@ async function loaded(el: HTMLVideoElement) {
   await expect.poll(() => el.readyState).toBeGreaterThanOrEqual(1)
 }
 
-describe('Video', () => {
+describe('Preview', () => {
   it('shows the logo instead of a video without a clip', async () => {
     const { screen, el } = await mount({ shown: null })
     expect(el).toBeNull()

@@ -24,6 +24,7 @@ import {
 } from './lib/media'
 import { Playback } from './lib/playback'
 import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
+import { Preview } from './panels/Preview/Preview'
 import {
   LANE_DEFAULT_HEIGHT,
   LANE_MIN_HEIGHT,
@@ -32,7 +33,6 @@ import {
 } from './panels/Timeline/layout'
 import { Timeline } from './panels/Timeline/Timeline'
 import { Toolbar } from './panels/Toolbar/Toolbar'
-import { Video } from './panels/Video/Video'
 
 const playback = new Playback()
 
@@ -366,7 +366,7 @@ export default function App() {
     >
       <Group orientation="vertical">
         <Panel minSize={80}>
-          <Video
+          <Preview
             clip={clips.video}
             time={time}
             playing={playing}

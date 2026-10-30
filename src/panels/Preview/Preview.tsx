@@ -12,7 +12,7 @@ type Props = {
 }
 
 /** The video preview, kept in step with the playhead. */
-export function Video({ clip, time, playing, muted, volume }: Props) {
+export function Preview({ clip, time, playing, muted, volume }: Props) {
   const ref = useRef<HTMLVideoElement>(null)
   const span = clip && clipSpan(clip)
   // Whether the playhead is on the clip's trimmed part.
