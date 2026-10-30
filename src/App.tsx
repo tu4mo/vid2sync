@@ -33,8 +33,8 @@ const playback = new Playback()
 // The shortest a clip can be trimmed to.
 const MIN_CLIP = 0.05
 
-// The toolbar, then the timeline's fixed rows.
-const TIMELINE_CHROME_HEIGHT = 42 + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
+// The toolbar and the line under it, then the timeline's fixed rows.
+const TIMELINE_CHROME_HEIGHT = 43 + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
 const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
 const TIMELINE_MIN_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_MIN_HEIGHT
 

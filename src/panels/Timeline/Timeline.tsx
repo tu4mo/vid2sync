@@ -1,3 +1,5 @@
+import { AudioWave01Icon, Video01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Fragment, useCallback, useEffect, useRef } from 'react'
 
 import {
@@ -11,7 +13,12 @@ import {
 import { snapTo } from '../../lib/time'
 import { ClipView } from './ClipView'
 import { useDrag } from './hooks/useDrag'
-import { EDGE_PX, useTimelineScroll } from './hooks/useTimelineScroll'
+import {
+  EDGE_PX,
+  TRACK_ICON_INSET_PX,
+  TRACK_ICON_WIDTH_PX,
+  useTimelineScroll,
+} from './hooks/useTimelineScroll'
 import { ImportPrompt } from './ImportPrompt'
 import { ROWS } from './layout'
 import { Playhead } from './Playhead'
@@ -23,6 +30,8 @@ const DROP_WHAT: Record<TrackKind, string> = {
   video: 'a video file',
   audio: 'an audio file',
 }
+const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
+const ICONS = { video: Video01Icon, audio: AudioWave01Icon }
 type Props = {
   clips: Clips
   volume: Record<TrackKind, number>
@@ -150,8 +159,35 @@ export function Timeline({
           />
         </div>
       )}
+      {/* The track headers, under the timeline, so the clips scroll over them. Not until there's a clip; before that the import prompt has the timeline to itself. */}
+      {(clips.video || clips.audio) && (
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 grid"
+          style={{ gridTemplateRows: ROWS }}
+        >
+          <div />
+          {TRACK_KINDS.map((kind) => (
+            <Fragment key={kind}>
+              <div
+                className="flex items-center justify-center text-dim/50"
+                style={{
+                  marginLeft: TRACK_ICON_INSET_PX,
+                  width: TRACK_ICON_WIDTH_PX,
+                }}
+                role="img"
+                aria-label={LABELS[kind]}
+                data-testid={`track-${kind}`}
+              >
+                <HugeiconsIcon icon={ICONS[kind]} size={24} />
+              </div>
+              {kind === 'video' && <div />}
+            </Fragment>
+          ))}
+          <div />
+        </div>
+      )}
       <div
-        className="overflow-x-auto overflow-y-hidden overscroll-x-contain"
+        className="relative overflow-x-auto overflow-y-hidden overscroll-x-contain"
         style={{ paddingInline: EDGE_PX }}
         ref={scrollRef}
         onScroll={onScroll}

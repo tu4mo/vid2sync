@@ -73,7 +73,7 @@ export function Toolbar({
     onZoom(clampZoom(pixelsPerSecond * factor))
   }
   return (
-    <div className="flex items-center justify-between gap-2.5 bg-panel px-4 py-2">
+    <div className="flex items-center justify-between gap-2.5 border-b border-line bg-panel px-4 py-2">
       <div className="flex items-center gap-2.5">
         <Button
           variant="primary"

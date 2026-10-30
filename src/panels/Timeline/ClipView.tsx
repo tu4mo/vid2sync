@@ -17,10 +17,11 @@ const WAVE_COLORS: Record<TrackKind, string> = {
   video: '#9cc4ff',
   audio: '#8ef0b8',
 }
-// Full class names, so Tailwind finds them in the source.
+// Full class names, so Tailwind finds them in the source. Mixed into the panel colour rather than
+// see-through, so the track icons don't show through the clips scrolling over them.
 const CLIP_BACKGROUNDS: Record<TrackKind, string> = {
-  video: 'bg-video/45',
-  audio: 'bg-audio/45',
+  video: 'bg-[color-mix(in_srgb,var(--color-video)_45%,var(--color-panel))]',
+  audio: 'bg-[color-mix(in_srgb,var(--color-audio)_45%,var(--color-panel))]',
 }
 const TRIM_HANDLE_CLASSES: Record<keyof TimeRange, string> = {
   start: 'left-0',
@@ -168,7 +169,7 @@ export const ClipView = memo(function ClipView({
             />
           </div>
         ) : (
-          <div className="absolute bottom-1 left-8 px-1.5 text-2xs text-white/50">
+          <div className="absolute bottom-1 left-0 px-1.5 text-2xs text-white/50">
             no audio track
           </div>
         )}
