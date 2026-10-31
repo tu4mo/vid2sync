@@ -36,7 +36,7 @@ export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
           <HugeiconsIcon icon={Delete02Icon} size={12} />
         </ClipButton>
         {/* The volume icon and slider share one block. The slider slides out on hover or focus, and stays out while it has focus, so dragging past it doesn't close it. */}
-        <div className="group flex h-4.5 min-w-0 shrink-0 items-center overflow-hidden rounded border border-line bg-panel-2 hover:border-line-strong has-[:focus-visible]:border-line-strong">
+        <div className="group/volume flex h-4.5 min-w-0 shrink-0 items-center overflow-hidden rounded border border-line bg-panel-2 hover:border-line-strong has-[:focus-visible]:border-line-strong">
           <span className="inline-flex h-full shrink-0 items-center px-1.5">
             <HugeiconsIcon
               icon={volume === 0 ? VolumeOffIcon : VolumeHighIcon}
@@ -44,7 +44,7 @@ export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
             />
           </span>
           {/* Grid columns animate from 0fr to 1fr, so the slider slides to its natural width. */}
-          <div className="grid h-full grid-cols-[0fr] transition-[grid-template-columns] duration-200 ease-out group-hover:grid-cols-[1fr] group-has-[input:focus]:grid-cols-[1fr] motion-reduce:transition-none">
+          <div className="grid h-full grid-cols-[0fr] transition-[grid-template-columns] duration-200 ease-out group-hover/volume:grid-cols-[1fr] group-has-[input:focus]/volume:grid-cols-[1fr] motion-reduce:transition-none">
             <div className="min-w-0 overflow-hidden">
               <div className="flex h-full w-max items-center gap-1 pr-1.5 pl-1">
                 <Slider
