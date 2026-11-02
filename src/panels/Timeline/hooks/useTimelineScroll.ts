@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -120,20 +119,17 @@ export function useTimelineScroll({
   }, [pixelsPerSecond])
 
   /** Scrolls time `t` into view, if it's off screen. */
-  const reveal = useCallback(
-    (t: number) => {
-      const el = scrollRef.current
-      const x = timeToX(t, pixelsPerSecond)
-      if (
-        el &&
-        (x > el.scrollLeft + el.clientWidth - REVEAL_MARGIN_PX ||
-          x < el.scrollLeft)
-      ) {
-        el.scrollLeft = x - REVEAL_MARGIN_PX
-      }
-    },
-    [pixelsPerSecond],
-  )
+  const reveal = useEffectEvent((t: number) => {
+    const el = scrollRef.current
+    const x = timeToX(t, pixelsPerSecond)
+    if (
+      el &&
+      (x > el.scrollLeft + el.clientWidth - REVEAL_MARGIN_PX ||
+        x < el.scrollLeft)
+    ) {
+      el.scrollLeft = x - REVEAL_MARGIN_PX
+    }
+  })
 
   // Keep the playhead in view during playback: once it nears the right edge, scroll along with it,
   // so it stays put and the clips move instead.
@@ -149,7 +145,7 @@ export function useTimelineScroll({
     } else {
       reveal(time)
     }
-  }, [time, playing, followPlayhead, pixelsPerSecond, reveal])
+  }, [time, playing, followPlayhead, pixelsPerSecond])
 
   // Where scrubbing last put the playhead. It's under the pointer, so there's nothing to reveal.
   const scrubbedTo = useRef<number | null>(null)
@@ -163,16 +159,15 @@ export function useTimelineScroll({
     if (moved && time !== scrubbedTo.current) {
       reveal(time)
     }
-  }, [time, playing, reveal])
+  }, [time, playing])
 
-  const onScroll = useCallback(
-    (e: UIEvent<HTMLElement>) => setScrollLeft(e.currentTarget.scrollLeft),
-    [],
-  )
-  const scrubTo = useCallback((t: number) => {
+  function onScroll(e: UIEvent<HTMLElement>) {
+    setScrollLeft(e.currentTarget.scrollLeft)
+  }
+  function scrubTo(t: number) {
     scrubbedTo.current = t
     return t
-  }, [])
+  }
 
   return {
     /** For the scroll container. */

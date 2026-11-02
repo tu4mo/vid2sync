@@ -1,5 +1,3 @@
-import { memo } from 'react'
-
 import {
   clipFade,
   clipSpan,
@@ -90,7 +88,7 @@ type ClipViewProps = {
   onRemove: (kind: TrackKind) => void
 }
 
-export const ClipView = memo(function ClipView({
+export function ClipView({
   kind,
   clip,
   pixelsPerSecond,
@@ -198,4 +196,4 @@ export const ClipView = memo(function ClipView({
       ))}
     </div>
   )
-})
+}

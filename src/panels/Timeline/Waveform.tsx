@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { Peaks } from '../../lib/clip'
 
@@ -12,12 +12,7 @@ type Props = {
   color: string
 }
 
-export const Waveform = memo(function Waveform({
-  peaks,
-  duration,
-  width,
-  color,
-}: Props) {
+export function Waveform({ peaks, duration, width, color }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
   // The canvas stretches with its lane; redraw at the height it ends up.
   const [height, setHeight] = useState(0)
@@ -83,4 +78,4 @@ export const Waveform = memo(function Waveform({
       style={{ width }}
     />
   )
-})
+}

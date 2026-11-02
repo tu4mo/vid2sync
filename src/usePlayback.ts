@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 
 import { TRACK_KINDS, clipsEnd, type Clips, type Volumes } from './lib/clip'
 import { Playback } from './lib/playback'
@@ -17,21 +17,21 @@ export function usePlayback(clips: Clips, volume: Volumes) {
   const end = clipsEnd(clips)
 
   /** Pauses, and returns where the playhead stopped. */
-  const pause = useCallback(() => {
+  function pause() {
     playback.pause()
     const t = playback.now()
     setTime(t)
     setPlaying(false)
     return t
-  }, [])
+  }
 
   /** Stops playback with the playhead parked at `t`. */
-  const stopAt = useCallback((t: number) => {
+  function stopAt(t: number) {
     playback.pause()
     playback.seek(t)
     setTime(t)
     setPlaying(false)
-  }, [])
+  }
 
   function play() {
     if (end === 0) {
@@ -47,6 +47,8 @@ export function usePlayback(clips: Clips, volume: Volumes) {
     setTime(clamped)
   }
 
+  const stopAtEnd = useEffectEvent(() => stopAt(end))
+
   // Playback loop: read the audio clock and drive the playhead.
   useEffect(() => {
     if (!playing) {
@@ -58,7 +60,7 @@ export function usePlayback(clips: Clips, volume: Volumes) {
       // Stop when playback runs off the end of the clips, but not when it was started past it.
       // Started past it, the Timeline stops it at the end of the empty timeline instead.
       if (t >= end && playback.startedFrom() < end) {
-        stopAt(end)
+        stopAtEnd()
         return
       }
       setTime(t)
@@ -66,7 +68,7 @@ export function usePlayback(clips: Clips, volume: Volumes) {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [playing, end, stopAt])
+  }, [playing, end])
 
   useEffect(() => {
     playback.setClips(clips)
