@@ -194,7 +194,6 @@ export default function App() {
     pause()
     // The new clip starts at the playhead.
     const offset = roundMs(playback.now())
-    setError(null)
     try {
       const clip = await loadClip(file, kind, playback.ctx)
       setClips((prev) => {
@@ -224,6 +223,8 @@ export default function App() {
   }
 
   function importFiles(files: File[], track?: string) {
+    // Clear once up front, so one file's error isn't wiped by the next file's import.
+    setError(null)
     for (const file of files) {
       const kind =
         files.length === 1 && (track === 'video' || track === 'audio')
