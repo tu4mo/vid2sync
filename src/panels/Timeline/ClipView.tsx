@@ -8,7 +8,7 @@ import {
 } from '../../lib/clip'
 import { ClipToolbar } from './ClipToolbar'
 import { FadeHandle } from './FadeHandle'
-import { useDrag } from './useDrag'
+import { useDrag } from './hooks/useDrag'
 import { Waveform } from './Waveform'
 
 const WAVE_COLORS: Record<TrackKind, string> = {

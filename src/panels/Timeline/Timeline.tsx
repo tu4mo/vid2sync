@@ -13,6 +13,8 @@ import {
 } from '../../lib/clip'
 import { snapTo } from '../../lib/snap'
 import { ClipView } from './ClipView'
+import { useDrag } from './hooks/useDrag'
+import { useTimelineScroll } from './hooks/useTimelineScroll'
 import { ImportPrompt } from './ImportPrompt'
 import {
   EDGE_PX,
@@ -22,8 +24,6 @@ import {
 } from './layout'
 import { Playhead } from './Playhead'
 import { SyncLane } from './SyncLane'
-import { useDrag } from './useDrag'
-import { useTimelineScroll } from './useTimelineScroll'
 
 const TAIL_SECONDS = 10
 const SNAP_PX = 6
