@@ -4,6 +4,7 @@ import { Group, Panel, Separator } from 'react-resizable-panels'
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
 import {
+  TRACK_KINDS,
   fadeClip,
   moveClip,
   roundMs,
@@ -95,18 +96,20 @@ export default function App() {
     }
   }
 
-  function importFiles(files: File[], track?: string) {
+  function importFiles(files: File[], track?: TrackKind) {
     // Clear once up front, so one file's error isn't wiped by the next file's import.
     setError(null)
+    const taken = new Set<TrackKind>()
     for (const file of files) {
-      const kind =
-        files.length === 1 && (track === 'video' || track === 'audio')
-          ? track
-          : kindForFile(file)
-      if (kind) {
-        void importFile(file, kind)
-      } else {
+      const kind = files.length === 1 && track ? track : kindForFile(file)
+      if (!kind) {
         setError(`“${file.name}” doesn’t look like a video or audio file.`)
+      } else if (taken.has(kind)) {
+        // A track holds one clip, so a second file of the same kind would race the first.
+        setError(`Only one ${kind} file can be imported at a time.`)
+      } else {
+        taken.add(kind)
+        void importFile(file, kind)
       }
     }
   }
@@ -121,7 +124,10 @@ export default function App() {
     }
     // A single file dropped onto a track goes to that track (e.g. a video's sound onto Audio).
     const track = target.closest<HTMLElement>('[data-track]')?.dataset.track
-    importFiles(files, track)
+    importFiles(
+      files,
+      TRACK_KINDS.find((k) => k === track),
+    )
   }
 
   async function exportVideo() {
