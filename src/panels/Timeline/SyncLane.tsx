@@ -11,6 +11,8 @@ import {
 } from '../../lib/clip'
 
 const EDGE_GAP = 4
+const STEPS_BEFORE = [-5, -1]
+const STEPS_AFTER = [1, 5]
 
 type Props = {
   video: Clip | null
@@ -24,7 +26,7 @@ type Props = {
 /**
  * The gap between the video file's start and the audio file's start (trimming doesn't change the sync),
  * centred under the video clip.
- * Clicking the label lets you type the gap.
+ * Clicking the label lets you type the gap, and the buttons either side of it step it by a few ms.
  */
 export function SyncLane({
   video,
@@ -63,6 +65,36 @@ export function SyncLane({
     return sync.delta
   }
 
+  /** Steps the gap by `ms` live, so you can hear the change, from what's typed if you're editing. */
+  function step(ms: number) {
+    if (!video || !audio || delta === null) {
+      return
+    }
+    const current = editing ? Number(editing.draft) : delta
+    const from = Number.isFinite(current) ? Math.round(current) : delta
+    const set = applySync(syncTo(video, audio, from + ms))
+    if (editing) {
+      setEditing({ ...editing, draft: String(set) })
+    }
+  }
+
+  function stepButton(ms: number) {
+    return (
+      <button
+        key={ms}
+        type="button"
+        className="h-4 cursor-pointer rounded px-1 text-dim tabular-nums hover:bg-panel-2 hover:text-accent"
+        aria-label={`${ms > 0 ? 'Add' : 'Subtract'} ${Math.abs(ms)} ms`}
+        data-testid={`sync-step-${ms}`}
+        // Keep the field focused while editing, so the step doesn't commit it.
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => step(ms)}
+      >
+        {ms > 0 ? `+${ms}` : ms}
+      </button>
+    )
+  }
+
   const span = clipSpan(video)
   const preferred =
     ((span.start + span.end) / 2) * pixelsPerSecond - labelWidth / 2
@@ -81,6 +113,7 @@ export function SyncLane({
         // Keep the timeline from scrubbing (and deselecting) under the label.
         onPointerDown={(e) => e.stopPropagation()}
       >
+        {STEPS_BEFORE.map(stepButton)}
         {editing ? (
           <>
             <input
@@ -101,14 +134,8 @@ export function SyncLane({
                   applySync(syncTo(video, audio, editing.original))
                   e.currentTarget.blur()
                 } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                  // Step live, so you can hear the change.
                   e.preventDefault()
-                  const current = Number(editing.draft)
-                  const next =
-                    (Number.isFinite(current) ? Math.round(current) : delta) +
-                    (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)
-                  const set = applySync(syncTo(video, audio, next))
-                  setEditing({ ...editing, draft: String(set) })
+                  step((e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1))
                 }
               }}
               onBlur={() => {
@@ -141,6 +168,7 @@ export function SyncLane({
               : `${Math.abs(delta)} ms ${delta > 0 ? 'ahead of' : 'behind'} audio`}
           </button>
         )}
+        {STEPS_AFTER.map(stepButton)}
       </div>
     </div>
   )
