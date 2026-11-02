@@ -70,7 +70,7 @@ type Props = {
   onPlayPastTimeline: (t: number) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   /** Imports each file onto the track its type belongs on, or a single file onto `kind`. */
-  onImport: (files: File[], kind?: TrackKind) => void
+  onImport: (files: File[]) => void
   onRemove: (kind: TrackKind) => void
   onZoom: (pixelsPerSecond: number) => void
 }
@@ -163,11 +163,7 @@ export function Timeline({
   function lane(kind: TrackKind) {
     const clip = clips[kind]
     return (
-      <div
-        className="relative flex items-center"
-        data-track={kind}
-        data-testid={`lane-${kind}`}
-      >
+      <div className="relative flex items-center" data-testid={`lane-${kind}`}>
         {/* With both tracks empty, the timeline-wide prompt covers it. */}
         {!clip && hasClips && (
           <div
@@ -177,7 +173,7 @@ export function Timeline({
             <ImportPrompt
               accept={`${kind}/*`}
               what={DROP_WHAT[kind]}
-              onImport={(files) => onImport(files, kind)}
+              onImport={onImport}
             />
           </div>
         )}

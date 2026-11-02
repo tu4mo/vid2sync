@@ -4,7 +4,6 @@ import { Group, Panel, Separator } from 'react-resizable-panels'
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
 import {
-  TRACK_KINDS,
   roundMs,
   updateClip,
   type ClipEdit,
@@ -71,8 +70,8 @@ export function App() {
     }
   }
 
-  function importFiles(files: File[], track?: TrackKind) {
-    const routes = routeFiles(files, track)
+  function importFiles(files: File[]) {
+    const routes = routeFiles(files)
     // Set before the imports start, so a failed import's error replaces it rather than the reverse.
     setError(routes.error)
     for (const { file, kind } of routes.imports) {
@@ -80,7 +79,7 @@ export function App() {
     }
   }
 
-  function dropFiles(files: File[], target: Element) {
+  function dropFiles(files: File[]) {
     if (files.length === 0) {
       setError(
         'The drop didn’t contain a file. If you’re dragging from Photos, try Safari, ' +
@@ -88,12 +87,7 @@ export function App() {
       )
       return
     }
-    // A single file dropped onto a track goes to that track (e.g. a video's sound onto Audio).
-    const track = target.closest<HTMLElement>('[data-track]')?.dataset.track
-    importFiles(
-      files,
-      TRACK_KINDS.find((k) => k === track),
-    )
+    importFiles(files)
   }
 
   async function exportVideo() {

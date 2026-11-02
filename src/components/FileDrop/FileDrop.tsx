@@ -5,8 +5,8 @@ type Props = {
   /** Shown over the contents while something is dragged over them. */
   label: string
   children: ReactNode
-  /** Called with the dropped files, which may be none, and the element they were dropped on. */
-  onDrop: (files: File[], target: Element) => void
+  /** Called with the dropped files, which may be none. */
+  onDrop: (files: File[]) => void
 }
 
 /** Takes files dropped anywhere on it, with an overlay while dragging. */
@@ -29,7 +29,7 @@ export function FileDrop({ className, label, children, onDrop }: Props) {
       onDrop={(e) => {
         e.preventDefault()
         setDragging(false)
-        onDrop([...e.dataTransfer.files], e.target as Element)
+        onDrop([...e.dataTransfer.files])
       }}
     >
       {dragging && (

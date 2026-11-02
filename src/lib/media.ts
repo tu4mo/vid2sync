@@ -129,15 +129,14 @@ export type FileRoutes = {
 }
 
 /**
- * Picks the track for each file by its type, or puts a single file on `track` when one's given
- * (e.g. a video's sound dropped onto Audio). A track holds one clip, so a second file of the same
+ * Picks the track for each file by its type. A track holds one clip, so a second file of the same
  * kind is left out rather than racing the first.
  */
-export function routeFiles(files: File[], track?: TrackKind): FileRoutes {
+export function routeFiles(files: File[]): FileRoutes {
   const imports: FileRoutes['imports'] = []
   let error: string | null = null
   for (const file of files) {
-    const kind = files.length === 1 && track ? track : kindForFile(file)
+    const kind = kindForFile(file)
     if (!kind) {
       error = `“${file.name}” doesn’t look like a video or audio file.`
     } else if (imports.some((i) => i.kind === kind)) {

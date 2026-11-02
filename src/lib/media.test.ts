@@ -148,19 +148,6 @@ describe('routeFiles', () => {
     })
   })
 
-  it('puts a single file on the given track', () => {
-    expect(routeFiles([video], 'audio').imports).toEqual([
-      { file: video, kind: 'audio' },
-    ])
-  })
-
-  it('ignores the given track for more than one file', () => {
-    expect(routeFiles([video, audio], 'audio').imports).toEqual([
-      { file: video, kind: 'video' },
-      { file: audio, kind: 'audio' },
-    ])
-  })
-
   it('leaves out a second file of the same kind', () => {
     const second = new File([], 'other.mp4')
     expect(routeFiles([video, second])).toEqual({
