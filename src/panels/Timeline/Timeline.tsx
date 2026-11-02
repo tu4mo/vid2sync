@@ -5,9 +5,8 @@ import { useEffect, useRef } from 'react'
 import {
   TRACK_KINDS,
   clipSpan,
+  type ClipEdit,
   type Clips,
-  type FadeSpan,
-  type Edge,
   type TrackKind,
   type Volumes,
 } from '../../lib/clip'
@@ -60,7 +59,8 @@ type Props = {
   /** Scrolls to keep the playhead in view during playback. */
   followPlayhead: boolean
   onSelect: (kind: TrackKind | null) => void
-  onOffsetChange: (kind: TrackKind, offset: number) => void
+  /** Moves, trims or fades the clip on the `kind` track. */
+  onEdit: (kind: TrackKind, edit: ClipEdit) => void
   onSeek: (t: number) => void
   /**
    * Called with the timeline's length when playback reaches the end of the empty timeline past
@@ -68,12 +68,6 @@ type Props = {
    * is stopped in `usePlayback`.
    */
   onPlayPastTimeline: (t: number) => void
-  /** Moves the start or end of a clip's trimmed part to timeline time `t`. */
-  onTrimChange: (kind: TrackKind, which: Edge, t: number) => void
-  /** Puts one end of a clip's trim back at the file's edge. */
-  onTrimReset: (kind: TrackKind, which: Edge) => void
-  /** Sets a clip's fade-in (`start`) or fade-out (`end`). */
-  onFadeChange: (kind: TrackKind, which: Edge, span: FadeSpan) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   /** Imports each file onto the track its type belongs on, or a single file onto `kind`. */
   onImport: (files: File[], kind?: TrackKind) => void
@@ -91,12 +85,9 @@ export function Timeline({
   playing,
   followPlayhead,
   onSelect,
-  onOffsetChange,
+  onEdit,
   onSeek,
   onPlayPastTimeline,
-  onTrimChange,
-  onTrimReset,
-  onFadeChange,
   onVolumeChange,
   onImport,
   onRemove,
@@ -198,11 +189,8 @@ export function Timeline({
             selected={selected === kind}
             volume={volume[kind]}
             onSelect={onSelect}
-            onOffsetChange={onOffsetChange}
+            onEdit={onEdit}
             snap={snap}
-            onTrimChange={onTrimChange}
-            onTrimReset={onTrimReset}
-            onFadeChange={onFadeChange}
             onVolumeChange={onVolumeChange}
             onRemove={onRemove}
           />
@@ -255,7 +243,7 @@ export function Timeline({
             audio={clips.audio}
             pixelsPerSecond={pixelsPerSecond}
             view={view}
-            onOffsetChange={onOffsetChange}
+            onEdit={onEdit}
           />
           {lane('audio')}
           <div />

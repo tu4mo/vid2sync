@@ -117,11 +117,14 @@ export function clipsEnd(clips: Clips): number {
   )
 }
 
+/** A change to a clip, such as `(c) => moveClip(c, 2)`. */
+export type ClipEdit = (clip: Clip) => Clip
+
 /** Applies `edit` to the clip on the `kind` track, if there is one. */
 export function updateClip(
   clips: Clips,
   kind: TrackKind,
-  edit: (clip: Clip) => Clip,
+  edit: ClipEdit,
 ): Clips {
   const clip = clips[kind]
   return clip ? { ...clips, [kind]: edit(clip) } : clips

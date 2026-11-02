@@ -5,15 +5,13 @@ import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
 import {
   TRACK_KINDS,
-  fadeClip,
   moveClip,
   roundMs,
   trimClip,
   untrimClip,
   updateClip,
+  type ClipEdit,
   type Clips,
-  type Edge,
-  type FadeSpan,
   type TrackKind,
   type Volumes,
 } from './lib/clip'
@@ -48,6 +46,10 @@ function revokeOnChange(url: string | undefined) {
   return url ? () => URL.revokeObjectURL(url) : undefined
 }
 
+function errorMessage(e: unknown) {
+  return e instanceof Error ? e.message : String(e)
+}
+
 export function App() {
   const [clips, setClips] = useState<Clips>({ video: null, audio: null })
   const [volume, setVolume] = useState<Volumes>({
@@ -65,20 +67,8 @@ export function App() {
     volume,
   )
 
-  function setOffset(kind: TrackKind, offset: number) {
-    setClips((prev) => updateClip(prev, kind, (c) => moveClip(c, offset)))
-  }
-
-  function setTrim(kind: TrackKind, edge: Edge, t: number) {
-    setClips((prev) => updateClip(prev, kind, (c) => trimClip(c, edge, t)))
-  }
-
-  function resetTrim(kind: TrackKind, edge?: Edge) {
-    setClips((prev) => updateClip(prev, kind, (c) => untrimClip(c, edge)))
-  }
-
-  function setFade(kind: TrackKind, edge: Edge, span: FadeSpan) {
-    setClips((prev) => updateClip(prev, kind, (c) => fadeClip(c, edge, span)))
+  function editClip(kind: TrackKind, edit: ClipEdit) {
+    setClips((prev) => updateClip(prev, kind, edit))
   }
 
   function changeVolume(kind: TrackKind, v: number) {
@@ -99,7 +89,7 @@ export function App() {
       setClips((prev) => ({ ...prev, [kind]: { ...clip, offset } }))
       setSelected(kind)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(errorMessage(e))
     }
   }
 
@@ -144,7 +134,7 @@ export function App() {
     try {
       await saveExport(clips, volume, setExportProgress)
     } catch (e) {
-      setError(`Export failed: ${e instanceof Error ? e.message : String(e)}`)
+      setError(`Export failed: ${errorMessage(e)}`)
     }
     setExportProgress(null)
   }
@@ -179,20 +169,19 @@ export function App() {
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault()
       const dir = e.key === 'ArrowLeft' ? -1 : 1
-      const clip = selected && clips[selected]
-      if (selected && clip) {
+      if (selected && clips[selected]) {
         const step = e.shiftKey ? NUDGE_CLIP_SHIFT : NUDGE_CLIP
-        setOffset(selected, clip.offset + dir * step)
+        editClip(selected, (c) => moveClip(c, c.offset + dir * step))
       } else {
         const step = e.shiftKey ? NUDGE_PLAYHEAD_SHIFT : NUDGE_PLAYHEAD
         seek(time + dir * step)
       }
     } else if (e.key === 'i') {
-      setTrim(trimTarget, 'start', time)
+      editClip(trimTarget, (c) => trimClip(c, 'start', time))
     } else if (e.key === 'o') {
-      setTrim(trimTarget, 'end', time)
+      editClip(trimTarget, (c) => trimClip(c, 'end', time))
     } else if (e.key === 'x') {
-      resetTrim(trimTarget)
+      editClip(trimTarget, (c) => untrimClip(c))
     } else if (e.key === 'Home') {
       seek(0)
     } else if (e.key === 'Escape') {
@@ -257,12 +246,9 @@ export function App() {
               playing={playing}
               followPlayhead={followPlayhead}
               onSelect={setSelected}
-              onOffsetChange={setOffset}
+              onEdit={editClip}
               onSeek={seek}
               onPlayPastTimeline={stopAt}
-              onTrimChange={setTrim}
-              onTrimReset={resetTrim}
-              onFadeChange={setFade}
               onImport={importFiles}
               onRemove={removeClip}
               onZoom={setPixelsPerSecond}

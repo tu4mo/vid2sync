@@ -2,8 +2,10 @@ import { useLayoutEffect, useRef, useState } from 'react'
 
 import {
   clipSpan,
+  moveClip,
   syncTo,
   type Clip,
+  type ClipEdit,
   type Sync,
   type TrackKind,
 } from '../../lib/clip'
@@ -16,7 +18,7 @@ type Props = {
   pixelsPerSecond: number
   /** The scrolled-into-view part of the lane, in px. */
   view: { start: number; width: number }
-  onOffsetChange: (kind: TrackKind, offset: number) => void
+  onEdit: (kind: TrackKind, edit: ClipEdit) => void
 }
 
 /**
@@ -29,7 +31,7 @@ export function SyncLane({
   audio,
   pixelsPerSecond,
   view,
-  onOffsetChange,
+  onEdit,
 }: Props) {
   const labelRef = useRef<HTMLDivElement>(null)
   const [labelWidth, setLabelWidth] = useState(0)
@@ -53,9 +55,10 @@ export function SyncLane({
   }
 
   function applySync(sync: Sync) {
-    onOffsetChange('audio', sync.audio)
-    if (sync.video !== undefined) {
-      onOffsetChange('video', sync.video)
+    onEdit('audio', (c) => moveClip(c, sync.audio))
+    const videoOffset = sync.video
+    if (videoOffset !== undefined) {
+      onEdit('video', (c) => moveClip(c, videoOffset))
     }
     return sync.delta
   }

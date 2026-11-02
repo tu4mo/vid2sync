@@ -1,8 +1,12 @@
 import {
   clipFade,
   clipSpan,
+  fadeClip,
+  moveClip,
+  trimClip,
+  untrimClip,
   type Clip,
-  type FadeSpan,
+  type ClipEdit,
   type Edge,
   type TrackKind,
 } from '../../lib/clip'
@@ -78,12 +82,9 @@ type ClipViewProps = {
   selected: boolean
   volume: number
   onSelect: (kind: TrackKind) => void
-  onOffsetChange: (kind: TrackKind, offset: number) => void
+  onEdit: (kind: TrackKind, edit: ClipEdit) => void
   /** Snaps a timeline time to nearby edges and the playhead. */
   snap: (t: number) => number
-  onTrimChange: (kind: TrackKind, which: Edge, t: number) => void
-  onTrimReset: (kind: TrackKind, which: Edge) => void
-  onFadeChange: (kind: TrackKind, which: Edge, span: FadeSpan) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onRemove: (kind: TrackKind) => void
 }
@@ -95,11 +96,8 @@ export function ClipView({
   selected,
   volume,
   onSelect,
-  onOffsetChange,
+  onEdit,
   snap,
-  onTrimChange,
-  onTrimReset,
-  onFadeChange,
   onVolumeChange,
   onRemove,
 }: ClipViewProps) {
@@ -112,9 +110,10 @@ export function ClipView({
       // Shift slows the drag down 10× for fine alignment.
       const dx = (e.clientX - d.lastX) * (e.shiftKey ? 0.1 : 1)
       d.lastX = e.clientX
-      // Unclamped (the setter clamps at 0:00), so after pushing past 0:00 the clip waits for the pointer to come back to it.
+      // Unclamped (moveClip clamps at 0:00), so after pushing past 0:00 the clip waits for the pointer to come back to it.
       d.offset += dx / pixelsPerSecond
-      onOffsetChange(kind, d.offset)
+      const offset = d.offset
+      onEdit(kind, (c) => moveClip(c, offset))
     },
   )
   const span = clipSpan(clip)
@@ -179,7 +178,7 @@ export function ClipView({
           active={selected}
           snap={snap}
           onGrab={() => onSelect(kind)}
-          onChange={(w, next) => onFadeChange(kind, w, next)}
+          onChange={(w, next) => onEdit(kind, (c) => fadeClip(c, w, next))}
         />
       ))}
       {(['start', 'end'] as const).map((which) => (
@@ -190,8 +189,8 @@ export function ClipView({
           pixelsPerSecond={pixelsPerSecond}
           snap={snap}
           onGrab={() => onSelect(kind)}
-          onChange={(t) => onTrimChange(kind, which, t)}
-          onReset={() => onTrimReset(kind, which)}
+          onChange={(t) => onEdit(kind, (c) => trimClip(c, which, t))}
+          onReset={() => onEdit(kind, (c) => untrimClip(c, which))}
         />
       ))}
     </div>
