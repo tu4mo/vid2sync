@@ -1,16 +1,16 @@
+import type { Edge, FadeSpan } from '../../lib/clip'
 import { fadeGain } from '../../lib/fade'
-import type { FadeSpan, TimeRange } from '../../lib/media'
 import { useDrag } from './hooks/useDrag'
 
 const CURVE_POINTS = 32
 // Puts the dot on the border's corner when there's no fade, centered on the 2px border like it is vertically.
 const DOT_INSET_PX = 1
 
-const LABELS: Record<keyof TimeRange, string> = {
+const LABELS: Record<Edge, string> = {
   start: 'Fade in',
   end: 'Fade out',
 }
-const SILENT_LABELS: Record<keyof TimeRange, string> = {
+const SILENT_LABELS: Record<Edge, string> = {
   start: 'Where the fade in starts',
   end: 'Where the fade out ends',
 }
@@ -19,7 +19,7 @@ const SILENT_LABELS: Record<keyof TimeRange, string> = {
  * The ramp across a 1×1 box, as path points from left to right. `silent` is the share of the
  * box that's silent: on the left for a fade-in, on the right for a fade-out.
  */
-function rampPoints(which: keyof TimeRange, silent: number): string {
+function rampPoints(which: Edge, silent: number): string {
   return Array.from({ length: CURVE_POINTS + 1 }, (_, i) => {
     const p = i / CURVE_POINTS
     return which === 'start'
@@ -29,7 +29,7 @@ function rampPoints(which: keyof TimeRange, silent: number): string {
 }
 
 /** The shade above the ramp, covering the silence too. */
-function shadePath(which: keyof TimeRange, silent: number): string {
+function shadePath(which: Edge, silent: number): string {
   const ramp = rampPoints(which, silent)
   return which === 'start'
     ? `M0,0 L0,1 L${ramp} Z`
@@ -37,7 +37,7 @@ function shadePath(which: keyof TimeRange, silent: number): string {
 }
 
 type DotProps = {
-  which: keyof TimeRange
+  which: Edge
   /** The top dot sets where the fade is at full volume, the bottom one where it stops being silent. */
   point: keyof FadeSpan
   /** How far in from the clip edge the dot sits, in seconds. */
@@ -108,7 +108,7 @@ function Dot({
 }
 
 type Props = {
-  which: keyof TimeRange
+  which: Edge
   span: FadeSpan
   /** The clip edge the fade runs from, on the timeline. */
   edge: number
@@ -118,7 +118,7 @@ type Props = {
   active: boolean
   snap: (t: number) => number
   onGrab: () => void
-  onChange: (which: keyof TimeRange, span: FadeSpan) => void
+  onChange: (which: Edge, span: FadeSpan) => void
 }
 
 /**

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { NO_FADE, type Clip, type Clips } from './media'
+import { NO_FADE, type Clip, type Clips } from './clip'
 import { Playback, scheduleClips } from './playback'
+import { testClip } from './testClip'
 
 class FakeAudioContext {
   currentTime = 10
@@ -53,16 +54,13 @@ function clip(
   trim = { start: 0, end: duration },
   fade = NO_FADE,
 ): Clip {
-  return {
-    file: new File([], 'clip'),
-    url: 'blob:clip',
+  return testClip({
     duration,
     offset,
     trim,
     fade,
     buffer: { duration } as AudioBuffer,
-    peaks: null,
-  }
+  })
 }
 
 const clips: Clips = { video: clip(60), audio: clip(60) }

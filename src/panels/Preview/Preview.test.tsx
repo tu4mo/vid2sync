@@ -2,20 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { render } from 'vitest-browser-react'
 
 import clipUrl from '../../../tests/fixtures/clip.mp4?url'
-import { NO_FADE, type Clip } from '../../lib/media'
+import { type Clip } from '../../lib/clip'
+import { testClip } from '../../lib/testClip'
 import { Preview } from './Preview'
 
 // The 3 s fixture at 10 s on the timeline, using 0.5–2.5 s of it, so it shows from 10.5 s to 12.5 s.
-const clip: Clip = {
-  file: new File([], 'clip.mp4'),
+const clip = testClip({
   url: clipUrl,
   duration: 3,
   offset: 10,
   trim: { start: 0.5, end: 2.5 },
-  fade: NO_FADE,
-  buffer: null,
-  peaks: null,
-}
+})
 
 type Options = {
   shown?: Clip | null

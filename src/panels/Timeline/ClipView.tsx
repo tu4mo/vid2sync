@@ -5,9 +5,9 @@ import {
   clipSpan,
   type Clip,
   type FadeSpan,
-  type TimeRange,
+  type Edge,
   type TrackKind,
-} from '../../lib/media'
+} from '../../lib/clip'
 import { ClipToolbar } from './ClipToolbar'
 import { FadeHandle } from './FadeHandle'
 import { useDrag } from './hooks/useDrag'
@@ -23,13 +23,13 @@ const CLIP_BACKGROUNDS: Record<TrackKind, string> = {
   video: 'bg-[color-mix(in_srgb,var(--color-video)_45%,var(--color-panel))]',
   audio: 'bg-[color-mix(in_srgb,var(--color-audio)_45%,var(--color-panel))]',
 }
-const TRIM_HANDLE_CLASSES: Record<keyof TimeRange, string> = {
+const TRIM_HANDLE_CLASSES: Record<Edge, string> = {
   start: 'left-0',
   end: 'right-0',
 }
 
 type TrimHandleProps = {
-  which: keyof TimeRange
+  which: Edge
   /** Where the edge is on the timeline. */
   time: number
   pixelsPerSecond: number
@@ -83,13 +83,9 @@ type ClipViewProps = {
   onOffsetChange: (kind: TrackKind, offset: number) => void
   /** Snaps a timeline time to nearby edges and the playhead. */
   snap: (t: number) => number
-  onTrimChange: (kind: TrackKind, which: keyof TimeRange, t: number) => void
-  onTrimReset: (kind: TrackKind, which: keyof TimeRange) => void
-  onFadeChange: (
-    kind: TrackKind,
-    which: keyof TimeRange,
-    span: FadeSpan,
-  ) => void
+  onTrimChange: (kind: TrackKind, which: Edge, t: number) => void
+  onTrimReset: (kind: TrackKind, which: Edge) => void
+  onFadeChange: (kind: TrackKind, which: Edge, span: FadeSpan) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onRemove: (kind: TrackKind) => void
 }

@@ -1,11 +1,11 @@
-import { scheduleFade } from './fade'
 import {
   TRACK_KINDS,
   clipFade,
   clipSpan,
   type Clips,
   type TrackKind,
-} from './media'
+} from './clip'
+import { scheduleFade } from './fade'
 
 /**
  * Starts every clip's audio (only its trimmed part, with its fades) so that timeline time `from` sounds at context time `at`.

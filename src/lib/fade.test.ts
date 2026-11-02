@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { NO_FADE } from './clip'
 import { fadeCurve, fadeGain, scheduleFade } from './fade'
-import { NO_FADE } from './media'
 
 // On the timeline from 2 s to 6 s, fading in over its first second and out over its last two.
 const span = { start: 2, end: 6 }

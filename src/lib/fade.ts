@@ -1,4 +1,4 @@
-import type { Fade, TimeRange } from './media'
+import type { Fade, TimeRange } from './clip'
 
 /** The gain at `progress` (0 to 1) through a linear fade-in. A fade-out runs it backwards. */
 export function fadeGain(progress: number): number {

@@ -1,4 +1,4 @@
-import type { Clip } from '../../lib/media'
+import type { Clip } from '../../lib/clip'
 
 /** Parks the video at timeline time `t`, or with `play`, plays it in step with `t`. */
 export function syncVideo(

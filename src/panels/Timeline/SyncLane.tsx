@@ -1,33 +1,14 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 
-import { clipSpan, minOffset, type Clip, type TrackKind } from '../../lib/media'
+import {
+  clipSpan,
+  syncTo,
+  type Clip,
+  type Sync,
+  type TrackKind,
+} from '../../lib/clip'
 
 const EDGE_GAP = 4
-
-type Sync = {
-  /** The gap that was set, in ms. */
-  delta: number
-  audio: number
-  /** Only there when the video has to move too. */
-  video?: number
-}
-
-/**
- * Where the clips go for the audio to start `ms` after the video. Moves the audio; if that would
- * put it before 0:00, the video moves the other way instead. Clamped to where the clips still
- * overlap, which also keeps a typo from stretching the timeline to days.
- */
-function syncTo(video: Clip, audio: Clip, ms: number): Sync {
-  const delta = Math.min(
-    Math.max(ms, -Math.floor(audio.duration * 1000)),
-    Math.floor(video.duration * 1000),
-  )
-  const audioMin = minOffset(audio)
-  const target = video.offset + delta / 1000
-  return target >= audioMin
-    ? { delta, audio: target }
-    : { delta, audio: audioMin, video: audioMin - delta / 1000 }
-}
 
 type Props = {
   video: Clip | null

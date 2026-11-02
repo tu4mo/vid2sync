@@ -12,7 +12,7 @@ import {
   type AudioCodec,
 } from 'mediabunny'
 
-import type { Clips, TrackKind } from './media'
+import type { Clips, Volumes } from './clip'
 import { scheduleClips } from './playback'
 
 const SAMPLE_RATE = 48000
@@ -32,7 +32,7 @@ function createMp4Output() {
  */
 async function mixAudio(
   clips: Clips,
-  gains: Record<TrackKind, number>,
+  gains: Volumes,
   start: number,
   duration: number,
 ): Promise<AudioBuffer> {
@@ -99,7 +99,7 @@ async function measureEncoderDelay(codec: AudioCodec): Promise<number> {
  */
 export async function exportSynced(
   clips: Clips,
-  gains: Record<TrackKind, number>,
+  gains: Volumes,
   onProgress: (fraction: number) => void,
 ): Promise<Blob> {
   const video = clips.video
