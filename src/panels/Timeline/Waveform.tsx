@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 
-import type { Peaks } from '../../lib/media'
+import type { Peaks } from '../../lib/clip'
 
 // Browsers cap canvas dimensions; beyond this the bitmap is stretched.
 const MAX_CANVAS_WIDTH = 16384

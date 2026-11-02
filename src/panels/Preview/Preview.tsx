@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { clipSpan, type Clip } from '../../lib/media'
+import { clipSpan, type Clip } from '../../lib/clip'
 import { syncVideo } from './sync'
 
 type Props = {

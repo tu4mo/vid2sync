@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { NO_FADE, type Clip } from '../../lib/media'
+import { testClip } from '../../lib/testClip'
 import { syncVideo } from './sync'
 
 class FakeVideo {
@@ -27,16 +27,7 @@ function element(el: FakeVideo) {
 }
 
 // Sits at 10 s on the timeline, using 2–8 s of the file.
-const clip: Clip = {
-  file: new File([], 'clip'),
-  url: 'blob:clip',
-  duration: 10,
-  offset: 10,
-  trim: { start: 2, end: 8 },
-  fade: NO_FADE,
-  buffer: null,
-  peaks: null,
-}
+const clip = testClip({ offset: 10, trim: { start: 2, end: 8 } })
 
 describe('syncVideo when parked', () => {
   it('seeks to the playhead', () => {

@@ -1,99 +1,4 @@
-/** The timeline's two tracks: the video (with its own audio) and the separate audio. */
-export type TrackKind = 'video' | 'audio'
-
-/** Every track, in the order they're shown and scheduled. */
-export const TRACK_KINDS: readonly TrackKind[] = ['video', 'audio']
-
-/** A clip's waveform, as the sample range of each short bucket of audio. */
-export type Peaks = {
-  /** Buckets per second of audio, for mapping a bucket to its time. */
-  perSecond: number
-  /** Lowest sample of each bucket, at most 0. */
-  min: Float32Array
-  /** Highest sample of each bucket, at least 0. */
-  max: Float32Array
-}
-
-/** A loaded media file and where it sits on the timeline. */
-export type Clip = {
-  file: File
-  /** Blob URL of the file, for the video element. */
-  url: string
-  /** Length in seconds. */
-  duration: number
-  /** Position of the file's start on the timeline, in seconds. Below 0 when trimmed. */
-  offset: number
-  /** The part of the file that's used, in seconds into the file. */
-  trim: TimeRange
-  /** How the sound fades in from the trimmed part's start and out to its end. */
-  fade: Fade
-  /** Decoded audio, or null when the file has no decodable audio track. */
-  buffer: AudioBuffer | null
-  /** Waveform of `buffer`, or null when there's no audio. */
-  peaks: Peaks | null
-}
-
-/** The clip on each track, or null for an empty track. */
-export type Clips = Record<TrackKind, Clip | null>
-
-/** A span of the timeline, in seconds. */
-export type TimeRange = {
-  start: number
-  end: number
-}
-
-/**
- * One fade, as distances in from its clip edge in seconds: silent up to `silent`, ramping to
- * full volume at `full`.
- */
-export type FadeSpan = {
-  silent: number
-  full: number
-}
-
-/** A clip's fade-in (`start`) and fade-out (`end`). */
-export type Fade = Record<keyof TimeRange, FadeSpan>
-
-/** No fade at either end. */
-export const NO_FADE: Fade = {
-  start: { silent: 0, full: 0 },
-  end: { silent: 0, full: 0 },
-}
-
-// The shortest a ramp can be after a silence, so a fade never turns into a hard cut.
-const MIN_RAMP = 0.01
-
-/** Fits a fade into `room` seconds, keeping the silence before its ramp. */
-export function fitFade({ silent, full }: FadeSpan, room: number): FadeSpan {
-  const fitted = Math.min(Math.max(0, full), room)
-  return {
-    silent: Math.min(Math.max(0, silent), Math.max(0, fitted - MIN_RAMP)),
-    full: fitted,
-  }
-}
-
-/** Where the clip's used part starts and ends on the timeline. */
-export function clipSpan(clip: Clip): TimeRange {
-  return {
-    start: clip.offset + clip.trim.start,
-    end: clip.offset + clip.trim.end,
-  }
-}
-
-/**
- * The fades as they apply: trimming can leave less room than they were set to, so they're
- * cut down to fit, the fade-in first.
- */
-export function clipFade(clip: Clip): Fade {
-  const length = clip.trim.end - clip.trim.start
-  const start = fitFade(clip.fade.start, length)
-  return { start, end: fitFade(clip.fade.end, length - start.full) }
-}
-
-/** The earliest offset a clip can have: its trimmed part can't start before 0:00. */
-export function minOffset(clip: Clip): number {
-  return -clip.trim.start
-}
+import { NO_FADE, type Clip, type Peaks, type TrackKind } from './clip'
 
 const PEAKS_PER_SECOND = 200
 
@@ -146,8 +51,8 @@ function readDuration(url: string, kind: TrackKind): Promise<number> {
 }
 
 /**
- * Loads a dropped file as a clip at the start of the timeline, decoding its audio when it
- * has any. Throws when neither the metadata nor the audio gives a duration.
+ * Loads a dropped file as a clip, decoding its audio when it has any. It starts at 0:00; the
+ * caller places it. Throws when neither the metadata nor the audio gives a duration.
  */
 export async function loadClip(
   file: File,

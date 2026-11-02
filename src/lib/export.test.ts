@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { NO_FADE, type Clip, type Clips } from './media'
+import type { Clip, Clips } from './clip'
+import { testClip } from './testClip'
 
 const SAMPLE_RATE = 48000
 // 2112 samples of AAC priming, as Apple's encoder writes it.
@@ -110,16 +111,12 @@ function clip(
   duration: number,
   trim = { start: 0, end: duration },
 ): Clip {
-  return {
-    file: new File([], 'clip'),
-    url: 'blob:clip',
+  return testClip({
     duration,
     offset,
     trim,
-    fade: NO_FADE,
     buffer: { duration } as AudioBuffer,
-    peaks: null,
-  }
+  })
 }
 
 const gains = { video: 1, audio: 0.5 }

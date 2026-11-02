@@ -6,7 +6,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Slider } from '../../components/Slider/Slider'
-import type { TrackKind } from '../../lib/media'
+import type { TrackKind } from '../../lib/clip'
 import { ClipButton } from './ClipButton'
 
 type Props = {

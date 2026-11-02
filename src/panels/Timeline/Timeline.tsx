@@ -7,9 +7,10 @@ import {
   clipSpan,
   type Clips,
   type FadeSpan,
-  type TimeRange,
+  type Edge,
   type TrackKind,
-} from '../../lib/media'
+  type Volumes,
+} from '../../lib/clip'
 import { snapTo } from '../../lib/time'
 import { ClipView } from './ClipView'
 import { useDrag } from './hooks/useDrag'
@@ -34,7 +35,7 @@ const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 const ICONS = { video: Video01Icon, audio: AudioWave01Icon }
 type Props = {
   clips: Clips
-  volume: Record<TrackKind, number>
+  volume: Volumes
   selected: TrackKind | null
   time: number
   end: number
@@ -48,15 +49,11 @@ type Props = {
   /** Called with the timeline's length when playback reaches the end of it. */
   onReachEnd: (t: number) => void
   /** Moves the start or end of a clip's trimmed part to timeline time `t`. */
-  onTrimChange: (kind: TrackKind, which: keyof TimeRange, t: number) => void
+  onTrimChange: (kind: TrackKind, which: Edge, t: number) => void
   /** Puts one end of a clip's trim back at the file's edge. */
-  onTrimReset: (kind: TrackKind, which: keyof TimeRange) => void
+  onTrimReset: (kind: TrackKind, which: Edge) => void
   /** Sets a clip's fade-in (`start`) or fade-out (`end`). */
-  onFadeChange: (
-    kind: TrackKind,
-    which: keyof TimeRange,
-    span: FadeSpan,
-  ) => void
+  onFadeChange: (kind: TrackKind, which: Edge, span: FadeSpan) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   /** Imports each file onto the track its type belongs on. */
   onImport: (files: File[]) => void

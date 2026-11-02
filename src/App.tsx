@@ -5,17 +5,20 @@ import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
 import {
   TRACK_KINDS,
-  clipFade,
-  clipSpan,
-  fitFade,
-  kindForFile,
-  loadClip,
-  minOffset,
+  clipsEnd,
+  fadeClip,
+  moveClip,
+  roundMs,
+  trimClip,
+  untrimClip,
+  updateClip,
   type Clips,
+  type Edge,
   type FadeSpan,
-  type TimeRange,
   type TrackKind,
-} from './lib/media'
+  type Volumes,
+} from './lib/clip'
+import { kindForFile, loadClip } from './lib/media'
 import { Playback } from './lib/playback'
 import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import { Preview } from './panels/Preview/Preview'
@@ -30,9 +33,6 @@ import { Toolbar } from './panels/Toolbar/Toolbar'
 
 const playback = new Playback()
 
-// The shortest a clip can be trimmed to.
-const MIN_CLIP = 0.05
-
 // The toolbar and the line under it, then the timeline's fixed rows.
 const TIMELINE_CHROME_HEIGHT = 43 + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
 const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
@@ -43,13 +43,9 @@ function revokeOnChange(url: string | undefined) {
   return url ? () => URL.revokeObjectURL(url) : undefined
 }
 
-function roundMs(t: number) {
-  return Math.round(t * 1000) / 1000
-}
-
 export default function App() {
   const [clips, setClips] = useState<Clips>({ video: null, audio: null })
-  const [volume, setVolume] = useState<Record<TrackKind, number>>({
+  const [volume, setVolume] = useState<Volumes>({
     video: 1,
     audio: 1,
   })
@@ -61,10 +57,7 @@ export default function App() {
   const [followPlayhead, setFollowPlayhead] = useState(true)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
 
-  const end = Math.max(
-    0,
-    ...TRACK_KINDS.map((k) => (clips[k] ? clipSpan(clips[k]).end : 0)),
-  )
+  const end = clipsEnd(clips)
 
   const pause = useCallback(() => {
     playback.pause()
@@ -96,86 +89,20 @@ export default function App() {
 
   // Stable identity so memoized clips on the timeline don't re-render every playback frame.
   const setOffset = useCallback((kind: TrackKind, offset: number) => {
-    setClips((prev) => {
-      const clip = prev[kind]
-      return clip
-        ? {
-            ...prev,
-            [kind]: {
-              ...clip,
-              offset: roundMs(Math.max(minOffset(clip), offset)),
-            },
-          }
-        : prev
-    })
+    setClips((prev) => updateClip(prev, kind, (c) => moveClip(c, offset)))
   }, [])
 
-  /** Moves the trimmed part's start or end to timeline time `t`, within the file and 0:00. */
-  const setTrim = useCallback(
-    (kind: TrackKind, which: keyof TimeRange, t: number) => {
-      setClips((prev) => {
-        const clip = prev[kind]
-        if (!clip) {
-          return prev
-        }
-        const local = roundMs(t - clip.offset)
-        const trim =
-          which === 'start'
-            ? {
-                ...clip.trim,
-                start: Math.min(
-                  Math.max(0, -clip.offset, local),
-                  clip.trim.end - MIN_CLIP,
-                ),
-              }
-            : {
-                ...clip.trim,
-                end: Math.max(
-                  Math.min(clip.duration, local),
-                  clip.trim.start + MIN_CLIP,
-                ),
-              }
-        return { ...prev, [kind]: { ...clip, trim } }
-      })
-    },
-    [],
-  )
-
-  /** Puts one end of the trim, or with no argument both, back at the file's edge. */
-  const resetTrim = useCallback((kind: TrackKind, which?: keyof TimeRange) => {
-    setClips((prev) => {
-      const clip = prev[kind]
-      if (!clip) {
-        return prev
-      }
-      // The start can only go back as far as 0:00.
-      const edges = { start: Math.max(0, -clip.offset), end: clip.duration }
-      const trim = which ? { ...clip.trim, [which]: edges[which] } : edges
-      return { ...prev, [kind]: { ...clip, trim } }
-    })
+  const setTrim = useCallback((kind: TrackKind, edge: Edge, t: number) => {
+    setClips((prev) => updateClip(prev, kind, (c) => trimClip(c, edge, t)))
   }, [])
 
-  /** Sets a clip's fade-in or fade-out, leaving room for the other fade. */
-  const setFade = useCallback(
-    (kind: TrackKind, which: keyof TimeRange, span: FadeSpan) => {
-      setClips((prev) => {
-        const clip = prev[kind]
-        if (!clip) {
-          return prev
-        }
-        const other = which === 'start' ? 'end' : 'start'
-        const room =
-          clip.trim.end - clip.trim.start - clipFade(clip)[other].full
-        const rounded = {
-          silent: roundMs(span.silent),
-          full: roundMs(span.full),
-        }
-        const fade = { ...clip.fade, [which]: fitFade(rounded, room) }
-        return { ...prev, [kind]: { ...clip, fade } }
-      })
-    },
-    [],
-  )
+  const resetTrim = useCallback((kind: TrackKind, edge?: Edge) => {
+    setClips((prev) => updateClip(prev, kind, (c) => untrimClip(c, edge)))
+  }, [])
+
+  const setFade = useCallback((kind: TrackKind, edge: Edge, span: FadeSpan) => {
+    setClips((prev) => updateClip(prev, kind, (c) => fadeClip(c, edge, span)))
+  }, [])
 
   const changeVolume = useCallback((kind: TrackKind, v: number) => {
     setVolume((prev) => ({ ...prev, [kind]: v }))
