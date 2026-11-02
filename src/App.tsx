@@ -38,6 +38,11 @@ const TIMELINE_CHROME_HEIGHT = 43 + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
 const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
 const TIMELINE_MIN_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_MIN_HEIGHT
 
+/** An effect cleanup that frees the blob URL, for when it stops being used. */
+function revokeOnChange(url: string | undefined) {
+  return url ? () => URL.revokeObjectURL(url) : undefined
+}
+
 function roundMs(t: number) {
   return Math.round(t * 1000) / 1000
 }
@@ -178,16 +183,11 @@ export default function App() {
 
   const removeClip = useCallback(
     (kind: TrackKind) => {
-      const clip = clips[kind]
-      if (!clip) {
-        return
-      }
       pause()
-      URL.revokeObjectURL(clip.url)
       setClips((prev) => ({ ...prev, [kind]: null }))
       setSelected(null)
     },
-    [clips, pause],
+    [pause],
   )
 
   async function importFile(file: File, kind: TrackKind) {
@@ -196,13 +196,7 @@ export default function App() {
     const offset = roundMs(playback.now())
     try {
       const clip = await loadClip(file, kind, playback.ctx)
-      setClips((prev) => {
-        const old = prev[kind]
-        if (old) {
-          URL.revokeObjectURL(old.url)
-        }
-        return { ...prev, [kind]: { ...clip, offset } }
-      })
+      setClips((prev) => ({ ...prev, [kind]: { ...clip, offset } }))
       setSelected(kind)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -283,6 +277,14 @@ export default function App() {
   useEffect(() => {
     playback.setClips(clips)
   }, [clips])
+
+  // Free each file's blob URL once its clip is replaced or removed. Kept here rather than in the
+  // components that show the clip: App mounts with no clips, so StrictMode's extra mount can't
+  // revoke a URL that's still in use.
+  const videoUrl = clips.video?.url
+  const audioUrl = clips.audio?.url
+  useEffect(() => revokeOnChange(videoUrl), [videoUrl])
+  useEffect(() => revokeOnChange(audioUrl), [audioUrl])
 
   useEffect(() => {
     for (const kind of TRACK_KINDS) {
