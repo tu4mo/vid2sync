@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { testClip } from '../../lib/testClip'
-import { syncVideo } from './sync'
+import { syncVideo } from './syncVideo'
 
 class FakeVideo {
   currentTime = 0

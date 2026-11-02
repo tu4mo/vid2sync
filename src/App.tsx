@@ -28,11 +28,18 @@ import {
   SYNC_LANE_HEIGHT,
 } from './panels/Timeline/layout'
 import { Timeline } from './panels/Timeline/Timeline'
-import { Toolbar } from './panels/Toolbar/Toolbar'
+import { TOOLBAR_HEIGHT, Toolbar } from './panels/Toolbar/Toolbar'
 import { usePlayback } from './usePlayback'
 
-// The toolbar and the line under it, then the timeline's fixed rows.
-const TIMELINE_CHROME_HEIGHT = 43 + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
+// How far the arrow keys move a selected clip, and the playhead otherwise, in seconds (with Shift).
+const NUDGE_CLIP = 0.01
+const NUDGE_CLIP_SHIFT = 0.1
+const NUDGE_PLAYHEAD = 1 / 30
+const NUDGE_PLAYHEAD_SHIFT = 1
+
+// The toolbar, then the timeline's fixed rows.
+const TIMELINE_CHROME_HEIGHT =
+  TOOLBAR_HEIGHT + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
 const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
 const TIMELINE_MIN_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_MIN_HEIGHT
 
@@ -41,7 +48,7 @@ function revokeOnChange(url: string | undefined) {
   return url ? () => URL.revokeObjectURL(url) : undefined
 }
 
-export default function App() {
+export function App() {
   const [clips, setClips] = useState<Clips>({ video: null, audio: null })
   const [volume, setVolume] = useState<Volumes>({
     video: 1,
@@ -160,6 +167,8 @@ export default function App() {
     ) {
       return
     }
+    // Trim keys act on the selected clip, or else the video.
+    const trimTarget = selected ?? 'video'
     if (e.key === ' ') {
       e.preventDefault()
       if (playing) {
@@ -172,17 +181,18 @@ export default function App() {
       const dir = e.key === 'ArrowLeft' ? -1 : 1
       const clip = selected && clips[selected]
       if (selected && clip) {
-        setOffset(selected, clip.offset + dir * (e.shiftKey ? 0.1 : 0.01))
+        const step = e.shiftKey ? NUDGE_CLIP_SHIFT : NUDGE_CLIP
+        setOffset(selected, clip.offset + dir * step)
       } else {
-        seek(time + dir * (e.shiftKey ? 1 : 1 / 30))
+        const step = e.shiftKey ? NUDGE_PLAYHEAD_SHIFT : NUDGE_PLAYHEAD
+        seek(time + dir * step)
       }
     } else if (e.key === 'i') {
-      // Trim keys act on the selected clip, or else the video.
-      setTrim(selected ?? 'video', 'start', time)
+      setTrim(trimTarget, 'start', time)
     } else if (e.key === 'o') {
-      setTrim(selected ?? 'video', 'end', time)
+      setTrim(trimTarget, 'end', time)
     } else if (e.key === 'x') {
-      resetTrim(selected ?? 'video')
+      resetTrim(trimTarget)
     } else if (e.key === 'Home') {
       seek(0)
     } else if (e.key === 'Escape') {
@@ -223,7 +233,7 @@ export default function App() {
           <div className="flex h-full flex-col bg-panel">
             <Toolbar
               playing={playing}
-              end={end}
+              hasClips={!!(clips.video || clips.audio)}
               canExport={!!clips.video}
               exportProgress={exportProgress}
               pixelsPerSecond={pixelsPerSecond}
@@ -249,7 +259,7 @@ export default function App() {
               onSelect={setSelected}
               onOffsetChange={setOffset}
               onSeek={seek}
-              onReachEnd={stopAt}
+              onPlayPastTimeline={stopAt}
               onTrimChange={setTrim}
               onTrimReset={resetTrim}
               onFadeChange={setFade}

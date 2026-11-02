@@ -58,7 +58,8 @@ export function usePlayback(clips: Clips, volume: Volumes) {
     function tick() {
       const t = playback.now()
       // Stop when playback runs off the end of the clips, but not when it was started past it.
-      // Started past it, the Timeline stops it at the end of the empty timeline instead.
+      // Started past it, the Timeline stops it at the end of the empty timeline instead
+      // (`onPlayPastTimeline`).
       if (t >= end && playback.startedFrom() < end) {
         stopAtEnd()
         return

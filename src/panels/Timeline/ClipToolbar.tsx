@@ -7,7 +7,10 @@ import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Slider } from '../../components/Slider/Slider'
 import type { TrackKind } from '../../lib/clip'
-import { ClipButton } from './ClipButton'
+
+// The remove button and the volume block, as tall and rounded as the clip's label.
+const CHIP =
+  'flex h-4.5 shrink-0 items-center rounded border border-line bg-panel-2'
 
 type Props = {
   kind: TrackKind
@@ -27,16 +30,19 @@ export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
         // Keep the buttons from dragging the clip (and capturing the pointer, which eats the click).
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <ClipButton
-          variant="danger"
+        <button
+          type="button"
+          className={`${CHIP} cursor-pointer justify-center px-1.5 hover:border-danger hover:text-danger`}
           aria-label="Remove clip"
           onClick={() => onRemove(kind)}
           title="Remove clip (Delete)"
         >
           <HugeiconsIcon icon={Delete02Icon} size={12} />
-        </ClipButton>
+        </button>
         {/* The volume icon and slider share one block. The slider slides out on hover or focus, and stays out while it has focus, so dragging past it doesn't close it. */}
-        <div className="group/volume flex h-4.5 min-w-0 shrink-0 items-center overflow-hidden rounded border border-line bg-panel-2 hover:border-line-strong has-[:focus-visible]:border-line-strong">
+        <div
+          className={`group/volume ${CHIP} min-w-0 overflow-hidden hover:border-line-strong has-[:focus-visible]:border-line-strong`}
+        >
           <span className="inline-flex h-full shrink-0 items-center px-1.5">
             <HugeiconsIcon
               icon={volume === 0 ? VolumeOffIcon : VolumeHighIcon}

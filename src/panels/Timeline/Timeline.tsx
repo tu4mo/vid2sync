@@ -11,7 +11,7 @@ import {
   type TrackKind,
   type Volumes,
 } from '../../lib/clip'
-import { snapTo } from '../../lib/time'
+import { snapTo } from '../../lib/snap'
 import { ClipView } from './ClipView'
 import { ImportPrompt } from './ImportPrompt'
 import {
@@ -62,8 +62,12 @@ type Props = {
   onSelect: (kind: TrackKind | null) => void
   onOffsetChange: (kind: TrackKind, offset: number) => void
   onSeek: (t: number) => void
-  /** Called with the timeline's length when playback reaches the end of it. */
-  onReachEnd: (t: number) => void
+  /**
+   * Called with the timeline's length when playback reaches the end of the empty timeline past
+   * the clips. That only happens when it was started past them: running off the end of the clips
+   * is stopped in `usePlayback`.
+   */
+  onPlayPastTimeline: (t: number) => void
   /** Moves the start or end of a clip's trimmed part to timeline time `t`. */
   onTrimChange: (kind: TrackKind, which: Edge, t: number) => void
   /** Puts one end of a clip's trim back at the file's edge. */
@@ -89,7 +93,7 @@ export function Timeline({
   onSelect,
   onOffsetChange,
   onSeek,
-  onReachEnd,
+  onPlayPastTimeline,
   onTrimChange,
   onTrimReset,
   onFadeChange,
@@ -99,7 +103,7 @@ export function Timeline({
   onZoom,
 }: Props) {
   const contentRef = useRef<HTMLDivElement>(null)
-  const { scrollRef, onScroll, viewport, scrollLeft, scrubTo } =
+  const { scrollRef, onScroll, viewport, scrollLeft, markScrub } =
     useTimelineScroll({
       time,
       playing,
@@ -110,9 +114,9 @@ export function Timeline({
 
   function seekToPointer(clientX: number) {
     const rect = contentRef.current?.getBoundingClientRect()
-    onSeek(
-      scrubTo(Math.max(0, rect ? (clientX - rect.left) / pixelsPerSecond : 0)),
-    )
+    const t = Math.max(0, rect ? (clientX - rect.left) / pixelsPerSecond : 0)
+    markScrub(t)
+    onSeek(t)
   }
 
   const scrub = useDrag(
@@ -128,12 +132,13 @@ export function Timeline({
     (viewport - 2 * EDGE_PX) / pixelsPerSecond,
   )
 
-  // Playing past the clips runs into empty timeline; stop at the end of it.
+  // Playing past the clips runs into empty timeline; stop at the end of it. It's stopped here
+  // because how much empty timeline there is depends on the viewport's width.
   useEffect(() => {
     if (playing && time >= visibleSeconds) {
-      onReachEnd(visibleSeconds)
+      onPlayPastTimeline(visibleSeconds)
     }
-  }, [playing, time, visibleSeconds, onReachEnd])
+  }, [playing, time, visibleSeconds, onPlayPastTimeline])
 
   const width = visibleSeconds * pixelsPerSecond
   // Trim edges and fades snap to the playhead, the clips' edges and the files' edges.
