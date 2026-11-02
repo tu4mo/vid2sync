@@ -1,6 +1,6 @@
 import { AudioWave01Icon, Video01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Fragment, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 import {
   TRACK_KINDS,
@@ -13,17 +13,17 @@ import {
 } from '../../lib/clip'
 import { snapTo } from '../../lib/time'
 import { ClipView } from './ClipView'
-import { useDrag } from './hooks/useDrag'
+import { ImportPrompt } from './ImportPrompt'
 import {
   EDGE_PX,
+  ROWS,
   TRACK_ICON_INSET_PX,
   TRACK_ICON_WIDTH_PX,
-  useTimelineScroll,
-} from './hooks/useTimelineScroll'
-import { ImportPrompt } from './ImportPrompt'
-import { ROWS } from './layout'
+} from './layout'
 import { Playhead } from './Playhead'
 import { SyncLane } from './SyncLane'
+import { useDrag } from './useDrag'
+import { useTimelineScroll } from './useTimelineScroll'
 
 const TAIL_SECONDS = 10
 const SNAP_PX = 6
@@ -33,6 +33,22 @@ const DROP_WHAT: Record<TrackKind, string> = {
 }
 const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
 const ICONS = { video: Video01Icon, audio: AudioWave01Icon }
+
+/** A track's icon, at the start of its lane, under the clips. */
+function TrackIcon({ kind }: { kind: TrackKind }) {
+  return (
+    <div
+      className="flex items-center justify-center text-dim/50"
+      style={{ marginLeft: TRACK_ICON_INSET_PX, width: TRACK_ICON_WIDTH_PX }}
+      role="img"
+      aria-label={LABELS[kind]}
+      data-testid={`track-${kind}`}
+    >
+      <HugeiconsIcon icon={ICONS[kind]} size={24} />
+    </div>
+  )
+}
+
 type Props = {
   clips: Clips
   volume: Volumes
@@ -55,8 +71,8 @@ type Props = {
   /** Sets a clip's fade-in (`start`) or fade-out (`end`). */
   onFadeChange: (kind: TrackKind, which: Edge, span: FadeSpan) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
-  /** Imports each file onto the track its type belongs on. */
-  onImport: (files: File[]) => void
+  /** Imports each file onto the track its type belongs on, or a single file onto `kind`. */
+  onImport: (files: File[], kind?: TrackKind) => void
   onRemove: (kind: TrackKind) => void
   onZoom: (pixelsPerSecond: number) => void
 }
@@ -144,9 +160,55 @@ export function Timeline({
     return snapTo(t, snapTimesRef.current, SNAP_PX / pixelsPerSecondRef.current)
   }
 
+  const hasClips = !!(clips.video || clips.audio)
+  // The scrolled-into-view part of a lane, in px.
+  const view = { start: scrollLeft - EDGE_PX, width: viewport }
+
+  function lane(kind: TrackKind) {
+    const clip = clips[kind]
+    return (
+      <div
+        className="relative flex items-center"
+        data-track={kind}
+        data-testid={`lane-${kind}`}
+      >
+        {/* With both tracks empty, the timeline-wide prompt covers it. */}
+        {!clip && hasClips && (
+          <div
+            className="pointer-events-none absolute inset-y-0 flex items-center justify-center"
+            style={{ left: view.start, width: view.width }}
+          >
+            <ImportPrompt
+              accept={`${kind}/*`}
+              what={DROP_WHAT[kind]}
+              onImport={(files) => onImport(files, kind)}
+            />
+          </div>
+        )}
+        {clip && (
+          <ClipView
+            kind={kind}
+            clip={clip}
+            pixelsPerSecond={pixelsPerSecond}
+            selected={selected === kind}
+            volume={volume[kind]}
+            onSelect={onSelect}
+            onOffsetChange={onOffsetChange}
+            snap={snap}
+            onTrimChange={onTrimChange}
+            onTrimReset={onTrimReset}
+            onFadeChange={onFadeChange}
+            onVolumeChange={onVolumeChange}
+            onRemove={onRemove}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel">
-      {!clips.video && !clips.audio && (
+      {!hasClips && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <ImportPrompt
             accept="video/*,audio/*"
@@ -155,30 +217,16 @@ export function Timeline({
           />
         </div>
       )}
-      {/* The track headers, under the timeline, so the clips scroll over them. Not until there's a clip; before that the import prompt has the timeline to itself. */}
-      {(clips.video || clips.audio) && (
+      {/* The track icons, under the timeline, so the clips scroll over them. Not until there's a clip; before that the import prompt has the timeline to itself. */}
+      {hasClips && (
         <div
           className="pointer-events-none absolute inset-y-0 left-0 grid"
           style={{ gridTemplateRows: ROWS }}
         >
           <div />
-          {TRACK_KINDS.map((kind) => (
-            <Fragment key={kind}>
-              <div
-                className="flex items-center justify-center text-dim/50"
-                style={{
-                  marginLeft: TRACK_ICON_INSET_PX,
-                  width: TRACK_ICON_WIDTH_PX,
-                }}
-                role="img"
-                aria-label={LABELS[kind]}
-                data-testid={`track-${kind}`}
-              >
-                <HugeiconsIcon icon={ICONS[kind]} size={24} />
-              </div>
-              {kind === 'video' && <div />}
-            </Fragment>
-          ))}
+          <TrackIcon kind="video" />
+          <div />
+          <TrackIcon kind="audio" />
           <div />
         </div>
       )}
@@ -188,6 +236,7 @@ export function Timeline({
         ref={scrollRef}
         onScroll={onScroll}
       >
+        {/* The rows match ROWS: scrub strip, video, sync, audio, scrub strip. */}
         <div
           className="relative grid h-full min-w-full cursor-text"
           ref={contentRef}
@@ -195,63 +244,18 @@ export function Timeline({
           {...scrub}
         >
           <div />
-
-          {TRACK_KINDS.map((kind) => {
-            const clip = clips[kind]
-            return (
-              <Fragment key={kind}>
-                <div
-                  className="relative flex items-center"
-                  data-track={kind}
-                  data-testid={`lane-${kind}`}
-                >
-                  {/* With both tracks empty, the timeline-wide prompt covers it. */}
-                  {!clip && (clips.video || clips.audio) && (
-                    // Kept to the scrolled-into-view part of the lane.
-                    <div
-                      className="pointer-events-none absolute inset-y-0 flex items-center justify-center"
-                      style={{ left: scrollLeft - EDGE_PX, width: viewport }}
-                    >
-                      <ImportPrompt
-                        accept={`${kind}/*`}
-                        what={DROP_WHAT[kind]}
-                        onImport={onImport}
-                      />
-                    </div>
-                  )}
-                  {clip && (
-                    <ClipView
-                      kind={kind}
-                      clip={clip}
-                      pixelsPerSecond={pixelsPerSecond}
-                      selected={selected === kind}
-                      volume={volume[kind]}
-                      onSelect={onSelect}
-                      onOffsetChange={onOffsetChange}
-                      snap={snap}
-                      onTrimChange={onTrimChange}
-                      onTrimReset={onTrimReset}
-                      onFadeChange={onFadeChange}
-                      onVolumeChange={onVolumeChange}
-                      onRemove={onRemove}
-                    />
-                  )}
-                </div>
-                {kind === 'video' && (
-                  <SyncLane
-                    video={clips.video}
-                    audio={clips.audio}
-                    pixelsPerSecond={pixelsPerSecond}
-                    view={{ start: scrollLeft - EDGE_PX, width: viewport }}
-                    onOffsetChange={onOffsetChange}
-                  />
-                )}
-              </Fragment>
-            )
-          })}
+          {lane('video')}
+          <SyncLane
+            video={clips.video}
+            audio={clips.audio}
+            pixelsPerSecond={pixelsPerSecond}
+            view={view}
+            onOffsetChange={onOffsetChange}
+          />
+          {lane('audio')}
           <div />
 
-          {(clips.video || clips.audio) && (
+          {hasClips && (
             <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
           )}
         </div>
