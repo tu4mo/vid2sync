@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import { Group, Panel, Separator } from 'react-resizable-panels'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
@@ -17,6 +17,7 @@ import {
   type Volumes,
 } from './lib/clip'
 import { kindForFile, loadClip } from './lib/media'
+import { saveExport } from './lib/saveExport'
 import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import { Preview } from './panels/Preview/Preview'
 import {
@@ -56,35 +57,31 @@ export default function App() {
     volume,
   )
 
-  // Stable identity so memoized clips on the timeline don't re-render every playback frame.
-  const setOffset = useCallback((kind: TrackKind, offset: number) => {
+  function setOffset(kind: TrackKind, offset: number) {
     setClips((prev) => updateClip(prev, kind, (c) => moveClip(c, offset)))
-  }, [])
+  }
 
-  const setTrim = useCallback((kind: TrackKind, edge: Edge, t: number) => {
+  function setTrim(kind: TrackKind, edge: Edge, t: number) {
     setClips((prev) => updateClip(prev, kind, (c) => trimClip(c, edge, t)))
-  }, [])
+  }
 
-  const resetTrim = useCallback((kind: TrackKind, edge?: Edge) => {
+  function resetTrim(kind: TrackKind, edge?: Edge) {
     setClips((prev) => updateClip(prev, kind, (c) => untrimClip(c, edge)))
-  }, [])
+  }
 
-  const setFade = useCallback((kind: TrackKind, edge: Edge, span: FadeSpan) => {
+  function setFade(kind: TrackKind, edge: Edge, span: FadeSpan) {
     setClips((prev) => updateClip(prev, kind, (c) => fadeClip(c, edge, span)))
-  }, [])
+  }
 
-  const changeVolume = useCallback((kind: TrackKind, v: number) => {
+  function changeVolume(kind: TrackKind, v: number) {
     setVolume((prev) => ({ ...prev, [kind]: v }))
-  }, [])
+  }
 
-  const removeClip = useCallback(
-    (kind: TrackKind) => {
-      pause()
-      setClips((prev) => ({ ...prev, [kind]: null }))
-      setSelected(null)
-    },
-    [pause],
-  )
+  function removeClip(kind: TrackKind) {
+    pause()
+    setClips((prev) => ({ ...prev, [kind]: null }))
+    setSelected(null)
+  }
 
   async function importFile(file: File, kind: TrackKind) {
     // The new clip starts at the playhead.
@@ -96,19 +93,6 @@ export default function App() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
-  }
-
-  function dropFiles(files: File[], target: Element) {
-    if (files.length === 0) {
-      setError(
-        'The drop didn’t contain a file. If you’re dragging from Photos, try Safari, ' +
-          'or drag the video to the Desktop first and drop it from there.',
-      )
-      return
-    }
-    // A single file dropped onto a track goes to that track (e.g. a video's sound onto Audio).
-    const track = target.closest<HTMLElement>('[data-track]')?.dataset.track
-    importFiles(files, track)
   }
 
   function importFiles(files: File[], track?: string) {
@@ -127,26 +111,29 @@ export default function App() {
     }
   }
 
-  async function exportVideo() {
-    const video = clips.video
-    if (!video) {
+  function dropFiles(files: File[], target: Element) {
+    if (files.length === 0) {
+      setError(
+        'The drop didn’t contain a file. If you’re dragging from Photos, try Safari, ' +
+          'or drag the video to the Desktop first and drop it from there.',
+      )
       return
     }
+    // A single file dropped onto a track goes to that track (e.g. a video's sound onto Audio).
+    const track = target.closest<HTMLElement>('[data-track]')?.dataset.track
+    importFiles(files, track)
+  }
+
+  async function exportVideo() {
     pause()
     setError(null)
     setExportProgress(0)
     try {
-      const { downloadBlob, exportSynced } = await import('./lib/export')
-      const blob = await exportSynced(clips, volume, setExportProgress)
-      downloadBlob(
-        blob,
-        `${video.file.name.replace(/\.[^.]+$/, '')}-synced.mp4`,
-      )
+      await saveExport(clips, volume, setExportProgress)
     } catch (e) {
       setError(`Export failed: ${e instanceof Error ? e.message : String(e)}`)
-    } finally {
-      setExportProgress(null)
     }
+    setExportProgress(null)
   }
 
   // Free each file's blob URL once its clip is replaced or removed. Kept here rather than in the

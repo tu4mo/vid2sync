@@ -6,6 +6,9 @@ const CURVE_POINTS = 32
 // Puts the dot on the border's corner when there's no fade, centered on the 2px border like it is vertically.
 const DOT_INSET_PX = 1
 
+// The side of the clip each fade sits on.
+const SIDES = { start: 'left', end: 'right' } as const
+
 const LABELS: Record<Edge, string> = {
   start: 'Fade in',
   end: 'Fade out',
@@ -68,6 +71,7 @@ function Dot({
   onMove,
   onReset,
 }: DotProps) {
+  const side = SIDES[which]
   const drag = useDrag(
     (e) => {
       onGrab()
@@ -93,7 +97,7 @@ function Dot({
         point === 'full' ? 'top-px' : 'bottom-px'
       } ${active ? '' : 'opacity-0 group-hover:opacity-100'}`}
       style={{
-        [which === 'start' ? 'left' : 'right']: x,
+        [side]: x,
         translate: `${which === 'start' ? '-50%' : '50%'} ${point === 'full' ? '-50%' : '50%'}`,
       }}
       title={title}
@@ -136,6 +140,7 @@ export function FadeHandle({
   onGrab,
   onChange,
 }: Props) {
+  const side = SIDES[which]
   const dot = { which, edge, clipWidth, pixelsPerSecond, active, snap, onGrab }
   // The share of the fade that's silent.
   const silentShare = span.full > 0 ? span.silent / span.full : 0
@@ -149,7 +154,7 @@ export function FadeHandle({
             which === 'start' ? 'rounded-l-md' : 'rounded-r-md'
           }`}
           style={{
-            [which === 'start' ? 'left' : 'right']: 0,
+            [side]: 0,
             width: span.full * pixelsPerSecond,
           }}
           viewBox="0 0 1 1"

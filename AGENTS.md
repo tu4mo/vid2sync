@@ -3,3 +3,4 @@
 ## Code style
 
 - Destructure component props in the function signature, e.g. `function Toolbar({ playing, onPlay }: Props)`, not `function Toolbar(props: Props)`. oxlint has no rule for this.
+- The React Compiler memoizes components, hooks and callbacks, so don't add `memo`, `useCallback` or `useMemo`. For a function an effect calls but shouldn't re-run on, use `useEffectEvent`. The compiler silently skips a component it can't handle (for example `try`/`finally`, a dynamic `import()`, or a conditional computed object key), so keep those out of components.

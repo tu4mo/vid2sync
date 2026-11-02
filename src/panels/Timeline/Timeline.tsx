@@ -1,6 +1,6 @@
 import { AudioWave01Icon, Video01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Fragment, useCallback, useEffect, useRef } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 
 import {
   TRACK_KINDS,
@@ -132,18 +132,17 @@ export function Timeline({
       return [span.start, span.end, clip.offset, clip.offset + clip.duration]
     }),
   ]
-  // Read through a ref, so memoized clips don't re-render as the playhead moves.
+  // Read through refs, so `snap` keeps its identity and the clips don't re-render as the playhead
+  // moves.
   const snapTimesRef = useRef(snapTimes)
   const pixelsPerSecondRef = useRef(pixelsPerSecond)
   useEffect(() => {
     snapTimesRef.current = snapTimes
     pixelsPerSecondRef.current = pixelsPerSecond
   })
-  const snap = useCallback(
-    (t: number) =>
-      snapTo(t, snapTimesRef.current, SNAP_PX / pixelsPerSecondRef.current),
-    [],
-  )
+  function snap(t: number) {
+    return snapTo(t, snapTimesRef.current, SNAP_PX / pixelsPerSecondRef.current)
+  }
 
   return (
     <div className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel">
