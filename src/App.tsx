@@ -4,8 +4,6 @@ import { Group, Panel, Separator } from 'react-resizable-panels'
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
 import {
-  TRACK_KINDS,
-  clipsEnd,
   fadeClip,
   moveClip,
   roundMs,
@@ -19,7 +17,6 @@ import {
   type Volumes,
 } from './lib/clip'
 import { kindForFile, loadClip } from './lib/media'
-import { Playback } from './lib/playback'
 import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import { Preview } from './panels/Preview/Preview'
 import {
@@ -30,8 +27,7 @@ import {
 } from './panels/Timeline/layout'
 import { Timeline } from './panels/Timeline/Timeline'
 import { Toolbar } from './panels/Toolbar/Toolbar'
-
-const playback = new Playback()
+import { usePlayback } from './usePlayback'
 
 // The toolbar and the line under it, then the timeline's fixed rows.
 const TIMELINE_CHROME_HEIGHT = 43 + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
@@ -51,41 +47,14 @@ export default function App() {
   })
   const [selected, setSelected] = useState<TrackKind | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [time, setTime] = useState(0)
-  const [playing, setPlaying] = useState(false)
   const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
   const [followPlayhead, setFollowPlayhead] = useState(true)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
 
-  const end = clipsEnd(clips)
-
-  const pause = useCallback(() => {
-    playback.pause()
-    setTime(playback.now())
-    setPlaying(false)
-  }, [])
-
-  /** Stops playback with the playhead parked at `t`. */
-  const stopAt = useCallback((t: number) => {
-    playback.pause()
-    playback.seek(t)
-    setTime(t)
-    setPlaying(false)
-  }, [])
-
-  function play() {
-    if (end === 0) {
-      return
-    }
-    playback.play(time)
-    setPlaying(true)
-  }
-
-  function seek(t: number) {
-    const clamped = Math.max(0, t)
-    playback.seek(clamped)
-    setTime(clamped)
-  }
+  const { time, playing, end, play, pause, stopAt, seek, ctx } = usePlayback(
+    clips,
+    volume,
+  )
 
   // Stable identity so memoized clips on the timeline don't re-render every playback frame.
   const setOffset = useCallback((kind: TrackKind, offset: number) => {
@@ -118,11 +87,10 @@ export default function App() {
   )
 
   async function importFile(file: File, kind: TrackKind) {
-    pause()
     // The new clip starts at the playhead.
-    const offset = roundMs(playback.now())
+    const offset = roundMs(pause())
     try {
-      const clip = await loadClip(file, kind, playback.ctx)
+      const clip = await loadClip(file, kind, ctx)
       setClips((prev) => ({ ...prev, [kind]: { ...clip, offset } }))
       setSelected(kind)
     } catch (e) {
@@ -181,30 +149,6 @@ export default function App() {
     }
   }
 
-  // Playback loop: read the audio clock and drive the playhead.
-  useEffect(() => {
-    if (!playing) {
-      return
-    }
-    let raf = 0
-    function tick() {
-      const t = playback.now()
-      // Stop when playback runs off the end, but not when it was started past the end.
-      if (t >= end && playback.startedFrom() < end) {
-        stopAt(end)
-        return
-      }
-      setTime(t)
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [playing, end, stopAt])
-
-  useEffect(() => {
-    playback.setClips(clips)
-  }, [clips])
-
   // Free each file's blob URL once its clip is replaced or removed. Kept here rather than in the
   // components that show the clip: App mounts with no clips, so StrictMode's extra mount can't
   // revoke a URL that's still in use.
@@ -212,12 +156,6 @@ export default function App() {
   const audioUrl = clips.audio?.url
   useEffect(() => revokeOnChange(videoUrl), [videoUrl])
   useEffect(() => revokeOnChange(audioUrl), [audioUrl])
-
-  useEffect(() => {
-    for (const kind of TRACK_KINDS) {
-      playback.setGain(kind, volume[kind])
-    }
-  }, [volume])
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     // Leave text fields, browser/OS shortcuts and the error dialog alone.
