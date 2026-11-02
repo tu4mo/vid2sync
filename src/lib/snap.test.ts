@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { snapTo } from './time'
+import { snapTo } from './snap'
 
 describe('snapTo', () => {
   it('snaps to the nearest target within the tolerance', () => {

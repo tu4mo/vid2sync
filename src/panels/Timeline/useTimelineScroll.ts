@@ -160,9 +160,8 @@ export function useTimelineScroll({
   function onScroll(e: UIEvent<HTMLElement>) {
     setScrollLeft(e.currentTarget.scrollLeft)
   }
-  function scrubTo(t: number) {
+  function markScrub(t: number) {
     scrubbedTo.current = t
-    return t
   }
 
   return {
@@ -173,7 +172,7 @@ export function useTimelineScroll({
     /** The scroll container's width. */
     viewport,
     scrollLeft,
-    /** Marks a seek to `t` as coming from the pointer, so the view doesn't scroll for it. Returns `t`. */
-    scrubTo,
+    /** Marks a seek to `t` as coming from the pointer, so the view doesn't scroll for it. */
+    markScrub,
   }
 }

@@ -17,6 +17,9 @@ import {
   clampZoom,
 } from '../../lib/zoom'
 
+/** The toolbar's height, line under it included, for laying out the panel it sits in. */
+export const TOOLBAR_HEIGHT = 43
+
 /** How much one press of a zoom button zooms. */
 const ZOOM_STEP = 1.5
 
@@ -39,7 +42,8 @@ function sliderToZoom(value: number) {
 
 type Props = {
   playing: boolean
-  end: number
+  /** Nothing to play or zoom until there's a clip. */
+  hasClips: boolean
   canExport: boolean
   exportProgress: number | null
   pixelsPerSecond: number
@@ -54,7 +58,7 @@ type Props = {
 
 export function Toolbar({
   playing,
-  end,
+  hasClips,
   canExport,
   exportProgress,
   pixelsPerSecond,
@@ -66,14 +70,16 @@ export function Toolbar({
   onZoom,
   onToggleFollowPlayhead,
 }: Props) {
-  // Nothing imported yet, so there's nothing to play or zoom.
-  const empty = end === 0
+  const empty = !hasClips
 
   function zoomBy(factor: number) {
     onZoom(clampZoom(pixelsPerSecond * factor))
   }
   return (
-    <div className="flex items-center justify-between gap-2.5 border-b border-line bg-panel px-4 py-2">
+    <div
+      className="flex shrink-0 items-center justify-between gap-2.5 border-b border-line bg-panel px-4"
+      style={{ height: TOOLBAR_HEIGHT }}
+    >
       <div className="flex items-center gap-2.5">
         <Button
           variant="primary"

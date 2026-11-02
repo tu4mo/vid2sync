@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react'
 // className passed in never has to win a conflict with them.
 const VARIANTS = {
   default: 'border-line bg-panel-2 enabled:hover:border-line-strong',
-  primary: 'border-accent bg-accent font-semibold text-[#1a1206]',
+  primary: 'border-accent bg-accent font-semibold text-on-accent',
   danger:
     'border-line bg-panel-2 enabled:hover:border-danger enabled:hover:text-danger',
 }
