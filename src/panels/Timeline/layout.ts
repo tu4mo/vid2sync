@@ -13,3 +13,9 @@ export const LANE_DEFAULT_HEIGHT = 72
 
 // Scrub strip, video lane, sync lane, audio lane, scrub strip.
 export const ROWS = `${SCRUB_STRIP_HEIGHT}px minmax(${LANE_MIN_HEIGHT}px, 1fr) ${SYNC_LANE_HEIGHT}px minmax(${LANE_MIN_HEIGHT}px, 1fr) ${SCRUB_STRIP_HEIGHT}px`
+
+// The scrub strips and sync lane, which don't stretch.
+const FIXED_ROWS_HEIGHT = 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
+/** The timeline's height with the lanes at their default height, and at their smallest. */
+export const TIMELINE_HEIGHT = FIXED_ROWS_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
+export const TIMELINE_MIN_HEIGHT = FIXED_ROWS_HEIGHT + 2 * LANE_MIN_HEIGHT

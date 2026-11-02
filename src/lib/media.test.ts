@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { kindForFile, loadClip } from './media'
+import { kindForFile, loadClip, routeFiles } from './media'
 
 function fakeBuffer(channels: number[][], sampleRate: number) {
   const length = channels[0].length
@@ -131,5 +131,49 @@ describe('loadClip', () => {
       'Could not read “take.wav”. Is it a supported video format?',
     )
     expect(revoke).toHaveBeenCalledWith('blob:test')
+  })
+})
+
+describe('routeFiles', () => {
+  const video = new File([], 'take.mov')
+  const audio = new File([], 'take.wav')
+
+  it('puts each file on the track for its type', () => {
+    expect(routeFiles([video, audio])).toEqual({
+      imports: [
+        { file: video, kind: 'video' },
+        { file: audio, kind: 'audio' },
+      ],
+      error: null,
+    })
+  })
+
+  it('puts a single file on the given track', () => {
+    expect(routeFiles([video], 'audio').imports).toEqual([
+      { file: video, kind: 'audio' },
+    ])
+  })
+
+  it('ignores the given track for more than one file', () => {
+    expect(routeFiles([video, audio], 'audio').imports).toEqual([
+      { file: video, kind: 'video' },
+      { file: audio, kind: 'audio' },
+    ])
+  })
+
+  it('leaves out a second file of the same kind', () => {
+    const second = new File([], 'other.mp4')
+    expect(routeFiles([video, second])).toEqual({
+      imports: [{ file: video, kind: 'video' }],
+      error: 'Only one video file can be imported at a time.',
+    })
+  })
+
+  it('leaves out files that are neither video nor audio', () => {
+    const notes = new File([], 'notes.txt')
+    expect(routeFiles([notes, audio])).toEqual({
+      imports: [{ file: audio, kind: 'audio' }],
+      error: '“notes.txt” doesn’t look like a video or audio file.',
+    })
   })
 })

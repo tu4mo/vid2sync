@@ -1,45 +1,26 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Group, Panel, Separator } from 'react-resizable-panels'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
 import {
   TRACK_KINDS,
-  moveClip,
   roundMs,
-  trimClip,
-  untrimClip,
   updateClip,
   type ClipEdit,
   type Clips,
   type TrackKind,
   type Volumes,
 } from './lib/clip'
-import { kindForFile, loadClip } from './lib/media'
+import { loadClip, routeFiles } from './lib/media'
 import { saveExport } from './lib/saveExport'
 import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import { Preview } from './panels/Preview/Preview'
-import {
-  LANE_DEFAULT_HEIGHT,
-  LANE_MIN_HEIGHT,
-  SCRUB_STRIP_HEIGHT,
-  SYNC_LANE_HEIGHT,
-} from './panels/Timeline/layout'
+import { TIMELINE_HEIGHT, TIMELINE_MIN_HEIGHT } from './panels/Timeline/layout'
 import { Timeline } from './panels/Timeline/Timeline'
 import { TOOLBAR_HEIGHT, Toolbar } from './panels/Toolbar/Toolbar'
 import { usePlayback } from './usePlayback'
-
-// How far the arrow keys move a selected clip, and the playhead otherwise, in seconds (with Shift).
-const NUDGE_CLIP = 0.01
-const NUDGE_CLIP_SHIFT = 0.1
-const NUDGE_PLAYHEAD = 1 / 30
-const NUDGE_PLAYHEAD_SHIFT = 1
-
-// The toolbar, then the timeline's fixed rows.
-const TIMELINE_CHROME_HEIGHT =
-  TOOLBAR_HEIGHT + 2 * SCRUB_STRIP_HEIGHT + SYNC_LANE_HEIGHT
-const TIMELINE_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_DEFAULT_HEIGHT
-const TIMELINE_MIN_HEIGHT = TIMELINE_CHROME_HEIGHT + 2 * LANE_MIN_HEIGHT
+import { useShortcuts } from './useShortcuts'
 
 /** An effect cleanup that frees the blob URL, for when it stops being used. */
 function revokeOnChange(url: string | undefined) {
@@ -52,10 +33,7 @@ function errorMessage(e: unknown) {
 
 export function App() {
   const [clips, setClips] = useState<Clips>({ video: null, audio: null })
-  const [volume, setVolume] = useState<Volumes>({
-    video: 1,
-    audio: 1,
-  })
+  const [volume, setVolume] = useState<Volumes>({ video: 1, audio: 1 })
   const [selected, setSelected] = useState<TrackKind | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
@@ -94,20 +72,11 @@ export function App() {
   }
 
   function importFiles(files: File[], track?: TrackKind) {
-    // Clear once up front, so one file's error isn't wiped by the next file's import.
-    setError(null)
-    const taken = new Set<TrackKind>()
-    for (const file of files) {
-      const kind = files.length === 1 && track ? track : kindForFile(file)
-      if (!kind) {
-        setError(`“${file.name}” doesn’t look like a video or audio file.`)
-      } else if (taken.has(kind)) {
-        // A track holds one clip, so a second file of the same kind would race the first.
-        setError(`Only one ${kind} file can be imported at a time.`)
-      } else {
-        taken.add(kind)
-        void importFile(file, kind)
-      }
+    const routes = routeFiles(files, track)
+    // Set before the imports start, so a failed import's error replaces it rather than the reverse.
+    setError(routes.error)
+    for (const { file, kind } of routes.imports) {
+      void importFile(file, kind)
     }
   }
 
@@ -147,54 +116,19 @@ export function App() {
   useEffect(() => revokeOnChange(videoUrl), [videoUrl])
   useEffect(() => revokeOnChange(audioUrl), [audioUrl])
 
-  const onKey = useEffectEvent((e: KeyboardEvent) => {
-    // Leave text fields, browser/OS shortcuts and the error dialog alone.
-    if (
-      e.target instanceof HTMLInputElement ||
-      e.metaKey ||
-      e.ctrlKey ||
-      error
-    ) {
-      return
-    }
-    // Trim keys act on the selected clip, or else the video.
-    const trimTarget = selected ?? 'video'
-    if (e.key === ' ') {
-      e.preventDefault()
-      if (playing) {
-        pause()
-      } else {
-        play()
-      }
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      e.preventDefault()
-      const dir = e.key === 'ArrowLeft' ? -1 : 1
-      if (selected && clips[selected]) {
-        const step = e.shiftKey ? NUDGE_CLIP_SHIFT : NUDGE_CLIP
-        editClip(selected, (c) => moveClip(c, c.offset + dir * step))
-      } else {
-        const step = e.shiftKey ? NUDGE_PLAYHEAD_SHIFT : NUDGE_PLAYHEAD
-        seek(time + dir * step)
-      }
-    } else if (e.key === 'i') {
-      editClip(trimTarget, (c) => trimClip(c, 'start', time))
-    } else if (e.key === 'o') {
-      editClip(trimTarget, (c) => trimClip(c, 'end', time))
-    } else if (e.key === 'x') {
-      editClip(trimTarget, (c) => untrimClip(c))
-    } else if (e.key === 'Home') {
-      seek(0)
-    } else if (e.key === 'Escape') {
-      setSelected(null)
-    } else if ((e.key === 'Delete' || e.key === 'Backspace') && selected) {
-      removeClip(selected)
-    }
+  useShortcuts({
+    enabled: !error,
+    clips,
+    selected,
+    time,
+    playing,
+    play,
+    pause,
+    seek,
+    onEdit: editClip,
+    onSelect: setSelected,
+    onRemove: removeClip,
   })
-
-  useEffect(() => {
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
 
   return (
     <FileDrop
@@ -215,8 +149,8 @@ export function App() {
         <Separator className="h-px bg-line transition-colors data-[separator=active]:bg-accent data-[separator=focus]:bg-line-strong data-[separator=hover]:bg-line-strong" />
 
         <Panel
-          defaultSize={TIMELINE_HEIGHT}
-          minSize={TIMELINE_MIN_HEIGHT}
+          defaultSize={TOOLBAR_HEIGHT + TIMELINE_HEIGHT}
+          minSize={TOOLBAR_HEIGHT + TIMELINE_MIN_HEIGHT}
           groupResizeBehavior="preserve-pixel-size"
         >
           <div className="flex h-full flex-col bg-panel">
