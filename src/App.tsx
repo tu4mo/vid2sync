@@ -182,7 +182,6 @@ export function App() {
               onSeek={seek}
               onPlayPastTimeline={stopAt}
               onImport={importFiles}
-              onRemove={removeClip}
               onZoom={setPixelsPerSecond}
             />
           </div>

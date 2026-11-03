@@ -10,9 +10,10 @@ import {
   type Edge,
   type TrackKind,
 } from '../../lib/clip'
-import { ClipToolbar } from './ClipToolbar'
+import { Envelope } from './Envelope'
 import { FadeHandle } from './FadeHandle'
 import { useDrag } from './hooks/useDrag'
+import { volumeLevel } from './level'
 import { Waveform } from './Waveform'
 
 const WAVE_COLORS: Record<TrackKind, string> = {
@@ -86,7 +87,6 @@ type ClipViewProps = {
   /** Snaps a timeline time to nearby edges and the playhead. */
   snap: (t: number) => number
   onVolumeChange: (kind: TrackKind, volume: number) => void
-  onRemove: (kind: TrackKind) => void
 }
 
 export function ClipView({
@@ -99,7 +99,6 @@ export function ClipView({
   onEdit,
   snap,
   onVolumeChange,
-  onRemove,
 }: ClipViewProps) {
   const drag = useDrag(
     (e) => {
@@ -130,21 +129,14 @@ export function ClipView({
         selected
           ? 'after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-md after:border-2 after:border-accent'
           : ''
-      } ${volume === 0 ? 'opacity-45' : ''}`}
+      }`}
       data-testid={`clip-${kind}`}
       style={{ left, width }}
       {...drag}
     >
       <div
-        // Clip, not hidden: hidden would make this the scroll container the label sticks to.
         className={`absolute inset-0 overflow-clip rounded-md ${CLIP_BACKGROUNDS[kind]}`}
       >
-        <ClipToolbar
-          kind={kind}
-          volume={volume}
-          onVolumeChange={onVolumeChange}
-          onRemove={onRemove}
-        />
         {clip.peaks ? (
           // The whole file's waveform, shifted so the trimmed part shows.
           <div
@@ -163,11 +155,20 @@ export function ClipView({
           </div>
         )}
       </div>
+      <Envelope
+        fade={fade}
+        volume={volume}
+        width={width}
+        pixelsPerSecond={pixelsPerSecond}
+        onGrab={() => onSelect(kind)}
+        onChange={(v) => onVolumeChange(kind, v)}
+      />
       {(['start', 'end'] as const).map((which) => (
         <FadeHandle
           key={which}
           which={which}
           span={fade[which]}
+          level={volumeLevel(volume)}
           edge={span[which]}
           clipWidth={width}
           pixelsPerSecond={pixelsPerSecond}

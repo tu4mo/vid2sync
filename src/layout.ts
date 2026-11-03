@@ -17,6 +17,9 @@ export const TRACK_ICON_WIDTH_PX = TOOLBAR_BUTTON_WIDTH_PX
 export const EDGE_PX =
   TRACK_ICON_INSET_PX + TRACK_ICON_WIDTH_PX + TOOLBAR_GAP_PX
 
+/** A sticky `left` that lines something on a clip up under the play button. Sticky offsets count from inside the timeline's padding, so it's taken back off. */
+export const STICKY_UNDER_PLAY_LEFT_PX = TOOLBAR_INSET_PX - EDGE_PX
+
 export const SYNC_LANE_HEIGHT_PX = 20
 /** Empty room above and below the lanes, to scrub the playhead in. As tall as the sync lane, so the gaps around the lanes match. */
 export const SCRUB_STRIP_HEIGHT_PX = SYNC_LANE_HEIGHT_PX

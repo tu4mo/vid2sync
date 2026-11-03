@@ -71,7 +71,6 @@ type Props = {
   onVolumeChange: (kind: TrackKind, volume: number) => void
   /** Imports each file onto the track its type belongs on, or a single file onto `kind`. */
   onImport: (files: File[]) => void
-  onRemove: (kind: TrackKind) => void
   onZoom: (pixelsPerSecond: number) => void
 }
 
@@ -90,7 +89,6 @@ export function Timeline({
   onPlayPastTimeline,
   onVolumeChange,
   onImport,
-  onRemove,
   onZoom,
 }: Props) {
   const contentRef = useRef<HTMLDivElement>(null)
@@ -188,7 +186,6 @@ export function Timeline({
             onEdit={onEdit}
             snap={snap}
             onVolumeChange={onVolumeChange}
-            onRemove={onRemove}
           />
         )}
       </div>

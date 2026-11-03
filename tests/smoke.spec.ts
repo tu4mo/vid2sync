@@ -96,14 +96,30 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await offset.press('Escape')
   await expect(sync).toContainText('1500 ms ahead of audio')
 
-  // Silence the video's own sound and halve the audio track. Each slider slides out on focus.
-  const videoVolume = videoClip.getByRole('slider', { name: 'Volume' })
-  await videoVolume.focus()
-  await videoVolume.fill('0')
+  // Silence the video's own sound and halve the audio track, by dragging their volume lines down.
+  // The line travels the clip's height, less a pixel at the top and bottom.
+  async function dragVolume(clip: Locator, fraction: number) {
+    const line = clip.getByTestId('volume')
+    const lineBox = (await line.boundingBox())!
+    const travel = (await clip.boundingBox())!.height - 2
+    const x = lineBox.x + lineBox.width / 2
+    const y = lineBox.y + lineBox.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x, y + travel * fraction, { steps: 5 })
+    await page.mouse.up()
+  }
+  await dragVolume(videoClip, 2) // Past the bottom, which stops at 0%
+  await expect(videoClip.getByTestId('volume')).toHaveAttribute(
+    'data-volume',
+    '0',
+  )
   await expect(videoClip).toContainText('0%')
-  const audioVolume = audioClip.getByRole('slider', { name: 'Volume' })
-  await audioVolume.focus()
-  await audioVolume.fill('0.5')
+  await dragVolume(audioClip, 0.5)
+  await expect(audioClip.getByTestId('volume')).toHaveAttribute(
+    'data-volume',
+    '0.5',
+  )
   await expect(audioClip).toContainText('50%')
 
   // Play, let the clock run, pause.
@@ -264,12 +280,13 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await fadeInStart.dblclick()
   await expect(fadeInStart).toHaveAttribute('data-distance', '0')
 
-  // Remove the audio with its clip's button.
-  await audioClip.getByRole('button', { name: 'Remove clip' }).click()
+  // Remove the audio with the keyboard.
+  await audioClip.click()
+  await page.keyboard.press('Delete')
   await expect(audioClip).toHaveCount(0)
   await expect(page.getByTestId('sync')).toHaveCount(0)
 
-  // Remove the video with the keyboard, which brings back the empty timeline.
+  // And the video, which brings back the empty timeline.
   await videoClip.click()
   await page.keyboard.press('Delete')
   await expect(videoClip).toHaveCount(0)

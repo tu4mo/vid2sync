@@ -1,10 +1,6 @@
 import type { Edge, FadeSpan } from '../../lib/clip'
-import { fadeGain } from '../../lib/fade'
 import { useDrag } from './hooks/useDrag'
-
-const CURVE_POINTS = 32
-// Puts the dot on the border's corner when there's no fade, centered on the 2px border like it is vertically.
-const DOT_INSET_PX = 1
+import { ENVELOPE_INSET_PX, levelTop } from './level'
 
 // The side of the clip each fade sits on.
 const SIDES = { start: 'left', end: 'right' } as const
@@ -18,33 +14,14 @@ const SILENT_LABELS: Record<Edge, string> = {
   end: 'Where the fade out ends',
 }
 
-/**
- * The ramp across a 1×1 box, as path points from left to right. `silent` is the share of the
- * box that's silent: on the left for a fade-in, on the right for a fade-out.
- */
-function rampPoints(which: Edge, silent: number): string {
-  return Array.from({ length: CURVE_POINTS + 1 }, (_, i) => {
-    const p = i / CURVE_POINTS
-    return which === 'start'
-      ? `${silent + p * (1 - silent)},${1 - fadeGain(p)}`
-      : `${p * (1 - silent)},${1 - fadeGain(1 - p)}`
-  }).join(' L')
-}
-
-/** The shade above the ramp, covering the silence too. */
-function shadePath(which: Edge, silent: number): string {
-  const ramp = rampPoints(which, silent)
-  return which === 'start'
-    ? `M0,0 L0,1 L${ramp} Z`
-    : `M0,0 L${ramp} L1,1 L1,0 Z`
-}
-
 type DotProps = {
   which: Edge
-  /** The top dot sets where the fade is at full volume, the bottom one where it stops being silent. */
+  /** The top dot sets where the fade reaches the volume line, the bottom one where it stops being silent. */
   point: keyof FadeSpan
   /** How far in from the clip edge the dot sits, in seconds. */
   distance: number
+  /** The volume line's height (0 to 1), which the top dot rides. */
+  level: number
   edge: number
   clipWidth: number
   pixelsPerSecond: number
@@ -61,6 +38,7 @@ function Dot({
   which,
   point,
   distance,
+  level,
   edge,
   clipWidth,
   pixelsPerSecond,
@@ -86,19 +64,20 @@ function Dot({
     },
   )
   const x = Math.min(
-    Math.max(distance * pixelsPerSecond, DOT_INSET_PX),
-    clipWidth - DOT_INSET_PX,
+    Math.max(distance * pixelsPerSecond, ENVELOPE_INSET_PX),
+    clipWidth - ENVELOPE_INSET_PX,
   )
 
   return (
     <div
       className={`absolute z-30 flex size-4 cursor-ew-resize items-center justify-center transition-opacity ${
-        // Centered on the 2px border.
-        point === 'full' ? 'top-px' : 'bottom-px'
-      } ${active ? '' : 'opacity-0 group-hover:opacity-100'}`}
+        active ? '' : 'opacity-0 group-hover:opacity-100'
+      }`}
       style={{
         [side]: x,
-        translate: `${which === 'start' ? '-50%' : '50%'} ${point === 'full' ? '-50%' : '50%'}`,
+        // The top dot rides the volume line; the bottom one sits at silence, on the 2px border.
+        top: levelTop(point === 'full' ? level : 0),
+        translate: `${which === 'start' ? '-50%' : '50%'} -50%`,
       }}
       title={title}
       data-testid={`fade-${which}${point === 'silent' ? '-silent' : ''}`}
@@ -114,6 +93,8 @@ function Dot({
 type Props = {
   which: Edge
   span: FadeSpan
+  /** The volume line's height (0 to 1), which the top dot rides. */
+  level: number
   /** The clip edge the fade runs from, on the timeline. */
   edge: number
   clipWidth: number
@@ -126,12 +107,13 @@ type Props = {
 }
 
 /**
- * A fade's ramp over the clip, with a dot at the top that drags where it reaches full volume
- * and, once there's a fade, one at the bottom that drags where it starts being silent.
+ * A fade's dots: one on the volume line that drags where the fade reaches it and, once there's
+ * a fade, one at the bottom that drags where it starts being silent. The envelope draws the ramp.
  */
 export function FadeHandle({
   which,
   span,
+  level,
   edge,
   clipWidth,
   pixelsPerSecond,
@@ -140,36 +122,19 @@ export function FadeHandle({
   onGrab,
   onChange,
 }: Props) {
-  const side = SIDES[which]
-  const dot = { which, edge, clipWidth, pixelsPerSecond, active, snap, onGrab }
-  // The share of the fade that's silent.
-  const silentShare = span.full > 0 ? span.silent / span.full : 0
+  const dot = {
+    which,
+    level,
+    edge,
+    clipWidth,
+    pixelsPerSecond,
+    active,
+    snap,
+    onGrab,
+  }
 
   return (
     <>
-      {span.full > 0 && (
-        <svg
-          // Rounded like the clip's corners, since the clip no longer clips it.
-          className={`pointer-events-none absolute inset-y-0 z-10 h-full ${
-            which === 'start' ? 'rounded-l-md' : 'rounded-r-md'
-          }`}
-          style={{
-            [side]: 0,
-            width: span.full * pixelsPerSecond,
-          }}
-          viewBox="0 0 1 1"
-          preserveAspectRatio="none"
-        >
-          {/* The shade, then the line along the ramp alone. */}
-          <path d={shadePath(which, silentShare)} className="fill-black/35" />
-          <path
-            d={`M${rampPoints(which, silentShare)}`}
-            className="fill-none stroke-white/80"
-            strokeWidth={1.5}
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      )}
       <Dot
         {...dot}
         point="full"

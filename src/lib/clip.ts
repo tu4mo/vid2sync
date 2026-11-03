@@ -7,6 +7,9 @@ export const TRACK_KINDS: readonly TrackKind[] = ['video', 'audio']
 /** A volume for each track, as a gain (1 is 100%). */
 export type Volumes = Record<TrackKind, number>
 
+/** The loudest a track can be turned up to, as a gain. */
+export const MAX_VOLUME = 2
+
 /** A clip's waveform, as the sample range of each short bucket of audio. */
 export type Peaks = {
   /** Buckets per second of audio, for mapping a bucket to its time. */
