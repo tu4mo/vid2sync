@@ -7,8 +7,8 @@ import {
   type UIEvent,
 } from 'react'
 
+import { EDGE_PX } from '../../../layout'
 import { clampZoom } from '../../../lib/zoom'
-import { EDGE_PX } from '../layout'
 
 // How far from the left edge a playhead scrolled back into view lands, and how close to the right
 // edge it gets before following it during playback scrolls the timeline.

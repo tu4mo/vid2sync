@@ -11,14 +11,12 @@ import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Button } from '../../components/Button/Button'
 import { Slider } from '../../components/Slider/Slider'
+import { TOOLBAR_HEIGHT_PX } from '../../layout'
 import {
   MAX_PIXELS_PER_SECOND,
   MIN_PIXELS_PER_SECOND,
   clampZoom,
 } from '../../lib/zoom'
-
-/** The toolbar's height, line under it included, for laying out the panel it sits in. */
-export const TOOLBAR_HEIGHT = 43
 
 /** How much one press of a zoom button zooms. */
 const ZOOM_STEP = 1.5
@@ -78,7 +76,7 @@ export function Toolbar({
   return (
     <div
       className="flex shrink-0 items-center justify-between gap-2.5 border-b border-line bg-panel px-4"
-      style={{ height: TOOLBAR_HEIGHT }}
+      style={{ height: TOOLBAR_HEIGHT_PX }}
     >
       <div className="flex items-center gap-2.5">
         <Button

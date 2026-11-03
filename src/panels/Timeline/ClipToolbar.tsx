@@ -6,7 +6,14 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Slider } from '../../components/Slider/Slider'
+import { EDGE_PX, TOOLBAR_INSET_PX } from '../../layout'
 import type { TrackKind } from '../../lib/clip'
+
+/** The buttons' gap from the clip's start. */
+const INSET_PX = 4
+/** Where the toolbar sticks, so the buttons line up under the play button. Sticky offsets count
+ * from inside the timeline's padding, so it's taken back off. */
+const STICKY_LEFT_PX = TOOLBAR_INSET_PX - EDGE_PX - INSET_PX
 
 // The remove button and the volume block, as tall and rounded as the clip's label.
 const CHIP =
@@ -24,9 +31,14 @@ export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
   const percent = Math.round(volume * 100)
 
   return (
-    <div className="pointer-events-none sticky left-0 z-10 flex h-full max-w-full">
+    // As wide as the buttons, not the clip: a sticky box as wide as its parent has no room to move.
+    <div
+      className="pointer-events-none sticky z-10 flex h-full w-max max-w-full"
+      style={{ left: STICKY_LEFT_PX }}
+    >
       <div
-        className="pointer-events-auto mt-1 ml-1 flex min-w-0 items-center gap-1 self-start"
+        className="pointer-events-auto mt-1 flex min-w-0 items-center gap-1 self-start"
+        style={{ marginLeft: INSET_PX }}
         // Keep the buttons from dragging the clip (and capturing the pointer, which eats the click).
         onPointerDown={(e) => e.stopPropagation()}
       >

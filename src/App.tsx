@@ -4,6 +4,11 @@ import { Group, Panel, Separator } from 'react-resizable-panels'
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
 import {
+  TIMELINE_HEIGHT_PX,
+  TOOLBAR_HEIGHT_PX,
+  TIMELINE_MIN_HEIGHT_PX,
+} from './layout'
+import {
   roundMs,
   updateClip,
   type ClipEdit,
@@ -15,9 +20,8 @@ import { loadClip, routeFiles } from './lib/media'
 import { saveExport } from './lib/saveExport'
 import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import { Preview } from './panels/Preview/Preview'
-import { TIMELINE_HEIGHT, TIMELINE_MIN_HEIGHT } from './panels/Timeline/layout'
 import { Timeline } from './panels/Timeline/Timeline'
-import { TOOLBAR_HEIGHT, Toolbar } from './panels/Toolbar/Toolbar'
+import { Toolbar } from './panels/Toolbar/Toolbar'
 import { usePlayback } from './usePlayback'
 import { useShortcuts } from './useShortcuts'
 
@@ -143,8 +147,8 @@ export function App() {
         <Separator className="h-px bg-line transition-colors data-[separator=active]:bg-accent data-[separator=focus]:bg-line-strong data-[separator=hover]:bg-line-strong" />
 
         <Panel
-          defaultSize={TOOLBAR_HEIGHT + TIMELINE_HEIGHT}
-          minSize={TOOLBAR_HEIGHT + TIMELINE_MIN_HEIGHT}
+          defaultSize={TOOLBAR_HEIGHT_PX + TIMELINE_HEIGHT_PX}
+          minSize={TOOLBAR_HEIGHT_PX + TIMELINE_MIN_HEIGHT_PX}
           groupResizeBehavior="preserve-pixel-size"
         >
           <div className="flex h-full flex-col bg-panel">

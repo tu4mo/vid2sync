@@ -3,6 +3,12 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { useEffect, useRef } from 'react'
 
 import {
+  EDGE_PX,
+  ROWS,
+  TRACK_ICON_INSET_PX,
+  TRACK_ICON_WIDTH_PX,
+} from '../../layout'
+import {
   TRACK_KINDS,
   clipSpan,
   type ClipEdit,
@@ -15,12 +21,6 @@ import { ClipView } from './ClipView'
 import { useDrag } from './hooks/useDrag'
 import { useTimelineScroll } from './hooks/useTimelineScroll'
 import { ImportPrompt } from './ImportPrompt'
-import {
-  EDGE_PX,
-  ROWS,
-  TRACK_ICON_INSET_PX,
-  TRACK_ICON_WIDTH_PX,
-} from './layout'
 import { Playhead } from './Playhead'
 import { SyncLane } from './SyncLane'
 
