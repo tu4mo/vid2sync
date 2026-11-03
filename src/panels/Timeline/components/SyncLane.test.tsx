@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { render } from 'vitest-browser-react'
 import { userEvent } from 'vitest/browser'
 
-import { type Clip, type Clips } from '../../lib/clip'
-import { testClip } from '../../lib/testClip'
+import { type Clip, type Clips } from '../../../lib/clip'
+import { testClip } from '../../../lib/testClip'
 import { SyncLane } from './SyncLane'
 
 /** Holds the clips like App does, so edits show up in the label, and reports them for checking. */

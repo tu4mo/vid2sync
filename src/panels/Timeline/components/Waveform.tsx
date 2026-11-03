@@ -1,4 +1,4 @@
-import type { Peaks } from '../../lib/clip'
+import type { Peaks } from '../../../lib/clip'
 
 type Props = {
   peaks: Peaks

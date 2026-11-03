@@ -17,12 +17,12 @@ import {
   type Volumes,
 } from '../../lib/clip'
 import { snapTo } from '../../lib/snap'
-import { ClipView } from './ClipView'
+import { ClipView } from './components/ClipView'
+import { ImportPrompt } from './components/ImportPrompt'
+import { Playhead } from './components/Playhead'
+import { SyncLane } from './components/SyncLane'
 import { useDrag } from './hooks/useDrag'
 import { useTimelineScroll } from './hooks/useTimelineScroll'
-import { ImportPrompt } from './ImportPrompt'
-import { Playhead } from './Playhead'
-import { SyncLane } from './SyncLane'
 
 const TAIL_SECONDS = 10
 const SNAP_PX = 6

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { testClip } from '../../lib/testClip'
+import { testClip } from '../../../lib/testClip'
 import { syncVideo } from './syncVideo'
 
 class FakeVideo {

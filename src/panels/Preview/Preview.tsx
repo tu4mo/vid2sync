@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 import { clipSpan, type Clip } from '../../lib/clip'
-import { syncVideo } from './syncVideo'
+import { syncVideo } from './lib/syncVideo'
 
 type Props = {
   clip: Clip | null

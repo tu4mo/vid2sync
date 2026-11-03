@@ -8,7 +8,7 @@ import {
   type ClipEdit,
   type Sync,
   type TrackKind,
-} from '../../lib/clip'
+} from '../../../lib/clip'
 
 const EDGE_GAP = 4
 const STEPS_BEFORE = [-5, -1]

@@ -9,11 +9,11 @@ import {
   type ClipEdit,
   type Edge,
   type TrackKind,
-} from '../../lib/clip'
+} from '../../../lib/clip'
+import { useDrag } from '../hooks/useDrag'
+import { volumeLevel } from '../lib/level'
 import { Envelope } from './Envelope'
 import { FadeHandle } from './FadeHandle'
-import { useDrag } from './hooks/useDrag'
-import { volumeLevel } from './level'
 import { Waveform } from './Waveform'
 
 const WAVE_COLORS: Record<TrackKind, string> = {

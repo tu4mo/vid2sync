@@ -1,5 +1,9 @@
 # Agent guidelines
 
+## File layout
+
+- A panel folder holds only its root component (and its test), e.g. `src/panels/Timeline/Timeline.tsx`. Its other components go in `components/`, hooks in `hooks/`, and non-React helpers in `lib/`.
+
 ## Code style
 
 - Destructure component props in the function signature, e.g. `function Toolbar({ playing, onPlay }: Props)`, not `function Toolbar(props: Props)`. oxlint has no rule for this.
