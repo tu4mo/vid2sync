@@ -112,6 +112,9 @@ export function useTimelineScroll({
     const anchor = zoomAnchor.current ?? playheadAnchor(el, previous)
     el.scrollLeft = timeToX(anchor.t, pixelsPerSecond) - anchor.x
     zoomAnchor.current = null
+    // The scroll event that would update this only fires after paint. Until then, the waveform is
+    // drawn for the old scroll position and the screen briefly shows a gap.
+    setScrollLeft(el.scrollLeft)
   }, [pixelsPerSecond])
 
   /** Scrolls time `t` into view, if it's off screen. */

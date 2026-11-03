@@ -1,18 +1,27 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import type { Peaks } from '../../lib/clip'
 
-// Browsers cap canvas dimensions; beyond this the bitmap is stretched.
-const MAX_CANVAS_WIDTH = 16384
-
 type Props = {
   peaks: Peaks
-  duration: number
+  /** The time into the file at the canvas's left edge, in seconds. */
+  startTime: number
+  pixelsPerSecond: number
+  /** Where the canvas sits in the clip, in px. */
+  left: number
+  /** The canvas's width in px; only the part of the clip around the screen is drawn. */
   width: number
   color: string
 }
 
-export function Waveform({ peaks, duration, width, color }: Props) {
+export function Waveform({
+  peaks,
+  startTime,
+  pixelsPerSecond,
+  left,
+  width,
+  color,
+}: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
   // The canvas stretches with its lane; redraw at the height it ends up.
   const [height, setHeight] = useState(0)
@@ -27,55 +36,64 @@ export function Waveform({ peaks, duration, width, color }: Props) {
     return () => observer.disconnect()
   }, [])
 
-  useEffect(() => {
+  // Before paint, so the canvas never shows at its new place and size with the old drawing.
+  useLayoutEffect(() => {
     const canvas = ref.current
-    const g = canvas?.getContext('2d')
-    if (!canvas || !g) {
+    const context = canvas?.getContext('2d')
+    if (!canvas || !context) {
       return
     }
 
-    const dpr = window.devicePixelRatio || 1
-    const cw = Math.max(1, Math.min(Math.round(width * dpr), MAX_CANVAS_WIDTH))
-    const ch = Math.max(1, Math.round(height * dpr))
-    canvas.width = cw
-    canvas.height = ch
-    g.clearRect(0, 0, cw, ch)
-    g.fillStyle = color
+    // The canvas's bitmap is in device pixels, so it's sharp on high-density screens.
+    const pixelRatio = window.devicePixelRatio || 1
+    const canvasWidth = Math.max(1, Math.round(width * pixelRatio))
+    const canvasHeight = Math.max(1, Math.round(height * pixelRatio))
+    canvas.width = canvasWidth
+    canvas.height = canvasHeight
+    context.clearRect(0, 0, canvasWidth, canvasHeight)
+    context.fillStyle = color
 
-    const mid = ch / 2
-    const bucketsPerPixel = (peaks.perSecond * duration) / cw
-    const count = peaks.min.length
+    const middle = canvasHeight / 2
+    // A bucket is one min/max pair in `peaks`. At high zoom a pixel covers less than one bucket.
+    const bucketsPerPixel = peaks.perSecond / (pixelsPerSecond * pixelRatio)
+    const firstBucket = startTime * peaks.perSecond
+    const bucketCount = peaks.min.length
 
-    for (let x = 0; x < cw; x++) {
-      const i0 = Math.floor(x * bucketsPerPixel)
-      if (i0 >= count) {
+    // One vertical bar per device pixel, spanning the lowest to the highest sample it covers.
+    for (let pixel = 0; pixel < canvasWidth; pixel++) {
+      const fromBucket = Math.max(
+        0,
+        Math.floor(firstBucket + pixel * bucketsPerPixel),
+      )
+      if (fromBucket >= bucketCount) {
         break
       }
-      const i1 = Math.min(
-        count,
-        Math.max(i0 + 1, Math.floor((x + 1) * bucketsPerPixel)),
+      // Exclusive, and at least one bucket past `fromBucket`, so every pixel draws something.
+      const toBucket = Math.min(
+        bucketCount,
+        Math.max(
+          fromBucket + 1,
+          Math.floor(firstBucket + (pixel + 1) * bucketsPerPixel),
+        ),
       )
-      let lo = 0
-      let hi = 0
-      for (let i = i0; i < i1; i++) {
-        if (peaks.min[i] < lo) {
-          lo = peaks.min[i]
-        }
-        if (peaks.max[i] > hi) {
-          hi = peaks.max[i]
-        }
+      let lowest = 0
+      let highest = 0
+      for (let bucket = fromBucket; bucket < toBucket; bucket++) {
+        lowest = Math.min(lowest, peaks.min[bucket])
+        highest = Math.max(highest, peaks.max[bucket])
       }
-      const top = mid - hi * mid
-      const bottom = mid - lo * mid
-      g.fillRect(x, top, 1, Math.max(1, bottom - top))
+      // Samples run -1 to 1, with 1 at the top.
+      const top = middle - highest * middle
+      const bottom = middle - lowest * middle
+      context.fillRect(pixel, top, 1, Math.max(1, bottom - top))
     }
-  }, [peaks, duration, width, height, color])
+  }, [peaks, startTime, pixelsPerSecond, width, height, color])
 
   return (
     <canvas
       ref={ref}
-      className="pointer-events-none absolute top-1 left-0 block h-[calc(100%-0.5rem)]"
-      style={{ width }}
+      className="pointer-events-none absolute top-1 block h-[calc(100%-0.5rem)]"
+      style={{ left, width }}
     />
   )
 }

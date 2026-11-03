@@ -85,6 +85,8 @@ type ClipViewProps = {
   onEdit: (kind: TrackKind, edit: ClipEdit) => void
   /** Snaps a timeline time to nearby edges and the playhead. */
   snap: (t: number) => number
+  /** The scrolled-into-view part of the lane, in px. */
+  view: { start: number; width: number }
   onVolumeChange: (kind: TrackKind, volume: number) => void
   onRemove: (kind: TrackKind) => void
 }
@@ -98,6 +100,7 @@ export function ClipView({
   onSelect,
   onEdit,
   snap,
+  view,
   onVolumeChange,
   onRemove,
 }: ClipViewProps) {
@@ -118,8 +121,17 @@ export function ClipView({
   )
   const span = clipSpan(clip)
   const fade = clipFade(clip)
+  const left = span.start * pixelsPerSecond
   const width = (span.end - span.start) * pixelsPerSecond
-  const fileWidth = clip.duration * pixelsPerSecond
+  // The waveform covers only the clip around the screen, so its canvas stays a few screens wide
+  // however far it's zoomed. It reaches at least half a screen past both edges, so a fast scroll
+  // doesn't outrun it, and moves in half-screen steps, so it isn't redrawn on every scroll. Its
+  // edges are on whole lane pixels, so it isn't drawn between them.
+  const step = Math.max(1, view.width / 2)
+  const drawnStart = Math.floor(view.start / step) * step - step
+  const drawnEnd = drawnStart + view.width + 3 * step
+  const waveStart = Math.floor(Math.max(left, drawnStart))
+  const waveEnd = Math.ceil(Math.min(left + width, drawnEnd))
 
   return (
     <div
@@ -132,7 +144,7 @@ export function ClipView({
           : ''
       } ${volume === 0 ? 'opacity-45' : ''}`}
       data-testid={`clip-${kind}`}
-      style={{ left: span.start * pixelsPerSecond, width }}
+      style={{ left, width }}
       {...drag}
     >
       <div
@@ -146,21 +158,15 @@ export function ClipView({
           onRemove={onRemove}
         />
         {clip.peaks ? (
-          // The whole file's waveform, shifted so the trimmed part shows.
-          <div
-            className="absolute inset-y-0"
-            style={{
-              left: -clip.trim.start * pixelsPerSecond,
-              width: fileWidth,
-            }}
-          >
-            <Waveform
-              peaks={clip.peaks}
-              duration={clip.duration}
-              width={fileWidth}
-              color={WAVE_COLORS[kind]}
-            />
-          </div>
+          // Kept mounted while scrolled off, so it doesn't have to measure its height again.
+          <Waveform
+            peaks={clip.peaks}
+            startTime={clip.trim.start + (waveStart - left) / pixelsPerSecond}
+            pixelsPerSecond={pixelsPerSecond}
+            left={waveStart - left}
+            width={Math.max(0, waveEnd - waveStart)}
+            color={WAVE_COLORS[kind]}
+          />
         ) : (
           <div className="absolute bottom-1 left-0 px-1.5 text-2xs text-white/50">
             no audio track
