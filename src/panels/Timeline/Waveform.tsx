@@ -2,6 +2,7 @@ import type { Peaks } from '../../lib/clip'
 
 type Props = {
   peaks: Peaks
+  pixelsPerSecond: number
   color: string
 }
 
@@ -21,14 +22,18 @@ function outline({ min, max }: Peaks) {
 }
 
 /**
- * The waveform as a vector, stretched to fill its box. The browser draws it at whatever size the
+ * The waveform as a vector, from the start of the file. The browser draws it at whatever size the
  * zoom makes it, and only the tiles that scroll into view, so it's sharp at any zoom.
  */
-export function Waveform({ peaks, color }: Props) {
+export function Waveform({ peaks, pixelsPerSecond, color }: Props) {
+  const buckets = Math.max(1, peaks.max.length)
   return (
     <svg
-      className="pointer-events-none absolute inset-0 block size-full"
-      viewBox={`0 -1 ${Math.max(1, peaks.max.length)} 2`}
+      className="pointer-events-none absolute inset-y-0 left-0 block h-full"
+      // Sized by the peaks' own timing, not the clip's duration, which can differ from the audio's
+      // length (a video's container, a part-filled last bucket). Each bucket then sits at its time.
+      style={{ width: (buckets / peaks.perSecond) * pixelsPerSecond }}
+      viewBox={`0 -1 ${buckets} 2`}
       preserveAspectRatio="none"
       data-testid="waveform"
     >

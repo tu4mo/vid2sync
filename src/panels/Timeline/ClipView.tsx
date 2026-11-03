@@ -149,12 +149,13 @@ export function ClipView({
           // The whole file's waveform, shifted so the trimmed part shows.
           <div
             className="absolute inset-y-1"
-            style={{
-              left: -clip.trim.start * pixelsPerSecond,
-              width: clip.duration * pixelsPerSecond,
-            }}
+            style={{ left: -clip.trim.start * pixelsPerSecond }}
           >
-            <Waveform peaks={clip.peaks} color={WAVE_COLORS[kind]} />
+            <Waveform
+              peaks={clip.peaks}
+              pixelsPerSecond={pixelsPerSecond}
+              color={WAVE_COLORS[kind]}
+            />
           </div>
         ) : (
           <div className="absolute bottom-1 left-0 px-1.5 text-2xs text-white/50">
