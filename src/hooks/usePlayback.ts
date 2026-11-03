@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 
-import { TRACK_KINDS, clipsEnd, type Clips, type Volumes } from './lib/clip'
-import { Playback } from './lib/playback'
+import { TRACK_KINDS, clipsEnd, type Clips, type Volumes } from '../lib/clip'
+import { Playback } from '../lib/playback'
 
 // One for the whole app, outside React, so StrictMode's double mount doesn't open a second
 // AudioContext.

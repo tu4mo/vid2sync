@@ -7,7 +7,7 @@ import {
   type ClipEdit,
   type Clips,
   type TrackKind,
-} from './lib/clip'
+} from '../lib/clip'
 
 // How far the arrow keys move a selected clip, and the playhead otherwise, in seconds (with Shift).
 const NUDGE_CLIP = 0.01

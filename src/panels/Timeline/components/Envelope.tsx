@@ -1,6 +1,6 @@
-import { STICKY_UNDER_PLAY_LEFT_PX } from '../../../layout'
 import { MAX_VOLUME, type Fade } from '../../../lib/clip'
 import { fadeGain } from '../../../lib/fade'
+import { STICKY_UNDER_PLAY_LEFT_PX } from '../../../lib/layout'
 import { useDrag } from '../hooks/useDrag'
 import { ENVELOPE_INSET_PX, levelTop, volumeLevel } from '../lib/level'
 

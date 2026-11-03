@@ -3,12 +3,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { useEffect, useRef } from 'react'
 
 import {
-  EDGE_PX,
-  ROWS,
-  TRACK_ICON_INSET_PX,
-  TRACK_ICON_WIDTH_PX,
-} from '../../layout'
-import {
   TRACK_KINDS,
   clipSpan,
   type ClipEdit,
@@ -16,6 +10,12 @@ import {
   type TrackKind,
   type Volumes,
 } from '../../lib/clip'
+import {
+  EDGE_PX,
+  ROWS,
+  TRACK_ICON_INSET_PX,
+  TRACK_ICON_WIDTH_PX,
+} from '../../lib/layout'
 import { snapTo } from '../../lib/snap'
 import { ClipView } from './components/ClipView'
 import { ImportPrompt } from './components/ImportPrompt'

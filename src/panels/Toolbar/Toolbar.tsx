@@ -11,7 +11,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Button } from '../../components/Button/Button'
 import { Slider } from '../../components/Slider/Slider'
-import { TOOLBAR_HEIGHT_PX } from '../../layout'
+import { TOOLBAR_HEIGHT_PX } from '../../lib/layout'
 import {
   MAX_PIXELS_PER_SECOND,
   MIN_PIXELS_PER_SECOND,

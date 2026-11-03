@@ -7,7 +7,7 @@ import {
   type UIEvent,
 } from 'react'
 
-import { EDGE_PX } from '../../../layout'
+import { EDGE_PX } from '../../../lib/layout'
 import { clampZoom } from '../../../lib/zoom'
 
 // How far from the left edge a playhead scrolled back into view lands, and how close to the right

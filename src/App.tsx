@@ -3,11 +3,8 @@ import { Group, Panel, Separator } from 'react-resizable-panels'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
-import {
-  TIMELINE_HEIGHT_PX,
-  TOOLBAR_HEIGHT_PX,
-  TIMELINE_MIN_HEIGHT_PX,
-} from './layout'
+import { usePlayback } from './hooks/usePlayback'
+import { useShortcuts } from './hooks/useShortcuts'
 import {
   roundMs,
   updateClip,
@@ -16,14 +13,17 @@ import {
   type TrackKind,
   type Volumes,
 } from './lib/clip'
+import {
+  TIMELINE_HEIGHT_PX,
+  TOOLBAR_HEIGHT_PX,
+  TIMELINE_MIN_HEIGHT_PX,
+} from './lib/layout'
 import { loadClip, routeFiles } from './lib/media'
 import { saveExport } from './lib/saveExport'
 import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import { Preview } from './panels/Preview/Preview'
 import { Timeline } from './panels/Timeline/Timeline'
 import { Toolbar } from './panels/Toolbar/Toolbar'
-import { usePlayback } from './usePlayback'
-import { useShortcuts } from './useShortcuts'
 
 /** An effect cleanup that frees the blob URL, for when it stops being used. */
 function revokeOnChange(url: string | undefined) {
