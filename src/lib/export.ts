@@ -1,5 +1,4 @@
-// Mediabunny is imported only for its types here and loaded on first export, which keeps it
-// out of the initial bundle.
+// Types only; `loadMediabunny` loads the module on first export.
 import type { AudioCodec } from 'mediabunny'
 
 import type { Clips, Volumes } from './clip'
@@ -47,6 +46,21 @@ function createMp4Output(mb: Mediabunny) {
     target,
   })
   return { output, target }
+}
+
+/**
+ * An encoder for the export's audio. The encoder delay is measured with this too, so the
+ * measurement matches the encoder that writes the export.
+ */
+function createAudioSource(
+  mb: Mediabunny,
+  codec: AudioCodec,
+  startTimestamp = 0,
+) {
+  return new mb.AudioBufferSource(
+    { codec, quality: new mb.Quality('high') },
+    { startTimestamp },
+  )
 }
 
 /**
@@ -99,10 +113,7 @@ async function measureEncoderDelay(
   osc.start(onset)
 
   const { output, target } = createMp4Output(mb)
-  const source = new mb.AudioBufferSource({
-    codec,
-    quality: new mb.Quality('high'),
-  })
+  const source = createAudioSource(mb, codec)
   output.addAudioTrack(source)
   await output.start()
   await source.add(await tone.startRendering())
@@ -173,10 +184,7 @@ export async function exportSynced(
       const reason = discarded?.reason ?? 'no video track found'
       throw new Error(`The video stream can’t be written to MP4 (${reason}).`)
     }
-    const audioSource = new mb.AudioBufferSource(
-      { codec: audioCodec, quality: new mb.Quality('high') },
-      { startTimestamp: -encoderDelay },
-    )
+    const audioSource = createAudioSource(mb, audioCodec, -encoderDelay)
     output.addAudioTrack(audioSource)
     await output.start()
 

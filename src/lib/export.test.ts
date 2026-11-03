@@ -212,13 +212,13 @@ describe('exportSynced', () => {
     await exportSynced(clips, gains)
 
     expect(FakeOfflineAudioContext.decoded).toBe(1)
-    const exported = mb.state.audioSources.filter((s) => s.options)
-    expect(exported).toHaveLength(2)
-    for (const source of exported) {
-      expect(source.options).toEqual({
-        startTimestamp: expect.closeTo(-PRIMING / SAMPLE_RATE),
-      })
-    }
+    // The measurement's tone, then the two exports, shifted back by the measured delay.
+    const delayed = { startTimestamp: expect.closeTo(-PRIMING / SAMPLE_RATE) }
+    expect(mb.state.audioSources.map((s) => s.options)).toEqual([
+      { startTimestamp: 0 },
+      delayed,
+      delayed,
+    ])
   })
 
   it('explains why the video stream can’t be written', async () => {
