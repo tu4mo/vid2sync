@@ -25,10 +25,14 @@ export function scheduleClips(
     if (!clip?.buffer) {
       continue
     }
+    // Where to stop reading the file; the decoded audio can be a little shorter than the file.
     const end = Math.min(clip.trim.end, clip.buffer.duration)
-    const delay = clip.offset + clip.trim.start - from
-    const into = clip.trim.start + Math.max(0, -delay)
-    if (into >= end) {
+    // Timeline seconds from the playhead to the clip's start; negative when the playhead is inside it.
+    const untilStart = clipSpan(clip).start - from
+    // Where to start reading the file: the trim start, plus whatever the playhead has already passed.
+    const readFrom = clip.trim.start + Math.max(0, -untilStart)
+    if (readFrom >= end) {
+      // The playhead is past the clip.
       continue
     }
     const destination = output(kind)
@@ -48,13 +52,15 @@ export function scheduleClips(
     } else {
       source.connect(destination)
     }
-    source.start(at + Math.max(0, delay), into, end - into)
+    // Wait until the clip starts (or start now if the playhead is inside it), then play to the end.
+    source.start(at + Math.max(0, untilStart), readFrom, end - readFrom)
     sources.push(source)
   }
   return sources
 }
 
-// Small scheduling lead so every source starts on the same audio-clock tick.
+// Schedule playback this far ahead of the audio clock. A start time that has already passed
+// makes Web Audio start late, so the audio would lag the playhead, which is read from the clock.
 const LEAD = 0.05
 
 /**
