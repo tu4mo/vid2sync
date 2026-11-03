@@ -163,16 +163,22 @@ export function Timeline({
     return (
       <div className="relative flex items-center" data-testid={`lane-${kind}`}>
         {/* With both tracks empty, the timeline-wide prompt covers it. */}
+        {/* Sticky, not placed from `scrollLeft`, which lags the scroll by a frame. The outer box spans the padding too, so the prompt starts at the viewport's edge; sticky offsets count from inside the padding, so it's taken back off. */}
         {!clip && hasClips && (
           <div
-            className="pointer-events-none absolute inset-y-0 flex items-center justify-center"
-            style={{ left: view.start, width: view.width }}
+            className="pointer-events-none absolute inset-y-0"
+            style={{ left: -EDGE_PX, right: -EDGE_PX }}
           >
-            <ImportPrompt
-              accept={`${kind}/*`}
-              what={DROP_WHAT[kind]}
-              onImport={onImport}
-            />
+            <div
+              className="sticky flex h-full items-center justify-center"
+              style={{ left: -EDGE_PX, width: viewport }}
+            >
+              <ImportPrompt
+                accept={`${kind}/*`}
+                what={DROP_WHAT[kind]}
+                onImport={onImport}
+              />
+            </div>
           </div>
         )}
         {clip && (
