@@ -150,7 +150,7 @@ export function ClipView({
             />
           </div>
         ) : (
-          <div className="absolute bottom-1 left-0 px-1.5 text-2xs text-white/50">
+          <div className="absolute bottom-1 left-0 px-1.5 text-xs text-white/50">
             no audio track
           </div>
         )}

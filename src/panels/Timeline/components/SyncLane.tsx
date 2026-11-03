@@ -108,7 +108,7 @@ export function SyncLane({
     <div className="pointer-events-none relative">
       <div
         ref={labelRef}
-        className="pointer-events-auto absolute top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md bg-panel px-1 text-2xs font-semibold text-accent tabular-nums"
+        className="pointer-events-auto absolute top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md bg-panel px-1 text-xs font-semibold text-accent tabular-nums"
         style={{ left: labelLeft }}
         // Keep the timeline from scrubbing (and deselecting) under the label.
         onPointerDown={(e) => e.stopPropagation()}

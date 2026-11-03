@@ -145,7 +145,7 @@ export function Envelope({
               style={{ left: STICKY_UNDER_PLAY_LEFT_PX - LABEL_INSET_PX }}
             >
               <span
-                className="block rounded bg-panel-2 px-1 text-2xs tabular-nums"
+                className="block rounded bg-panel-2 px-1 text-xs tabular-nums"
                 style={{ marginLeft: LABEL_INSET_PX }}
               >
                 {percent}%
