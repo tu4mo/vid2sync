@@ -187,7 +187,6 @@ export function Timeline({
             onSelect={onSelect}
             onEdit={onEdit}
             snap={snap}
-            view={view}
             onVolumeChange={onVolumeChange}
             onRemove={onRemove}
           />

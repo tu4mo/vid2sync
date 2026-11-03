@@ -58,8 +58,8 @@ test('import, sync, play, trim and export', async ({ page }) => {
   const audioClip = page.getByTestId('clip-audio')
   await expect(page.getByRole('img', { name: 'Video' })).toBeVisible()
   await expect(page.getByRole('img', { name: 'Audio' })).toBeVisible()
-  await expect(videoClip.locator('canvas')).toBeVisible()
-  await expect(audioClip.locator('canvas')).toBeVisible()
+  await expect(videoClip.getByTestId('waveform')).toBeVisible()
+  await expect(audioClip.getByTestId('waveform')).toBeVisible()
   // Zoom in from the zoomed-out start, once there's a clip to zoom.
   const zoomIn = page.getByRole('button', { name: 'Zoom in' })
   for (let i = 0; i < 6; i++) {
