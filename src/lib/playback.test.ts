@@ -142,13 +142,16 @@ describe('Playback', () => {
     expect(playback.startedFrom()).toBeCloseTo(2)
   })
 
-  it('ignores sources that already stopped', () => {
+  it('stops the audio and parks the position on stopAt', () => {
     playback.setClips(clips)
     playback.play(0)
-    ctx.sources[0].stop.mockImplementation(() => {
-      throw new Error('InvalidStateError')
-    })
-    expect(() => playback.pause()).not.toThrow()
+    playback.stopAt(42)
+
+    expect(playback.playing).toBe(false)
+    expect(playback.now()).toBe(42)
+    for (const source of ctx.sources) {
+      expect(source.stop).toHaveBeenCalled()
+    }
   })
 
   it('routes each track through its own gain', () => {

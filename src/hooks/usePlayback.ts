@@ -27,8 +27,7 @@ export function usePlayback(clips: Clips, volume: Volumes) {
 
   /** Stops playback with the playhead parked at `t`. */
   function stopAt(t: number) {
-    playback.pause()
-    playback.seek(t)
+    playback.stopAt(t)
     setTime(t)
     setPlaying(false)
   }

@@ -119,6 +119,13 @@ export class Playback {
     this.stopSources()
   }
 
+  /** Stops playback with the position parked at `t`. */
+  stopAt(t: number) {
+    this.playing = false
+    this.anchorTime = t
+    this.stopSources()
+  }
+
   seek(t: number) {
     if (this.playing) {
       this.play(t)
@@ -134,11 +141,7 @@ export class Playback {
 
   private stopSources() {
     for (const source of this.sources) {
-      try {
-        source.stop()
-      } catch {
-        // Already stopped
-      }
+      source.stop()
       source.disconnect()
     }
     this.sources = []
