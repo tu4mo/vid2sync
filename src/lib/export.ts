@@ -1,26 +1,49 @@
-import {
-  ALL_FORMATS,
-  AudioBufferSource,
-  BlobSource,
-  BufferTarget,
-  Conversion,
-  Input,
-  Mp4OutputFormat,
-  Output,
-  Quality,
-  getFirstEncodableAudioCodec,
-  type AudioCodec,
-} from 'mediabunny'
+// Mediabunny is imported only for its types here and loaded on first export, which keeps it
+// out of the initial bundle.
+import type { AudioCodec } from 'mediabunny'
 
 import type { Clips, Volumes } from './clip'
 import { scheduleClips } from './playback'
 
 const SAMPLE_RATE = 48000
 
-function createMp4Output() {
-  const target = new BufferTarget()
-  const output = new Output({
-    format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
+/**
+ * Loads the parts of Mediabunny the export uses. Destructuring the dynamic import, rather than
+ * keeping the whole module, lets the bundler leave the rest of Mediabunny out of the chunk.
+ */
+async function loadMediabunny() {
+  const {
+    ALL_FORMATS,
+    AudioBufferSource,
+    BlobSource,
+    BufferTarget,
+    Conversion,
+    Input,
+    Mp4OutputFormat,
+    Output,
+    Quality,
+    getFirstEncodableAudioCodec,
+  } = await import('mediabunny')
+  return {
+    ALL_FORMATS,
+    AudioBufferSource,
+    BlobSource,
+    BufferTarget,
+    Conversion,
+    Input,
+    Mp4OutputFormat,
+    Output,
+    Quality,
+    getFirstEncodableAudioCodec,
+  }
+}
+
+type Mediabunny = Awaited<ReturnType<typeof loadMediabunny>>
+
+function createMp4Output(mb: Mediabunny) {
+  const target = new mb.BufferTarget()
+  const output = new mb.Output({
+    format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }),
     target,
   })
   return { output, target }
@@ -60,7 +83,10 @@ const encoderDelays = new Map<AudioCodec, number>()
  * exported audio late. Measure it once by encoding a tone with a known onset, so it can be
  * cancelled with a negative start timestamp (written as an MP4 edit list).
  */
-async function measureEncoderDelay(codec: AudioCodec): Promise<number> {
+async function measureEncoderDelay(
+  mb: Mediabunny,
+  codec: AudioCodec,
+): Promise<number> {
   const cached = encoderDelays.get(codec)
   if (cached !== undefined) {
     return cached
@@ -72,8 +98,11 @@ async function measureEncoderDelay(codec: AudioCodec): Promise<number> {
   osc.connect(tone.destination)
   osc.start(onset)
 
-  const { output, target } = createMp4Output()
-  const source = new AudioBufferSource({ codec, quality: new Quality('high') })
+  const { output, target } = createMp4Output(mb)
+  const source = new mb.AudioBufferSource({
+    codec,
+    quality: new mb.Quality('high'),
+  })
   output.addAudioTrack(source)
   await output.start()
   await source.add(await tone.startRendering())
@@ -107,7 +136,8 @@ export async function exportSynced(
   }
   const { trim } = video
 
-  const audioCodec = await getFirstEncodableAudioCodec(['aac', 'opus'], {
+  const mb = await loadMediabunny()
+  const audioCodec = await mb.getFirstEncodableAudioCodec(['aac', 'opus'], {
     numberOfChannels: 2,
     sampleRate: SAMPLE_RATE,
   })
@@ -115,16 +145,16 @@ export async function exportSynced(
     throw new Error('This browser can’t encode audio for export.')
   }
 
-  const input = new Input({
-    source: new BlobSource(video.file),
-    formats: ALL_FORMATS,
+  const input = new mb.Input({
+    source: new mb.BlobSource(video.file),
+    formats: mb.ALL_FORMATS,
   })
   try {
-    const { output, target } = createMp4Output()
+    const { output, target } = createMp4Output(mb)
     const [conversion, encoderDelay, mix] = await Promise.all([
       // The conversion copies the video and handles cuts that don't land on a keyframe,
       // keeping the exact start and end. Our own mixed audio track is added next to it.
-      Conversion.init({
+      mb.Conversion.init({
         input,
         output,
         composable: true,
@@ -133,7 +163,7 @@ export async function exportSynced(
         trim,
         showWarnings: false,
       }),
-      measureEncoderDelay(audioCodec),
+      measureEncoderDelay(mb, audioCodec),
       mixAudio(clips, gains, video.offset + trim.start, trim.end - trim.start),
     ])
     if (!conversion.utilizedTracks.some((track) => track.type === 'video')) {
@@ -143,8 +173,8 @@ export async function exportSynced(
       const reason = discarded?.reason ?? 'no video track found'
       throw new Error(`The video stream can’t be written to MP4 (${reason}).`)
     }
-    const audioSource = new AudioBufferSource(
-      { codec: audioCodec, quality: new Quality('high') },
+    const audioSource = new mb.AudioBufferSource(
+      { codec: audioCodec, quality: new mb.Quality('high') },
       { startTimestamp: -encoderDelay },
     )
     output.addAudioTrack(audioSource)
@@ -162,7 +192,17 @@ export async function exportSynced(
   }
 }
 
-export function downloadBlob(blob: Blob, name: string) {
+/** Exports the synced video and downloads it, named after the video file. */
+export async function saveExport(clips: Clips, gains: Volumes) {
+  if (!clips.video) {
+    return
+  }
+  const blob = await exportSynced(clips, gains)
+  const name = clips.video.file.name.replace(/\.[^.]+$/, '')
+  downloadBlob(blob, `${name}-synced.mp4`)
+}
+
+function downloadBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

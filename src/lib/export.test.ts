@@ -122,6 +122,7 @@ const gains = { video: 1, audio: 0.5 }
 
 describe('exportSynced', () => {
   let exportSynced: typeof import('./export').exportSynced
+  let saveExport: typeof import('./export').saveExport
 
   beforeEach(async () => {
     vi.stubGlobal('OfflineAudioContext', FakeOfflineAudioContext)
@@ -138,7 +139,7 @@ describe('exportSynced', () => {
     mb.module.getFirstEncodableAudioCodec.mockResolvedValue('aac')
     // A fresh module, so the encoder delay cache starts empty.
     vi.resetModules()
-    ;({ exportSynced } = await import('./export'))
+    ;({ exportSynced, saveExport } = await import('./export'))
   })
 
   afterEach(() => vi.unstubAllGlobals())
@@ -232,15 +233,8 @@ describe('exportSynced', () => {
     )
     expect(mb.state.inputs[0].dispose).toHaveBeenCalled()
   })
-})
 
-describe('downloadBlob', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.useRealTimers()
-  })
-
-  it('downloads the blob under the name and frees its URL later', async () => {
+  it('downloads the export named after the video and frees its URL later', async () => {
     vi.useFakeTimers()
     const revoke = vi.fn()
     vi.stubGlobal('URL', {
@@ -249,14 +243,18 @@ describe('downloadBlob', () => {
     })
     const link = { href: '', download: '', click: vi.fn() }
     vi.stubGlobal('document', { createElement: () => link })
-    const { downloadBlob } = await import('./export')
+    const video = { ...clip(0, 10), file: new File([], 'trip.mov') }
 
-    downloadBlob(new Blob(), 'synced.mp4')
+    await saveExport({ video, audio: null }, gains)
 
-    expect(link).toMatchObject({ href: 'blob:out', download: 'synced.mp4' })
+    expect(link).toMatchObject({
+      href: 'blob:out',
+      download: 'trip-synced.mp4',
+    })
     expect(link.click).toHaveBeenCalled()
     expect(revoke).not.toHaveBeenCalled()
     vi.advanceTimersByTime(10_000)
     expect(revoke).toHaveBeenCalledWith('blob:out')
+    vi.useRealTimers()
   })
 })
