@@ -32,8 +32,9 @@ export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
 
   return (
     // As wide as the buttons, not the clip: a sticky box as wide as its parent has no room to move.
+    // Over the fade shade (z-10), under the fade dots (z-30), so the dots stay grabbable.
     <div
-      className="pointer-events-none sticky z-10 flex h-full w-max max-w-full"
+      className="pointer-events-none sticky z-20 flex h-full w-max max-w-full"
       style={{ left: STICKY_LEFT_PX }}
     >
       <div
