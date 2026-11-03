@@ -1,6 +1,7 @@
 import {
   CenterFocusIcon,
   Download01Icon,
+  Loading03Icon,
   PauseIcon,
   PlayIcon,
   PreviousIcon,
@@ -43,7 +44,7 @@ type Props = {
   /** Nothing to play or zoom until there's a clip. */
   hasClips: boolean
   canExport: boolean
-  exportProgress: number | null
+  exporting: boolean
   pixelsPerSecond: number
   followPlayhead: boolean
   onPlay: () => void
@@ -58,7 +59,7 @@ export function Toolbar({
   playing,
   hasClips,
   canExport,
-  exportProgress,
+  exporting,
   pixelsPerSecond,
   followPlayhead,
   onPlay,
@@ -97,14 +98,18 @@ export function Toolbar({
           <HugeiconsIcon icon={PreviousIcon} size={16} />
         </Button>
         <Button
-          className="ml-3 tabular-nums"
-          aria-label="Export MP4"
+          className="ml-3"
+          aria-label={exporting ? 'Exporting MP4' : 'Export MP4'}
+          aria-busy={exporting}
           onClick={onExport}
-          disabled={!canExport || exportProgress !== null}
+          disabled={!canExport || exporting}
           title="Save the video with the synced audio as MP4"
         >
-          <HugeiconsIcon icon={Download01Icon} size={16} />
-          {exportProgress !== null && `${Math.round(exportProgress * 100)}%`}
+          <HugeiconsIcon
+            className={exporting ? 'animate-spin' : undefined}
+            icon={exporting ? Loading03Icon : Download01Icon}
+            size={16}
+          />
         </Button>
       </div>
       <div className="flex items-center gap-2">

@@ -41,7 +41,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null)
   const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
   const [followPlayhead, setFollowPlayhead] = useState(true)
-  const [exportProgress, setExportProgress] = useState<number | null>(null)
+  const [exporting, setExporting] = useState(false)
 
   const { time, playing, end, play, pause, stopAt, seek, ctx } = usePlayback(
     clips,
@@ -97,13 +97,13 @@ export function App() {
   async function exportVideo() {
     pause()
     setError(null)
-    setExportProgress(0)
+    setExporting(true)
     try {
-      await saveExport(clips, volume, setExportProgress)
+      await saveExport(clips, volume)
     } catch (e) {
       setError(`Export failed: ${errorMessage(e)}`)
     }
-    setExportProgress(null)
+    setExporting(false)
   }
 
   // Free each file's blob URL once its clip is replaced or removed. Kept here rather than in the
@@ -156,7 +156,7 @@ export function App() {
               playing={playing}
               hasClips={!!(clips.video || clips.audio)}
               canExport={!!clips.video}
-              exportProgress={exportProgress}
+              exporting={exporting}
               pixelsPerSecond={pixelsPerSecond}
               followPlayhead={followPlayhead}
               onPlay={play}

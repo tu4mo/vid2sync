@@ -100,7 +100,6 @@ async function measureEncoderDelay(codec: AudioCodec): Promise<number> {
 export async function exportSynced(
   clips: Clips,
   gains: Volumes,
-  onProgress: (fraction: number) => void,
 ): Promise<Blob> {
   const video = clips.video
   if (!video) {
@@ -144,8 +143,6 @@ export async function exportSynced(
       const reason = discarded?.reason ?? 'no video track found'
       throw new Error(`The video stream can’t be written to MP4 (${reason}).`)
     }
-    conversion.onProgress = (p) => onProgress(p * 0.9)
-
     const audioSource = new AudioBufferSource(
       { codec: audioCodec, quality: new Quality('high') },
       { startTimestamp: -encoderDelay },
@@ -159,7 +156,6 @@ export async function exportSynced(
     ])
 
     await output.finalize()
-    onProgress(1)
     return new Blob([target.buffer!], { type: 'video/mp4' })
   } finally {
     input.dispose()
