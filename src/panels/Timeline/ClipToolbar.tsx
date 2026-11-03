@@ -38,7 +38,7 @@ export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
       style={{ left: STICKY_LEFT_PX }}
     >
       <div
-        className="pointer-events-auto mt-1 flex min-w-0 items-center gap-1 self-start"
+        className="pointer-events-auto flex min-w-0 items-center gap-1 self-center"
         style={{ marginLeft: INSET_PX }}
         // Keep the buttons from dragging the clip (and capturing the pointer, which eats the click).
         onPointerDown={(e) => e.stopPropagation()}
