@@ -17,7 +17,7 @@ const STICKY_LEFT_PX = TOOLBAR_INSET_PX - EDGE_PX - INSET_PX
 
 // The remove button and the volume block, as tall and rounded as the clip's label.
 const CHIP =
-  'flex h-4.5 shrink-0 items-center rounded border border-line bg-panel-2'
+  'flex h-4.5 shrink-0 items-center rounded bg-panel-2'
 
 type Props = {
   kind: TrackKind
@@ -45,7 +45,7 @@ export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
       >
         <button
           type="button"
-          className={`${CHIP} cursor-pointer justify-center px-1.5 hover:border-danger hover:text-danger`}
+          className={`${CHIP} cursor-pointer justify-center px-1.5 hover:text-danger`}
           aria-label="Remove clip"
           onClick={() => onRemove(kind)}
           title="Remove clip (Delete)"
@@ -54,7 +54,7 @@ export function ClipToolbar({ kind, volume, onVolumeChange, onRemove }: Props) {
         </button>
         {/* The volume icon and slider share one block. The slider slides out on hover or focus, and stays out while it has focus, so dragging past it doesn't close it. */}
         <div
-          className={`group/volume ${CHIP} min-w-0 overflow-hidden hover:border-line-strong has-[:focus-visible]:border-line-strong`}
+          className={`group/volume ${CHIP} min-w-0 cursor-default overflow-hidden`}
         >
           <span className="inline-flex h-full shrink-0 items-center px-1.5">
             <HugeiconsIcon
