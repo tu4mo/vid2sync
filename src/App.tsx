@@ -3,23 +3,26 @@ import { Group, Panel, Separator } from 'react-resizable-panels'
 
 import { ErrorDialog } from './components/ErrorDialog/ErrorDialog'
 import { FileDrop } from './components/FileDrop/FileDrop'
+import { useImport } from './hooks/useImport'
 import { usePlayback } from './hooks/usePlayback'
 import { useShortcuts } from './hooks/useShortcuts'
+import { autoSyncFor } from './lib/autoSync'
 import {
-  roundMs,
+  syncClips,
   updateClip,
   type ClipEdit,
   type Clips,
   type TrackKind,
   type Volumes,
 } from './lib/clip'
+import { errorMessage } from './lib/error'
 import { saveExport } from './lib/export'
 import {
+  SYNC_TRANSITION_MS,
   TIMELINE_HEIGHT_PX,
   TOOLBAR_HEIGHT_PX,
   TIMELINE_MIN_HEIGHT_PX,
 } from './lib/layout'
-import { loadClip, routeFiles } from './lib/media'
 import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import { Preview } from './panels/Preview/Preview'
 import { Timeline } from './panels/Timeline/Timeline'
@@ -30,10 +33,6 @@ function revokeOnChange(url: string | undefined) {
   return url ? () => URL.revokeObjectURL(url) : undefined
 }
 
-function errorMessage(e: unknown) {
-  return e instanceof Error ? e.message : String(e)
-}
-
 export function App() {
   const [clips, setClips] = useState<Clips>({ video: null, audio: null })
   const [volume, setVolume] = useState<Volumes>({ video: 1, audio: 1 })
@@ -42,6 +41,10 @@ export function App() {
   const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
   const [followPlayhead, setFollowPlayhead] = useState(true)
   const [exporting, setExporting] = useState(false)
+  /** The sync offset auto-sync found when the clips were imported, or null when it couldn't sync them. */
+  const [foundSyncOffset, setFoundSyncOffset] = useState<number | null>(null)
+  /** Whether the clips are gliding to where auto-sync put them, rather than jumping. */
+  const [gliding, setGliding] = useState(false)
 
   const { time, playing, end, play, pause, stopAt, seek, ctx } = usePlayback(
     clips,
@@ -50,6 +53,10 @@ export function App() {
 
   function editClip(kind: TrackKind, edit: ClipEdit) {
     setClips((prev) => updateClip(prev, kind, edit))
+  }
+
+  function setSyncOffset(syncOffset: number) {
+    setClips((prev) => syncClips(prev, syncOffset))
   }
 
   function changeVolume(kind: TrackKind, v: number) {
@@ -62,37 +69,28 @@ export function App() {
     setSelected(null)
   }
 
-  async function importFile(file: File, kind: TrackKind) {
-    // The new clip starts at the playhead.
-    const offset = roundMs(pause())
-    try {
-      const clip = await loadClip(file, kind, ctx)
-      setClips((prev) => ({ ...prev, [kind]: { ...clip, offset } }))
-      setSelected(kind)
-    } catch (e) {
-      setError(errorMessage(e))
+  /** Moves the clips to where auto-sync matched them, with a transition, so you see them move. */
+  function autoSyncTo(syncOffset: number) {
+    setGliding(true)
+    setSyncOffset(syncOffset)
+    setTimeout(() => setGliding(false), SYNC_TRANSITION_MS)
+  }
+
+  function syncImported(syncOffset: number | null) {
+    setFoundSyncOffset(syncOffset)
+    if (syncOffset !== null) {
+      autoSyncTo(syncOffset)
     }
   }
 
-  function importFiles(files: File[]) {
-    const routes = routeFiles(files)
-    // Set before the imports start, so a failed import's error replaces it rather than the reverse.
-    setError(routes.error)
-    for (const { file, kind } of routes.imports) {
-      void importFile(file, kind)
-    }
-  }
-
-  function dropFiles(files: File[]) {
-    if (files.length === 0) {
-      setError(
-        'The drop didn’t contain a file. If you’re dragging from Photos, try Safari, ' +
-          'or drag the video to the Desktop first and drop it from there.',
-      )
-      return
-    }
-    importFiles(files)
-  }
+  const { importing, importFiles } = useImport({
+    ctx,
+    clips,
+    pause,
+    onLoad: setClips,
+    onSync: syncImported,
+    onError: setError,
+  })
 
   async function exportVideo() {
     pause()
@@ -114,8 +112,11 @@ export function App() {
   useEffect(() => revokeOnChange(videoUrl), [videoUrl])
   useEffect(() => revokeOnChange(audioUrl), [audioUrl])
 
+  // The timeline and toolbar are disabled while either runs, so the clips can't change under it.
+  const busy = exporting || importing
+
   useShortcuts({
-    enabled: !error,
+    enabled: !error && !busy,
     clips,
     selected,
     time,
@@ -132,7 +133,7 @@ export function App() {
     <FileDrop
       className="h-full select-none"
       label="Drop video or audio to import"
-      onDrop={dropFiles}
+      onDrop={importFiles}
     >
       <Group orientation="vertical">
         <Panel minSize={80}>
@@ -153,10 +154,12 @@ export function App() {
         >
           <div className="flex h-full flex-col bg-panel">
             <Toolbar
+              disabled={busy}
               playing={playing}
               hasClips={!!(clips.video || clips.audio)}
               canExport={!!clips.video}
-              exporting={exporting}
+              autoSync={autoSyncFor(clips, foundSyncOffset)}
+              onAutoSync={autoSyncTo}
               pixelsPerSecond={pixelsPerSecond}
               followPlayhead={followPlayhead}
               onPlay={play}
@@ -177,6 +180,8 @@ export function App() {
               pixelsPerSecond={pixelsPerSecond}
               playing={playing}
               followPlayhead={followPlayhead}
+              disabled={busy}
+              gliding={gliding}
               onSelect={setSelected}
               onEdit={editClip}
               onSeek={seek}

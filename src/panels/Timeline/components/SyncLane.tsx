@@ -1,12 +1,13 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 
 import {
+  TRACK_KINDS,
   clipSpan,
   moveClip,
-  syncTo,
+  syncClips,
+  syncOffsetOf,
   type Clip,
   type ClipEdit,
-  type Sync,
   type TrackKind,
 } from '../../../lib/clip'
 
@@ -24,9 +25,8 @@ type Props = {
 }
 
 /**
- * The gap between the video file's start and the audio file's start (trimming doesn't change the sync),
- * centred under the video clip.
- * Clicking the label lets you type the gap, and the buttons either side of it step it by a few ms.
+ * Shows the sync offset (see `syncOffsetOf`), centred under the video clip. Trimming doesn't change it.
+ * Clicking the label lets you type it, and the buttons either side of it step it by a few ms.
  */
 export function SyncLane({
   video,
@@ -42,37 +42,41 @@ export function SyncLane({
     original: number
   } | null>(null)
   const cancelled = useRef(false)
-  const delta =
-    video && audio ? Math.round((audio.offset - video.offset) * 1000) : null
+  const syncOffset = syncOffsetOf({ video, audio })
   // The field grows with its contents, so re-measure as you type.
   const draft = editing?.draft
 
   useLayoutEffect(() => {
     setLabelWidth(labelRef.current?.offsetWidth ?? 0)
     // oxlint-disable-next-line react/exhaustive-effect-dependencies -- the label's text changes with these, so they trigger the re-measure
-  }, [delta, draft])
+  }, [syncOffset, draft])
 
-  if (!video || !audio || delta === null) {
+  if (!video || !audio || syncOffset === null) {
     return <div />
   }
 
-  function applySync(sync: Sync) {
-    onEdit('audio', (c) => moveClip(c, sync.audio))
-    const videoOffset = sync.video
-    if (videoOffset !== undefined) {
-      onEdit('video', (c) => moveClip(c, videoOffset))
+  /** Sets the sync offset, and returns it as clamped, for the field to show. */
+  function applySync(target: number) {
+    const current = { video, audio }
+    const next = syncClips(current, target)
+    // One edit per clip that moved: the audio, and the video when the audio can't go before 0:00.
+    for (const kind of TRACK_KINDS) {
+      const offset = next[kind]?.offset
+      if (offset !== undefined && next[kind] !== current[kind]) {
+        onEdit(kind, (c) => moveClip(c, offset))
+      }
     }
-    return sync.delta
+    return syncOffsetOf(next) ?? target
   }
 
-  /** Steps the gap by `ms` live, so you can hear the change, from what's typed if you're editing. */
+  /** Steps the sync offset by `ms` live, so you can hear the change, from what's typed if you're editing. */
   function step(ms: number) {
-    if (!video || !audio || delta === null) {
+    if (!video || !audio || syncOffset === null) {
       return
     }
-    const current = editing ? Number(editing.draft) : delta
-    const from = Number.isFinite(current) ? Math.round(current) : delta
-    const set = applySync(syncTo(video, audio, from + ms))
+    const current = editing ? Number(editing.draft) : syncOffset
+    const from = Number.isFinite(current) ? Math.round(current) : syncOffset
+    const set = applySync(from + ms)
     if (editing) {
       setEditing({ ...editing, draft: String(set) })
     }
@@ -131,7 +135,7 @@ export function SyncLane({
                   e.currentTarget.blur()
                 } else if (e.key === 'Escape') {
                   cancelled.current = true
-                  applySync(syncTo(video, audio, editing.original))
+                  applySync(editing.original)
                   e.currentTarget.blur()
                 } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                   e.preventDefault()
@@ -145,7 +149,7 @@ export function SyncLane({
                   editing.draft.trim() !== '' &&
                   Number.isFinite(ms)
                 ) {
-                  applySync(syncTo(video, audio, Math.round(ms)))
+                  applySync(Math.round(ms))
                 }
                 cancelled.current = false
                 setEditing(null)
@@ -160,12 +164,12 @@ export function SyncLane({
             data-testid="sync"
             title="Click to edit in ms (positive puts the video ahead of the audio)"
             onClick={() =>
-              setEditing({ draft: String(delta), original: delta })
+              setEditing({ draft: String(syncOffset), original: syncOffset })
             }
           >
-            {delta === 0
+            {syncOffset === 0
               ? 'In sync'
-              : `${Math.abs(delta)} ms ${delta > 0 ? 'ahead of' : 'behind'} audio`}
+              : `${Math.abs(syncOffset)} ms ${syncOffset > 0 ? 'ahead of' : 'behind'} audio`}
           </button>
         )}
         {STEPS_AFTER.map(stepButton)}

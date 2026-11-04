@@ -163,4 +163,11 @@ describe('routeFiles', () => {
       error: '“notes.txt” doesn’t look like a video or audio file.',
     })
   })
+
+  it('says when there are no files, as from a failed drop', () => {
+    expect(routeFiles([])).toEqual({
+      imports: [],
+      error: 'The drop didn’t contain a file.',
+    })
+  })
 })

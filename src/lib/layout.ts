@@ -1,3 +1,6 @@
+/** How long auto-sync takes to glide the clips to their synced places. */
+export const SYNC_TRANSITION_MS = 300
+
 /** The toolbar's height, line under it included, for laying out the panel it sits in. */
 export const TOOLBAR_HEIGHT_PX = 43
 

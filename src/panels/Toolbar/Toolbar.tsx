@@ -1,7 +1,7 @@
 import {
   CenterFocusIcon,
   Download01Icon,
-  Loading03Icon,
+  MagicWand01Icon,
   PauseIcon,
   PlayIcon,
   PreviousIcon,
@@ -12,6 +12,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Button } from '../../components/Button/Button'
 import { Slider } from '../../components/Slider/Slider'
+import type { AutoSync } from '../../lib/autoSync'
 import { TOOLBAR_HEIGHT_PX } from '../../lib/layout'
 import {
   MAX_PIXELS_PER_SECOND,
@@ -39,33 +40,49 @@ function sliderToZoom(value: number) {
   )
 }
 
+/** The sync button's tooltip, which says why it's disabled when it is. */
+function autoSyncTitle(autoSync: AutoSync) {
+  switch (autoSync.status) {
+    case 'none':
+      return autoSync.reason
+    case 'matched':
+      return 'Sync the audio to the video by their sound'
+  }
+}
+
 type Props = {
+  /** Disables every control, while something runs that the clips mustn't change under. */
+  disabled: boolean
   playing: boolean
   /** Nothing to play or zoom until there's a clip. */
   hasClips: boolean
   canExport: boolean
-  exporting: boolean
+  autoSync: AutoSync
   pixelsPerSecond: number
   followPlayhead: boolean
   onPlay: () => void
   onPause: () => void
   onSeek: (t: number) => void
   onExport: () => void
+  /** Moves the clips to this sync offset (see `syncOffsetOf`). */
+  onAutoSync: (syncOffset: number) => void
   onZoom: (pixelsPerSecond: number) => void
   onToggleFollowPlayhead: () => void
 }
 
 export function Toolbar({
+  disabled,
   playing,
   hasClips,
   canExport,
-  exporting,
+  autoSync,
   pixelsPerSecond,
   followPlayhead,
   onPlay,
   onPause,
   onSeek,
   onExport,
+  onAutoSync,
   onZoom,
   onToggleFollowPlayhead,
 }: Props) {
@@ -75,11 +92,13 @@ export function Toolbar({
     onZoom(clampZoom(pixelsPerSecond * factor))
   }
   return (
-    <div
-      className="flex shrink-0 items-center justify-between gap-2.5 border-b border-line bg-panel px-4"
+    // A fieldset, so disabling it disables every control in it, each with its usual disabled look.
+    <fieldset
+      className="flex min-w-0 shrink-0 items-center justify-between gap-2.5 border-b border-line bg-panel px-4"
       style={{ height: TOOLBAR_HEIGHT_PX }}
+      disabled={disabled}
     >
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
         <Button
           variant="primary"
           aria-label={playing ? 'Pause' : 'Play'}
@@ -99,17 +118,26 @@ export function Toolbar({
         </Button>
         <Button
           className="ml-3"
-          aria-label={exporting ? 'Exporting MP4' : 'Export MP4'}
-          aria-busy={exporting}
+          aria-label="Sync automatically"
+          data-testid="auto-sync"
+          onClick={() => {
+            if (autoSync.status === 'matched') {
+              onAutoSync(autoSync.syncOffset)
+            }
+          }}
+          disabled={autoSync.status !== 'matched'}
+          title={autoSyncTitle(autoSync)}
+        >
+          <HugeiconsIcon icon={MagicWand01Icon} size={16} />
+        </Button>
+        <Button
+          className="ml-3"
+          aria-label="Export MP4"
           onClick={onExport}
-          disabled={!canExport || exporting}
+          disabled={!canExport}
           title="Save the video with the synced audio as MP4"
         >
-          <HugeiconsIcon
-            className={exporting ? 'animate-spin' : undefined}
-            icon={exporting ? Loading03Icon : Download01Icon}
-            size={16}
-          />
+          <HugeiconsIcon icon={Download01Icon} size={16} />
         </Button>
       </div>
       <div className="flex items-center gap-2">
@@ -149,6 +177,6 @@ export function Toolbar({
           <HugeiconsIcon icon={ZoomInIcon} size={16} />
         </Button>
       </div>
-    </div>
+    </fieldset>
   )
 }

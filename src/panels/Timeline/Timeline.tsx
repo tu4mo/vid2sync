@@ -1,4 +1,8 @@
-import { AudioWave01Icon, Video01Icon } from '@hugeicons/core-free-icons'
+import {
+  AudioWave01Icon,
+  Loading03Icon,
+  Video01Icon,
+} from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { useEffect, useRef } from 'react'
 
@@ -58,6 +62,10 @@ type Props = {
   playing: boolean
   /** Scrolls to keep the playhead in view during playback. */
   followPlayhead: boolean
+  /** Disables the timeline under a spinner while something runs that the clips mustn't change under. */
+  disabled: boolean
+  /** Glides the clips into new places rather than jumping, as when auto-sync moves them. */
+  gliding: boolean
   onSelect: (kind: TrackKind | null) => void
   /** Moves, trims or fades the clip on the `kind` track. */
   onEdit: (kind: TrackKind, edit: ClipEdit) => void
@@ -83,6 +91,8 @@ export function Timeline({
   pixelsPerSecond,
   playing,
   followPlayhead,
+  disabled,
+  gliding,
   onSelect,
   onEdit,
   onSeek,
@@ -191,6 +201,7 @@ export function Timeline({
             onSelect={onSelect}
             onEdit={onEdit}
             snap={snap}
+            gliding={gliding}
             onVolumeChange={onVolumeChange}
           />
         )}
@@ -199,59 +210,78 @@ export function Timeline({
   }
 
   return (
-    <div className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel">
-      {!hasClips && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <ImportPrompt
-            accept="video/*,audio/*"
-            what="a video and an audio file"
-            onImport={onImport}
-          />
-        </div>
-      )}
-      {/* The track icons, under the timeline, so the clips scroll over them. Not until there's a clip; before that the import prompt has the timeline to itself. */}
-      {hasClips && (
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 grid"
-          style={{ gridTemplateRows: ROWS }}
-        >
-          <div />
-          <TrackIcon kind="video" />
-          <div />
-          <TrackIcon kind="audio" />
-          <div />
-        </div>
-      )}
+    <div className="relative flex min-h-0 flex-1 flex-col" aria-busy={disabled}>
+      {/* Inert while disabled, so nothing can be clicked, focused or tabbed to. Isolated, so nothing inside, however high its z-index, draws over the spinner. */}
       <div
-        className="relative overflow-x-auto overflow-y-hidden overscroll-x-contain"
-        style={{ paddingInline: EDGE_PX }}
-        ref={scrollRef}
-        onScroll={onScroll}
+        className="relative isolate grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel"
+        inert={disabled}
       >
-        {/* The rows match ROWS: scrub strip, video, sync, audio, scrub strip. */}
+        {!hasClips && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+            <ImportPrompt
+              accept="video/*,audio/*"
+              what="a video and an audio file"
+              onImport={onImport}
+            />
+          </div>
+        )}
+        {/* The track icons, under the timeline, so the clips scroll over them. Not until there's a clip; before that the import prompt has the timeline to itself. */}
+        {hasClips && (
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 grid"
+            style={{ gridTemplateRows: ROWS }}
+          >
+            <div />
+            <TrackIcon kind="video" />
+            <div />
+            <TrackIcon kind="audio" />
+            <div />
+          </div>
+        )}
         <div
-          className="relative grid h-full min-w-full cursor-text"
-          ref={contentRef}
-          style={{ width, gridTemplateRows: ROWS }}
-          {...scrub}
+          className="relative overflow-x-auto overflow-y-hidden overscroll-x-contain"
+          style={{ paddingInline: EDGE_PX }}
+          ref={scrollRef}
+          onScroll={onScroll}
         >
-          <div />
-          {lane('video')}
-          <SyncLane
-            video={clips.video}
-            audio={clips.audio}
-            pixelsPerSecond={pixelsPerSecond}
-            view={view}
-            onEdit={onEdit}
-          />
-          {lane('audio')}
-          <div />
+          {/* The rows match ROWS: scrub strip, video, sync, audio, scrub strip. */}
+          <div
+            className="relative grid h-full min-w-full cursor-text"
+            ref={contentRef}
+            style={{ width, gridTemplateRows: ROWS }}
+            {...scrub}
+          >
+            <div />
+            {lane('video')}
+            <SyncLane
+              video={clips.video}
+              audio={clips.audio}
+              pixelsPerSecond={pixelsPerSecond}
+              view={view}
+              onEdit={onEdit}
+            />
+            {lane('audio')}
+            <div />
 
-          {hasClips && (
-            <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
-          )}
+            {hasClips && (
+              <Playhead time={time} pixelsPerSecond={pixelsPerSecond} />
+            )}
+          </div>
         </div>
       </div>
+      {disabled && (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-panel/70"
+          role="status"
+          aria-label="Working"
+        >
+          <HugeiconsIcon
+            className="animate-spin text-accent"
+            icon={Loading03Icon}
+            size={20}
+          />
+        </div>
+      )}
     </div>
   )
 }

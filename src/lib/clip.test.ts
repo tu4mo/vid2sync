@@ -8,7 +8,8 @@ import {
   fitFade,
   moveClip,
   untrimClip,
-  syncTo,
+  syncClips,
+  syncOffsetOf,
   trimClip,
   updateClip,
   type Clip,
@@ -168,25 +169,43 @@ describe('fadeClip', () => {
   })
 })
 
-describe('syncTo', () => {
-  const video = testClip({ offset: 1 })
+describe('syncOffsetOf', () => {
+  it('measures how far after the video the audio starts, in ms', () => {
+    const video = testClip({ offset: 1 })
+    expect(syncOffsetOf({ video, audio: testClip({ offset: 2.5 }) })).toBe(1500)
+    expect(syncOffsetOf({ video, audio: testClip() })).toBe(-1000)
+  })
 
-  it('moves the audio to start the gap after the video', () => {
-    expect(syncTo(video, testClip(), 500)).toEqual({ delta: 500, audio: 1.5 })
+  it('is null unless both clips are there', () => {
+    expect(syncOffsetOf({ video: testClip(), audio: null })).toBeNull()
+  })
+})
+
+describe('syncClips', () => {
+  it('moves the audio to start the sync offset after the video', () => {
+    const clips = { video: testClip({ offset: 1 }), audio: testClip() }
+    const synced = syncClips(clips, 2345)
+    expect(synced.audio?.offset).toBe(3.345)
+    expect(synced.video).toBe(clips.video)
   })
 
   it('moves the video instead when the audio would start before 0:00', () => {
     // Trimmed to start 1 s into the file, so it can go down to -1.
     const audio = testClip({ trim: { start: 1, end: 10 } })
-    expect(syncTo(video, audio, -3000)).toEqual({
-      delta: -3000,
-      audio: -1,
-      video: 2,
-    })
+    const synced = syncClips({ video: testClip({ offset: 1 }), audio }, -3000)
+    expect(synced.audio?.offset).toBe(-1)
+    expect(synced.video?.offset).toBe(2)
   })
 
   it('keeps the clips overlapping', () => {
-    expect(syncTo(video, testClip({ duration: 3 }), 60_000).delta).toBe(10_000)
-    expect(syncTo(video, testClip({ duration: 3 }), -60_000).delta).toBe(-3000)
+    const video = testClip({ offset: 1 })
+    const audio = testClip({ duration: 3 })
+    expect(syncOffsetOf(syncClips({ video, audio }, 60_000))).toBe(10_000)
+    expect(syncOffsetOf(syncClips({ video, audio }, -60_000))).toBe(-3000)
+  })
+
+  it('leaves the clips alone when a track is empty', () => {
+    const clips = { video: testClip(), audio: null }
+    expect(syncClips(clips, 500)).toBe(clips)
   })
 })

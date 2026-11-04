@@ -11,30 +11,30 @@ function computePeaks(buffer: AudioBuffer): Peaks {
   const count = Math.ceil(buffer.length / bucket)
   const min = new Float32Array(count)
   const max = new Float32Array(count)
-  const channels = Array.from({ length: buffer.numberOfChannels }, (_, c) =>
-    buffer.getChannelData(c),
-  )
-
-  for (let i = 0; i < count; i++) {
-    const start = i * bucket
-    const end = Math.min(buffer.length, start + bucket)
-    let lo = 0
-    let hi = 0
-    for (const data of channels) {
-      for (let s = start; s < end; s++) {
-        const v = data[s]
-        if (v < lo) {
-          lo = v
-        } else if (v > hi) {
-          hi = v
-        }
-      }
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const data = buffer.getChannelData(c)
+    for (let i = 0; i < count; i++) {
+      const [lo, hi] = sampleRange(
+        data,
+        i * bucket,
+        Math.min(data.length, (i + 1) * bucket),
+      )
+      min[i] = Math.min(min[i], lo)
+      max[i] = Math.max(max[i], hi)
     }
-    min[i] = lo
-    max[i] = hi
   }
-
   return { perSecond: buffer.sampleRate / bucket, min, max }
+}
+
+/** The lowest and highest sample from `start` up to `end`, counting from 0 (silence). */
+function sampleRange(data: Float32Array, start: number, end: number) {
+  let lo = 0
+  let hi = 0
+  for (let s = start; s < end; s++) {
+    lo = Math.min(lo, data[s])
+    hi = Math.max(hi, data[s])
+  }
+  return [lo, hi] as const
 }
 
 /** Reads the file's duration from its metadata; 0 when the browser can't tell. */
@@ -134,7 +134,8 @@ export type FileRoutes = {
  */
 export function routeFiles(files: File[]): FileRoutes {
   const imports: FileRoutes['imports'] = []
-  let error: string | null = null
+  // A drop can hold no files, as when dragging from Photos goes wrong.
+  let error = files.length === 0 ? 'The drop didn’t contain a file.' : null
   for (const file of files) {
     const kind = kindForFile(file)
     if (!kind) {

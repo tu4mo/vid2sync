@@ -176,28 +176,38 @@ export function fadeClip(clip: Clip, edge: Edge, span: FadeSpan): Clip {
   return { ...clip, fade: { ...clip.fade, [edge]: fitFade(rounded, room) } }
 }
 
-/** New offsets for the clips, from `syncTo`. */
-export type Sync = {
-  /** The gap that was set, in ms. */
-  delta: number
-  audio: number
-  /** Only there when the video has to move too. */
-  video?: number
+/**
+ * The clips' sync offset: how far apart their files start, in ms, positive when the audio starts
+ * later. Trimming doesn't change it. Null unless both clips are there.
+ */
+export function syncOffsetOf({ video, audio }: Clips): number | null {
+  return video && audio
+    ? Math.round((audio.offset - video.offset) * 1000)
+    : null
 }
 
 /**
- * Where the clips go for the audio to start `ms` after the video. Moves the audio; if that would
- * put it before 0:00, the video moves the other way instead. Clamped to where the clips still
- * overlap, which also keeps a typo from stretching the timeline to days.
+ * Moves the clips to a sync offset (see `syncOffsetOf`). Moves the audio; if that would put it
+ * before 0:00, the video moves the other way instead. Clamped to where the clips still overlap,
+ * which also keeps a typo from stretching the timeline to days. Leaves the clips alone unless
+ * both are there.
  */
-export function syncTo(video: Clip, audio: Clip, ms: number): Sync {
-  const delta = Math.min(
-    Math.max(ms, -Math.floor(audio.duration * 1000)),
+export function syncClips(clips: Clips, syncOffset: number): Clips {
+  const { video, audio } = clips
+  if (!video || !audio) {
+    return clips
+  }
+  const clamped = Math.min(
+    Math.max(syncOffset, -Math.floor(audio.duration * 1000)),
     Math.floor(video.duration * 1000),
   )
+  const target = video.offset + clamped / 1000
   const audioMin = minOffset(audio)
-  const target = video.offset + delta / 1000
-  return target >= audioMin
-    ? { delta, audio: target }
-    : { delta, audio: audioMin, video: audioMin - delta / 1000 }
+  if (target >= audioMin) {
+    return { video, audio: moveClip(audio, target) }
+  }
+  return {
+    video: moveClip(video, audioMin - clamped / 1000),
+    audio: moveClip(audio, audioMin),
+  }
 }

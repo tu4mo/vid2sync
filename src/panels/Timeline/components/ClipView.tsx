@@ -10,6 +10,7 @@ import {
   type Edge,
   type TrackKind,
 } from '../../../lib/clip'
+import { SYNC_TRANSITION_MS } from '../../../lib/layout'
 import { useDrag } from '../hooks/useDrag'
 import { volumeLevel } from '../lib/level'
 import { Envelope } from './Envelope'
@@ -86,6 +87,8 @@ type ClipViewProps = {
   onEdit: (kind: TrackKind, edit: ClipEdit) => void
   /** Snaps a timeline time to nearby edges and the playhead. */
   snap: (t: number) => number
+  /** Glides into a new place rather than jumping. */
+  gliding: boolean
   onVolumeChange: (kind: TrackKind, volume: number) => void
 }
 
@@ -98,6 +101,7 @@ export function ClipView({
   onSelect,
   onEdit,
   snap,
+  gliding,
   onVolumeChange,
 }: ClipViewProps) {
   const drag = useDrag(
@@ -131,7 +135,13 @@ export function ClipView({
           : ''
       }`}
       data-testid={`clip-${kind}`}
-      style={{ left, width }}
+      style={{
+        left,
+        width,
+        transition: gliding
+          ? `left ${SYNC_TRANSITION_MS}ms ease-out`
+          : undefined,
+      }}
       {...drag}
     >
       <div

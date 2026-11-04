@@ -60,6 +60,13 @@ test('import, sync, play, trim and export', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'Audio' })).toBeVisible()
   await expect(videoClip.getByTestId('waveform')).toBeVisible()
   await expect(audioClip.getByTestId('waveform')).toBeVisible()
+  // The fixtures are steady tones, with nothing to match on, so auto-sync says why and moves nothing.
+  const autoSync = page.getByTestId('auto-sync')
+  await expect(autoSync).toHaveAttribute(
+    'title',
+    'Couldn’t sync the clips automatically',
+  )
+  await expect(autoSync).toBeDisabled()
   // Zoom in from the zoomed-out start, once there's a clip to zoom.
   const zoomIn = page.getByRole('button', { name: 'Zoom in' })
   for (let i = 0; i < 6; i++) {

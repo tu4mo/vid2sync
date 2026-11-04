@@ -71,7 +71,7 @@ describe('SyncLane', () => {
     await expect.element(screen.getByTestId('sync')).toHaveTextContent(text)
   })
 
-  it('steps the gap with the buttons', async () => {
+  it('steps the sync offset with the buttons', async () => {
     const { screen, clips } = await mount(1)
     const label = screen.getByTestId('sync')
 
@@ -104,7 +104,7 @@ describe('SyncLane', () => {
     expect(clips().video!.offset).toBe(0.005)
   })
 
-  it('sets the gap typed into the field', async () => {
+  it('sets the sync offset typed into the field', async () => {
     const { screen, clips } = await mount(1)
     await screen.getByTestId('sync').click()
 
@@ -131,7 +131,7 @@ describe('SyncLane', () => {
     expect(clips().audio!.offset).toBe(1.01)
   })
 
-  it('steps live with the arrow keys and puts the gap back on Escape', async () => {
+  it('steps live with the arrow keys and puts the sync offset back on Escape', async () => {
     const { screen, clips } = await mount(1)
     await screen.getByTestId('sync').click()
     const field = screen.getByRole('textbox')
