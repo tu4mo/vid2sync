@@ -5,44 +5,17 @@ import {
   PauseIcon,
   PlayIcon,
   PreviousIcon,
-  ZoomInIcon,
-  ZoomOutIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Button } from '../../components/Button/Button'
-import { Slider } from '../../components/Slider/Slider'
 import type { AutoSync } from '../../lib/autoSync'
 import { TOOLBAR_HEIGHT_PX } from '../../lib/layout'
-import {
-  MAX_PIXELS_PER_SECOND,
-  MIN_PIXELS_PER_SECOND,
-  clampZoom,
-} from '../../lib/zoom'
+import { Zoom } from './components/Zoom'
 
 /** The nudge buttons either side of the wand, in ms. */
 const NUDGES_BEFORE = [-5, -1]
 const NUDGES_AFTER = [1, 5]
-
-/** How much one press of a zoom button zooms. */
-const ZOOM_STEP = 1.5
-
-const LOG_MIN = Math.log(MIN_PIXELS_PER_SECOND)
-const LOG_RANGE = Math.log(MAX_PIXELS_PER_SECOND) - LOG_MIN
-
-// The slider runs 0–100 on a log scale, so its native tooltip shows a tidy percentage
-// rather than the raw logarithm.
-function zoomToSlider(pixelsPerSecond: number) {
-  return ((Math.log(pixelsPerSecond) - LOG_MIN) / LOG_RANGE) * 100
-}
-
-function sliderToZoom(value: number) {
-  // Written as a power so the ends land exactly on the limits, which the zoom buttons check.
-  return (
-    MIN_PIXELS_PER_SECOND *
-    (MAX_PIXELS_PER_SECOND / MIN_PIXELS_PER_SECOND) ** (value / 100)
-  )
-}
 
 /** The sync button's tooltip, which says why it's disabled when it is. */
 function autoSyncTitle(autoSync: AutoSync) {
@@ -97,10 +70,6 @@ export function Toolbar({
   onToggleFollowPlayhead,
 }: Props) {
   const empty = !hasClips
-
-  function zoomBy(factor: number) {
-    onZoom(clampZoom(pixelsPerSecond * factor))
-  }
 
   function nudgeButton(ms: number) {
     const label = `Move ${Math.abs(ms)} ms ${ms > 0 ? 'later' : 'earlier'}`
@@ -183,31 +152,11 @@ export function Toolbar({
         >
           <HugeiconsIcon icon={CenterFocusIcon} size={16} />
         </Button>
-        <Button
-          aria-label="Zoom out"
-          title="Zoom out"
-          onClick={() => zoomBy(1 / ZOOM_STEP)}
-          disabled={empty || pixelsPerSecond <= MIN_PIXELS_PER_SECOND}
-        >
-          <HugeiconsIcon icon={ZoomOutIcon} size={16} />
-        </Button>
-        <Slider
-          className="w-28"
-          aria-label="Zoom"
-          min={0}
-          max={100}
-          value={zoomToSlider(pixelsPerSecond)}
+        <Zoom
+          pixelsPerSecond={pixelsPerSecond}
           disabled={empty}
-          onChange={(e) => onZoom(sliderToZoom(Number(e.target.value)))}
+          onZoom={onZoom}
         />
-        <Button
-          aria-label="Zoom in"
-          title="Zoom in"
-          onClick={() => zoomBy(ZOOM_STEP)}
-          disabled={empty || pixelsPerSecond >= MAX_PIXELS_PER_SECOND}
-        >
-          <HugeiconsIcon icon={ZoomInIcon} size={16} />
-        </Button>
       </div>
     </fieldset>
   )
