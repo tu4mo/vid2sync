@@ -2,7 +2,7 @@
 
 ## File layout
 
-- `src/` holds only `App.tsx` and the entry files. App-level hooks go in `src/hooks/`, non-React code in `src/lib/`, shared components in `src/components/` and panels in `src/panels/`.
+- `src/` holds only `App.tsx` and the entry files. App-level hooks go in `src/hooks/`, non-React code in `src/lib/`, shared components in `src/components/` and panels in `src/panels/`, and helpers shared by unit tests in `src/test/`.
 - A panel folder holds only its root component (and its test). Its other components go in `components/`, hooks in `hooks/`, and non-React helpers in `lib/`.
 
 ## Code style

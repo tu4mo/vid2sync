@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { testClip } from '../test/testClip'
 import { autoSyncFor, findClipsSync, findSync, type Sound } from './autoSync'
-import { testClip } from './testClip'
 
 const RATE = 48000
 

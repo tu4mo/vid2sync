@@ -1,4 +1,4 @@
-import { NO_FADE, type Clip } from './clip'
+import { NO_FADE, type Clip } from '../lib/clip'
 
 /** A clip for tests: a 10 s file at 0:00, untrimmed, with no fades and no audio. */
 export function testClip(overrides: Partial<Clip> = {}): Clip {

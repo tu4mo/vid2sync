@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { testClip } from '../test/testClip'
 import type { Clip, Clips } from './clip'
 import { exportSynced, saveExport } from './export'
-import { testClip } from './testClip'
 
 const SAMPLE_RATE = 48000
 

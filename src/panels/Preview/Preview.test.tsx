@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 
 import clipUrl from '../../../tests/fixtures/clip.mp4?url'
 import { type Clip } from '../../lib/clip'
-import { testClip } from '../../lib/testClip'
+import { testClip } from '../../test/testClip'
 import { Preview } from './Preview'
 
 // The 3 s fixture at 10 s on the timeline, using 0.5–2.5 s of it, so it shows from 10.5 s to 12.5 s.

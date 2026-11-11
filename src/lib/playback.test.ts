@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { testClip } from '../test/testClip'
 import { NO_FADE, type Clip, type Clips } from './clip'
 import { Playback, scheduleClips } from './playback'
-import { testClip } from './testClip'
 
 class FakeAudioContext {
   currentTime = 10

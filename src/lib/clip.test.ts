@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { testClip } from '../test/testClip'
 import {
   clipFade,
   clipSpan,
@@ -16,7 +17,6 @@ import {
   type Clip,
   type Fade,
 } from './clip'
-import { testClip } from './testClip'
 
 describe('clipSpan', () => {
   it('places the trimmed part on the timeline', () => {

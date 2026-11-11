@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render } from 'vitest-browser-react'
 
-import { testClip } from '../../lib/testClip'
+import { testClip } from '../../test/testClip'
 import { Timeline } from './Timeline'
 
 function noop() {}
