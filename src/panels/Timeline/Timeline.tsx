@@ -1,22 +1,15 @@
 import { useEffect, useRef } from 'react'
 
 import { Spinner } from '../../components/Spinner/Spinner'
-import {
-  TRACK_KINDS,
-  clipSpan,
-  type ClipEdit,
-  type Clips,
-  type TrackKind,
-  type Volumes,
-} from '../../lib/clip'
+import type { ClipEdit, Clips, TrackKind, Volumes } from '../../lib/clip'
 import { EDGE_PX, ROWS } from '../../lib/layout'
-import { SNAP_PX, snapTo } from '../../lib/snap'
 import { ImportPrompt } from './components/ImportPrompt'
 import { Playhead } from './components/Playhead'
 import { SyncLane } from './components/SyncLane'
-import { TrackIcon } from './components/TrackIcon'
+import { TrackIcons } from './components/TrackIcons'
 import { TrackLane } from './components/TrackLane'
 import { useDrag } from './hooks/useDrag'
+import { useSnap } from './hooks/useSnap'
 import { useTimelineScroll } from './hooks/useTimelineScroll'
 
 const TAIL_SECONDS = 10
@@ -111,33 +104,7 @@ export function Timeline({
   }, [playing, time, visibleSeconds, onPlayPastTimeline])
 
   const width = visibleSeconds * pixelsPerSecond
-  // Trim edges and fades snap to the playhead, the clips' edges and the files' edges.
-  const snapTimes = [
-    time,
-    ...TRACK_KINDS.flatMap((kind) => {
-      const clip = clips[kind]
-      if (!clip) {
-        return []
-      }
-      const span = clipSpan(clip)
-      return [span.start, span.end, clip.offset, clip.offset + clip.duration]
-    }),
-  ]
-  // Read through refs, so `snap` keeps its identity and the clips don't re-render as the playhead
-  // moves.
-  const snapTimesRef = useRef(snapTimes)
-  const pixelsPerSecondRef = useRef(pixelsPerSecond)
-  useEffect(() => {
-    snapTimesRef.current = snapTimes
-    pixelsPerSecondRef.current = pixelsPerSecond
-  })
-  function snap(candidate: number) {
-    return snapTo(
-      candidate,
-      snapTimesRef.current,
-      SNAP_PX / pixelsPerSecondRef.current,
-    )
-  }
+  const snap = useSnap(clips, time, pixelsPerSecond)
 
   const hasClips = !!(clips.video || clips.audio)
   // What both lanes take: each picks its own clip, selection and volume out of these.
@@ -177,18 +144,7 @@ export function Timeline({
           </div>
         )}
         {/* The track icons, under the timeline, so the clips scroll over them. Not until there's a clip; before that the import prompt has the timeline to itself. */}
-        {hasClips && (
-          <div
-            className="pointer-events-none absolute inset-y-0 left-0 grid"
-            style={{ gridTemplateRows: ROWS }}
-          >
-            <div />
-            <TrackIcon kind="video" />
-            <div />
-            <TrackIcon kind="audio" />
-            <div />
-          </div>
-        )}
+        {hasClips && <TrackIcons />}
         <div
           className="relative overflow-x-auto overflow-y-hidden overscroll-x-contain"
           style={{ paddingInline: EDGE_PX }}
