@@ -1,3 +1,5 @@
+import { clsx } from 'clsx'
+
 import type { Edge, FadeSpan } from '../../../../lib/clip'
 import { useDrag } from '../../hooks/useDrag'
 import { ENVELOPE_INSET_PX, levelTop } from '../../lib/level'
@@ -73,9 +75,10 @@ function Dot({
 
   return (
     <div
-      className={`absolute z-30 flex size-4 cursor-ew-resize items-center justify-center transition-opacity ${
-        active ? '' : 'opacity-0 group-hover:opacity-100'
-      }`}
+      className={clsx(
+        'absolute z-30 flex size-4 cursor-ew-resize items-center justify-center transition-opacity',
+        !active && 'opacity-0 group-hover:opacity-100',
+      )}
       style={{
         [side]: x,
         // The top dot rides the volume line; the bottom one sits at silence, on the 2px border.

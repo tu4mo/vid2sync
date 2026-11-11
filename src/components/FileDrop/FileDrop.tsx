@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import { useState, type ReactNode } from 'react'
 
 type Props = {
@@ -15,7 +16,7 @@ export function FileDrop({ className, label, children, onDrop }: Props) {
 
   return (
     <div
-      className={`relative ${className ?? ''}`}
+      className={clsx('relative', className)}
       onDragOver={(e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'

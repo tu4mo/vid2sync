@@ -1,3 +1,5 @@
+import { clsx } from 'clsx'
+
 import { MAX_VOLUME, hasFade, type Fade } from '../../../../lib/clip'
 import { fadeGain } from '../../../../lib/fade'
 import { STICKY_UNDER_PLAY_LEFT_PX } from '../../../../lib/layout'
@@ -137,13 +139,18 @@ export function Envelope({
           onDoubleClick={() => onChange(1)}
         >
           <div
-            className={`absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-white ${REVEAL}`}
+            className={clsx(
+              'absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-white',
+              REVEAL,
+            )}
           />
           {/* Below the line in the clip's top half, above it in the bottom half, so it stays inside the clip. */}
           <div
-            className={`pointer-events-none absolute inset-x-0 ${REVEAL} ${
-              level > 0.5 ? 'top-full mt-0.5' : 'bottom-full mb-0.5'
-            }`}
+            className={clsx(
+              'pointer-events-none absolute inset-x-0',
+              REVEAL,
+              level > 0.5 ? 'top-full mt-0.5' : 'bottom-full mb-0.5',
+            )}
           >
             {/* As wide as the readout, not the line: a sticky box as wide as its parent has no room to move. */}
             <div

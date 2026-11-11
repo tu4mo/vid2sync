@@ -1,3 +1,5 @@
+import { clsx } from 'clsx'
+
 import {
   clipFade,
   clipSpan,
@@ -82,12 +84,12 @@ export function ClipView({
     <div
       // Isolated, so the z-indexes inside stay under the playhead. Not clipped, so the fade dots
       // can sit on the border; the box inside clips the rest.
-      className={`group absolute inset-y-1 isolate cursor-grab touch-none rounded-md select-none active:cursor-grabbing ${
+      className={clsx(
+        'group absolute inset-y-1 isolate cursor-grab touch-none rounded-md select-none active:cursor-grabbing',
         // An overlay draws the border inside the clip, on top of the waveform.
-        selected
-          ? 'after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-md after:border-2 after:border-accent'
-          : ''
-      }`}
+        selected &&
+          'after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-md after:border-2 after:border-accent',
+      )}
       role="group"
       aria-label={LABELS[kind]}
       data-start={span.start}
@@ -101,7 +103,10 @@ export function ClipView({
       {...drag}
     >
       <div
-        className={`absolute inset-0 overflow-clip rounded-md ${CLIP_BACKGROUNDS[kind]}`}
+        className={clsx(
+          'absolute inset-0 overflow-clip rounded-md',
+          CLIP_BACKGROUNDS[kind],
+        )}
       >
         {clip.peaks ? (
           // The whole file's waveform, shifted so the trimmed part shows.

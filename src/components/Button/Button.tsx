@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import type { ComponentProps } from 'react'
 
 // Variants own every class they set, so a className passed in never has to win a conflict with them.
@@ -14,16 +15,16 @@ type Props = {
   variant?: keyof typeof VARIANTS
 } & ComponentProps<'button'>
 
-export function Button({
-  variant = 'default',
-  className = '',
-  ...props
-}: Props) {
+export function Button({ variant = 'default', className, ...props }: Props) {
   return (
     // A fixed height, so buttons line up whether they hold text, an icon or both.
     <button
       type="button"
-      className={`inline-flex h-6.5 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-2.5 enabled:active:scale-95 disabled:cursor-default disabled:opacity-40 ${VARIANTS[variant]} ${className}`}
+      className={clsx(
+        'inline-flex h-6.5 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-2.5 enabled:active:scale-95 disabled:cursor-default disabled:opacity-40',
+        VARIANTS[variant],
+        className,
+      )}
       {...props}
     />
   )

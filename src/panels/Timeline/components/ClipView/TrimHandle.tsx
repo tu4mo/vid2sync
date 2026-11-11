@@ -1,3 +1,5 @@
+import { clsx } from 'clsx'
+
 import type { Edge } from '../../../../lib/clip'
 import { useDrag } from '../../hooks/useDrag'
 
@@ -42,7 +44,10 @@ export function TrimHandle({
 
   return (
     <div
-      className={`absolute inset-y-0 z-20 w-2 cursor-ew-resize ${TRIM_HANDLE_CLASSES[which]}`}
+      className={clsx(
+        'absolute inset-y-0 z-20 w-2 cursor-ew-resize',
+        TRIM_HANDLE_CLASSES[which],
+      )}
       title={`Trim the ${which} (drag, Shift to not snap; double-click to reset)`}
       data-testid={`trim-${which}`}
       data-time={time}
