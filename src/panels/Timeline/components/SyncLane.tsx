@@ -11,9 +11,6 @@ import {
 } from '../../../lib/clip'
 import { EDGE_PX } from '../../../lib/layout'
 
-const STEPS_BEFORE = [-5, -1]
-const STEPS_AFTER = [1, 5]
-
 type Props = {
   video: Clip | null
   audio: Clip | null
@@ -24,7 +21,7 @@ type Props = {
 
 /**
  * Shows the sync offset (see `syncOffsetOf`), centred in the scrolled-into-view part of the lane. Trimming doesn't change it.
- * Clicking the label lets you type it, and the buttons either side of it step it by a few ms.
+ * Clicking the label lets you type it.
  */
 export function SyncLane({ video, audio, viewport, onEdit }: Props) {
   const [editing, setEditing] = useState<{
@@ -52,34 +49,14 @@ export function SyncLane({ video, audio, viewport, onEdit }: Props) {
     return syncOffsetOf(next) ?? target
   }
 
-  /** Steps the sync offset by `ms` live, so you can hear the change, from what's typed if you're editing. */
+  /** Steps the typed sync offset by `ms` live, so you can hear the change. */
   function step(ms: number) {
-    if (!video || !audio || syncOffset === null) {
+    if (!editing || syncOffset === null) {
       return
     }
-    const current = editing ? Number(editing.draft) : syncOffset
+    const current = Number(editing.draft)
     const from = Number.isFinite(current) ? Math.round(current) : syncOffset
-    const set = applySync(from + ms)
-    if (editing) {
-      setEditing({ ...editing, draft: String(set) })
-    }
-  }
-
-  function stepButton(ms: number) {
-    return (
-      <button
-        key={ms}
-        type="button"
-        className="h-4 cursor-pointer rounded px-1 text-dim tabular-nums hover:bg-panel-2 hover:text-accent"
-        aria-label={`${ms > 0 ? 'Add' : 'Subtract'} ${Math.abs(ms)} ms`}
-        data-testid={`sync-step-${ms}`}
-        // Keep the field focused while editing, so the step doesn't commit it.
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => step(ms)}
-      >
-        {ms > 0 ? `+${ms}` : ms}
-      </button>
-    )
+    setEditing({ ...editing, draft: String(applySync(from + ms)) })
   }
 
   return (
@@ -98,7 +75,6 @@ export function SyncLane({ video, audio, viewport, onEdit }: Props) {
             // Keep the timeline from scrubbing (and deselecting) under the label.
             onPointerDown={(e) => e.stopPropagation()}
           >
-            {STEPS_BEFORE.map(stepButton)}
             {editing ? (
               <>
                 <input
@@ -158,7 +134,6 @@ export function SyncLane({ video, audio, viewport, onEdit }: Props) {
                   : `${Math.abs(syncOffset)} ms ${syncOffset > 0 ? 'ahead of' : 'behind'} audio`}
               </button>
             )}
-            {STEPS_AFTER.map(stepButton)}
           </div>
         </div>
       </div>

@@ -20,6 +20,10 @@ import {
   clampZoom,
 } from '../../lib/zoom'
 
+/** The nudge buttons either side of the wand, in ms. */
+const NUDGES_BEFORE = [-5, -1]
+const NUDGES_AFTER = [1, 5]
+
 /** How much one press of a zoom button zooms. */
 const ZOOM_STEP = 1.5
 
@@ -66,6 +70,10 @@ type Props = {
   onExport: () => void
   /** Moves the clips to this sync offset (see `syncOffsetOf`). */
   onAutoSync: (syncOffset: number) => void
+  /** Whether there's a selected clip to nudge. */
+  canNudge: boolean
+  /** Moves the selected clip by this many ms. */
+  onNudge: (ms: number) => void
   onZoom: (pixelsPerSecond: number) => void
   onToggleFollowPlayhead: () => void
 }
@@ -83,6 +91,8 @@ export function Toolbar({
   onSeek,
   onExport,
   onAutoSync,
+  canNudge,
+  onNudge,
   onZoom,
   onToggleFollowPlayhead,
 }: Props) {
@@ -91,10 +101,29 @@ export function Toolbar({
   function zoomBy(factor: number) {
     onZoom(clampZoom(pixelsPerSecond * factor))
   }
+
+  function nudgeButton(ms: number) {
+    const label = `Move ${Math.abs(ms)} ms ${ms > 0 ? 'later' : 'earlier'}`
+    return (
+      <Button
+        key={ms}
+        className="tabular-nums"
+        aria-label={label}
+        title={canNudge ? label : `${label} (select a clip first)`}
+        data-testid={`nudge-${ms}`}
+        onClick={() => onNudge(ms)}
+        disabled={!canNudge}
+      >
+        {ms > 0 ? `+${ms}` : ms}
+      </Button>
+    )
+  }
+
   return (
     // A fieldset, so disabling it disables every control in it, each with its usual disabled look.
+    // Three columns, the outer two equal, so the nudge and sync controls sit in the middle.
     <fieldset
-      className="flex min-w-0 shrink-0 items-center justify-between gap-2.5 border-b border-line bg-panel px-4"
+      className="grid min-w-0 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2.5 border-b border-line bg-panel px-4"
       style={{ height: TOOLBAR_HEIGHT_PX }}
       disabled={disabled}
     >
@@ -118,6 +147,17 @@ export function Toolbar({
         </Button>
         <Button
           className="ml-3"
+          aria-label="Export MP4"
+          onClick={onExport}
+          disabled={!canExport}
+          title="Save the video with the synced audio as MP4"
+        >
+          <HugeiconsIcon icon={Download01Icon} size={16} />
+        </Button>
+      </div>
+      <div className="flex items-center gap-2">
+        {NUDGES_BEFORE.map(nudgeButton)}
+        <Button
           aria-label="Sync automatically"
           data-testid="auto-sync"
           onClick={() => {
@@ -130,17 +170,9 @@ export function Toolbar({
         >
           <HugeiconsIcon icon={MagicWand01Icon} size={16} />
         </Button>
-        <Button
-          className="ml-3"
-          aria-label="Export MP4"
-          onClick={onExport}
-          disabled={!canExport}
-          title="Save the video with the synced audio as MP4"
-        >
-          <HugeiconsIcon icon={Download01Icon} size={16} />
-        </Button>
+        {NUDGES_AFTER.map(nudgeButton)}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-self-end">
         <Button
           className="aria-pressed:text-accent"
           aria-label="Follow playhead"

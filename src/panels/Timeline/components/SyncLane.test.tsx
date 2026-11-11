@@ -69,31 +69,12 @@ describe('SyncLane', () => {
     await expect.element(screen.getByTestId('sync')).toHaveTextContent(text)
   })
 
-  it('steps the sync offset with the buttons', async () => {
-    const { screen, clips } = await mount(1)
-    const label = screen.getByTestId('sync')
-
-    await screen.getByRole('button', { name: 'Add 5 ms' }).click()
-    await expect.element(label).toHaveTextContent('5 ms ahead of audio')
-    expect(clips().audio!.offset).toBe(1.005)
-
-    await screen.getByRole('button', { name: 'Add 1 ms' }).click()
-    await expect.element(label).toHaveTextContent('6 ms ahead of audio')
-
-    await screen.getByRole('button', { name: 'Subtract 5 ms' }).click()
-    await screen.getByRole('button', { name: 'Subtract 1 ms' }).click()
-    await expect.element(label).toHaveTextContent('In sync')
-
-    await screen.getByRole('button', { name: 'Subtract 1 ms' }).click()
-    await expect.element(label).toHaveTextContent('1 ms behind audio')
-    expect(clips().audio!.offset).toBe(0.999)
-    expect(clips().video!.offset).toBe(1)
-  })
-
   it('moves the video instead when the audio would go before 0:00', async () => {
     const { screen, clips } = await mount(0, testClip({ offset: 0 }))
 
-    await screen.getByRole('button', { name: 'Subtract 5 ms' }).click()
+    await screen.getByTestId('sync').click()
+    await screen.getByRole('textbox').fill('-5')
+    await userEvent.keyboard('{Enter}')
     await expect
       .element(screen.getByTestId('sync'))
       .toHaveTextContent('5 ms behind audio')
@@ -149,20 +130,19 @@ describe('SyncLane', () => {
     expect(clips().audio!.offset).toBe(1)
   })
 
-  it('steps from the typed value with the buttons, keeping the field open', async () => {
+  it('steps from the typed value with the arrow keys', async () => {
     const { screen, clips } = await mount(1)
     await screen.getByTestId('sync').click()
     const field = screen.getByRole('textbox')
     await field.fill('40')
 
-    await screen.getByRole('button', { name: 'Add 5 ms' }).click()
-    await expect.element(field).toHaveValue('45')
-    await expect.element(field).toHaveFocus()
-    expect(clips().audio!.offset).toBe(1.045)
+    await userEvent.keyboard('{ArrowUp}')
+    await expect.element(field).toHaveValue('41')
+    expect(clips().audio!.offset).toBe(1.041)
 
     await userEvent.keyboard('{Enter}')
     await expect
       .element(screen.getByTestId('sync'))
-      .toHaveTextContent('45 ms ahead of audio')
+      .toHaveTextContent('41 ms ahead of audio')
   })
 })

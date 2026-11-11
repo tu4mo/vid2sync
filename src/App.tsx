@@ -8,6 +8,7 @@ import { usePlayback } from './hooks/usePlayback'
 import { useShortcuts } from './hooks/useShortcuts'
 import { autoSyncFor } from './lib/autoSync'
 import {
+  moveClip,
   syncClips,
   updateClip,
   type ClipEdit,
@@ -57,6 +58,13 @@ export function App() {
 
   function setSyncOffset(syncOffset: number) {
     setClips((prev) => syncClips(prev, syncOffset))
+  }
+
+  /** Moves the selected clip by `ms`. */
+  function nudgeSelected(ms: number) {
+    if (selected) {
+      editClip(selected, (c) => moveClip(c, c.offset + ms / 1000))
+    }
   }
 
   function changeVolume(kind: TrackKind, v: number) {
@@ -160,6 +168,8 @@ export function App() {
               canExport={!!clips.video}
               autoSync={autoSyncFor(clips, foundSyncOffset)}
               onAutoSync={autoSyncTo}
+              canNudge={!!(selected && clips[selected])}
+              onNudge={nudgeSelected}
               pixelsPerSecond={pixelsPerSecond}
               followPlayhead={followPlayhead}
               onPlay={play}
