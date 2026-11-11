@@ -16,6 +16,32 @@
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-logo: 'Bruno Ace SC', var(--font-sans);
+
+  --animate-sparkle: sparkle 600ms ease-out both;
+
+  /* Flies a sparkle out to (--sparkle-x, --sparkle-y), twinkling up and then fading as it goes. */
+  @keyframes sparkle {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    }
+    30% {
+      opacity: 1;
+      transform: translate(
+          calc(-50% + var(--sparkle-x) * 0.5),
+          calc(-50% + var(--sparkle-y) * 0.5)
+        )
+        scale(1) rotate(45deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(
+          calc(-50% + var(--sparkle-x)),
+          calc(-50% + var(--sparkle-y))
+        )
+        scale(0.3) rotate(90deg);
+    }
+  }
 }
 
 @layer base {

@@ -46,6 +46,8 @@ export function App() {
   const [foundSyncOffset, setFoundSyncOffset] = useState<number | null>(null)
   /** Whether the clips are gliding to where auto-sync put them, rather than jumping. */
   const [gliding, setGliding] = useState(false)
+  /** How many times auto-sync has finished moving the clips; each one sparkles the wand. */
+  const [autoSyncCount, setAutoSyncCount] = useState(0)
 
   const { time, playing, end, play, pause, stopAt, seek, audioContext } =
     usePlayback(clips, volume)
@@ -79,7 +81,10 @@ export function App() {
   function autoSyncTo(syncOffset: number) {
     setGliding(true)
     setSyncOffset(syncOffset)
-    setTimeout(() => setGliding(false), SYNC_TRANSITION_MS)
+    setTimeout(() => {
+      setGliding(false)
+      setAutoSyncCount((prev) => prev + 1)
+    }, SYNC_TRANSITION_MS)
   }
 
   function syncImported(syncOffset: number | null) {
@@ -166,6 +171,7 @@ export function App() {
               canExport={!!clips.video}
               autoSync={autoSyncFor(clips, foundSyncOffset)}
               onAutoSync={autoSyncTo}
+              autoSyncCount={autoSyncCount}
               canNudge={!!(selected && clips[selected])}
               onNudge={nudgeSelected}
               pixelsPerSecond={pixelsPerSecond}

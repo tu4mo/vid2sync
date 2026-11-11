@@ -11,6 +11,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Button } from '../../components/Button/Button'
 import type { AutoSync } from '../../lib/autoSync'
 import { TOOLBAR_HEIGHT_PX } from '../../lib/layout'
+import { Sparkles } from './components/Sparkles'
 import { Zoom } from './components/Zoom'
 
 /** The nudge buttons either side of the wand, in ms. */
@@ -43,6 +44,8 @@ type Props = {
   onExport: () => void
   /** Moves the clips to this sync offset (see `syncOffsetOf`). */
   onAutoSync: (syncOffset: number) => void
+  /** How many times auto-sync has finished; the wand sparkles each time it goes up. */
+  autoSyncCount: number
   /** Whether there's a selected clip to nudge. */
   canNudge: boolean
   /** Moves the selected clip by this many ms. */
@@ -64,6 +67,7 @@ export function Toolbar({
   onSeek,
   onExport,
   onAutoSync,
+  autoSyncCount,
   canNudge,
   onNudge,
   onZoom,
@@ -126,19 +130,21 @@ export function Toolbar({
       </div>
       <div className="flex items-center gap-2">
         {NUDGES_BEFORE.map(nudgeButton)}
-        <Button
-          aria-label="Sync automatically"
-          data-testid="auto-sync"
-          onClick={() => {
-            if (autoSync.status === 'matched') {
-              onAutoSync(autoSync.syncOffset)
-            }
-          }}
-          disabled={autoSync.status !== 'matched'}
-          title={autoSyncTitle(autoSync)}
-        >
-          <HugeiconsIcon icon={MagicWand01Icon} size={16} />
-        </Button>
+        <Sparkles count={autoSyncCount}>
+          <Button
+            aria-label="Sync automatically"
+            data-testid="auto-sync"
+            onClick={() => {
+              if (autoSync.status === 'matched') {
+                onAutoSync(autoSync.syncOffset)
+              }
+            }}
+            disabled={autoSync.status !== 'matched'}
+            title={autoSyncTitle(autoSync)}
+          >
+            <HugeiconsIcon icon={MagicWand01Icon} size={16} />
+          </Button>
+        </Sparkles>
         {NUDGES_AFTER.map(nudgeButton)}
       </div>
       <div className="flex items-center gap-2 justify-self-end">

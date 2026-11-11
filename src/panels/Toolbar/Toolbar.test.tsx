@@ -12,6 +12,7 @@ async function mount(canNudge: boolean) {
       hasClips
       canExport
       autoSync={{ status: 'matched', syncOffset: 0 }}
+      autoSyncCount={0}
       pixelsPerSecond={100}
       followPlayhead
       onPlay={() => {}}
