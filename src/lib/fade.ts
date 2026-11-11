@@ -8,7 +8,7 @@ export function fadeGain(progress: number): number {
 const CURVE_POINTS = 64
 
 /** Samples the gain from fade progress `from` to `to`, as a value curve for an AudioParam. */
-export function fadeCurve(from: number, to: number): Float32Array {
+function fadeCurve(from: number, to: number): Float32Array {
   return Float32Array.from({ length: CURVE_POINTS }, (_, i) =>
     fadeGain(from + ((to - from) * i) / (CURVE_POINTS - 1)),
   )

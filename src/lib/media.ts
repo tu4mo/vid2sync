@@ -105,7 +105,7 @@ const AUDIO_EXTENSIONS = [
 ]
 
 /** Picks the track a file belongs on, by MIME type or else extension; null if neither. */
-export function kindForFile(file: File): TrackKind | null {
+function kindForFile(file: File): TrackKind | null {
   if (file.type.startsWith('video/')) {
     return 'video'
   }
@@ -124,7 +124,7 @@ export function kindForFile(file: File): TrackKind | null {
 }
 
 /** The files to import with the track each goes on, and why any were left out. */
-export type FileRoutes = {
+type FileRoutes = {
   imports: { file: File; kind: TrackKind }[]
   /** About the last file left out, or null when none were. */
   error: string | null

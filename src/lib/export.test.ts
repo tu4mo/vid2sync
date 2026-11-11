@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { testClip } from '../test/testClip'
 import type { Clip, Clips } from './clip'
-import { exportSynced, saveExport } from './export'
+import { saveExport } from './export'
 
 const SAMPLE_RATE = 48000
 
@@ -100,7 +100,19 @@ function clip(
 
 const gains = { video: 1, audio: 0.5 }
 
-describe('exportSynced', () => {
+const download = {
+  link: { href: '', download: '', click: vi.fn() },
+  blob: null as Blob | null,
+  revoke: vi.fn(),
+}
+
+/** Exports the clips and returns the blob handed to the download. */
+async function exportBlob(clips: Clips, volumes = gains) {
+  await saveExport(clips, volumes)
+  return download.blob
+}
+
+describe('saveExport', () => {
   beforeEach(() => {
     vi.stubGlobal('OfflineAudioContext', FakeOfflineAudioContext)
     FakeOfflineAudioContext.created = []
@@ -112,29 +124,41 @@ describe('exportSynced', () => {
     }
     mb.module.Conversion.init.mockClear()
     mb.module.getFirstEncodableAudioCodec.mockResolvedValue('aac')
+
+    download.link = { href: '', download: '', click: vi.fn() }
+    download.blob = null
+    download.revoke = vi.fn()
+    vi.stubGlobal('URL', {
+      createObjectURL: (blob: Blob) => {
+        download.blob = blob
+        return 'blob:out'
+      },
+      revokeObjectURL: download.revoke,
+    })
+    vi.stubGlobal('document', { createElement: () => download.link })
   })
 
   afterEach(() => vi.unstubAllGlobals())
 
-  it('needs a video', async () => {
-    await expect(
-      exportSynced({ video: null, audio: clip(0, 10) }, gains),
-    ).rejects.toThrow('There’s no video to export.')
+  it('does nothing without a video', async () => {
+    await saveExport({ video: null, audio: clip(0, 10) }, gains)
+    expect(mb.module.Conversion.init).not.toHaveBeenCalled()
+    expect(download.link.click).not.toHaveBeenCalled()
   })
 
   it('needs an audio encoder', async () => {
     mb.module.getFirstEncodableAudioCodec.mockResolvedValue(null)
     const clips: Clips = { video: clip(0, 10), audio: null }
-    await expect(exportSynced(clips, gains)).rejects.toThrow(
+    await expect(saveExport(clips, gains)).rejects.toThrow(
       'This browser can’t encode audio for export.',
     )
   })
 
   it('exports the whole video when it isn’t trimmed', async () => {
     const clips: Clips = { video: clip(2, 10), audio: clip(0, 30) }
-    const blob = await exportSynced(clips, gains)
+    const blob = await exportBlob(clips)
 
-    expect(blob.type).toBe('video/mp4')
+    expect(blob?.type).toBe('video/mp4')
     expect(mb.module.Conversion.init).toHaveBeenCalledWith(
       expect.objectContaining({
         trim: { start: 0, end: 10 },
@@ -150,7 +174,7 @@ describe('exportSynced', () => {
       video: clip(2, 10, { start: 3, end: 6 }),
       audio: null,
     }
-    await exportSynced(clips, gains)
+    await exportBlob(clips)
     expect(mb.module.Conversion.init).toHaveBeenCalledWith(
       expect.objectContaining({ trim: { start: 3, end: 6 } }),
     )
@@ -162,7 +186,7 @@ describe('exportSynced', () => {
       video: clip(2, 10, { start: 3, end: 6 }),
       audio: clip(0, 30),
     }
-    await exportSynced(clips, gains)
+    await exportBlob(clips)
 
     const audioContext = mixContext()!
     expect(
@@ -176,7 +200,7 @@ describe('exportSynced', () => {
 
   it('leaves muted tracks out of the mix', async () => {
     const clips: Clips = { video: clip(0, 10), audio: clip(0, 10) }
-    await exportSynced(clips, { video: 0, audio: 1 })
+    await exportBlob(clips, { video: 0, audio: 1 })
     expect(mixContext()?.sources).toHaveLength(1)
   })
 
@@ -187,7 +211,7 @@ describe('exportSynced', () => {
     ]
     const clips: Clips = { video: clip(0, 10), audio: null }
 
-    await expect(exportSynced(clips, gains)).rejects.toThrow(
+    await expect(saveExport(clips, gains)).rejects.toThrow(
       'The video stream can’t be written to MP4 (undecodable_source_codec).',
     )
     expect(mb.state.inputs[0].dispose).toHaveBeenCalled()
@@ -195,25 +219,18 @@ describe('exportSynced', () => {
 
   it('downloads the export named after the video and frees its URL later', async () => {
     vi.useFakeTimers()
-    const revoke = vi.fn()
-    vi.stubGlobal('URL', {
-      createObjectURL: () => 'blob:out',
-      revokeObjectURL: revoke,
-    })
-    const link = { href: '', download: '', click: vi.fn() }
-    vi.stubGlobal('document', { createElement: () => link })
     const video = { ...clip(0, 10), file: new File([], 'trip.mov') }
 
     await saveExport({ video, audio: null }, gains)
 
-    expect(link).toMatchObject({
+    expect(download.link).toMatchObject({
       href: 'blob:out',
       download: 'trip-synced.mp4',
     })
-    expect(link.click).toHaveBeenCalled()
-    expect(revoke).not.toHaveBeenCalled()
+    expect(download.link.click).toHaveBeenCalled()
+    expect(download.revoke).not.toHaveBeenCalled()
     vi.advanceTimersByTime(10_000)
-    expect(revoke).toHaveBeenCalledWith('blob:out')
+    expect(download.revoke).toHaveBeenCalledWith('blob:out')
     vi.useRealTimers()
   })
 })

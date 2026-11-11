@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { testClip } from '../test/testClip'
-import { autoSyncFor, findClipsSync, findSync, type Sound } from './autoSync'
+import { autoSyncFor, findClipsSync } from './autoSync'
 
 const RATE = 48000
 
@@ -9,13 +9,21 @@ const RATE = 48000
 function sound(
   channels: Float32Array<ArrayBuffer>[],
   sampleRate = RATE,
-): Sound {
+): AudioBuffer {
   return {
     sampleRate,
     length: channels[0].length,
     numberOfChannels: channels.length,
-    getChannelData: (channel) => channels[channel],
-  }
+    getChannelData: (channel: number) => channels[channel],
+  } as AudioBuffer
+}
+
+/** Matches a video's sound against an audio file's, as clips at 0:00. */
+function findSync(video: AudioBuffer, audio: AudioBuffer) {
+  return findClipsSync({
+    video: testClip({ buffer: video }),
+    audio: testClip({ buffer: audio }),
+  })
 }
 
 /** A seeded random number generator, so the tests are the same every run. */
@@ -59,7 +67,7 @@ function record(
     hiss,
     seed,
   }: { gain: number; smooth: number; hiss: number; seed: number },
-): Sound {
+): AudioBuffer {
   const nextRandom = random(seed)
   const out = new Float32Array(seconds * RATE)
   const offset = Math.round(from * RATE)
@@ -71,7 +79,7 @@ function record(
   return sound([out, out.slice()])
 }
 
-function tone(frequency: number, seconds: number): Sound {
+function tone(frequency: number, seconds: number): AudioBuffer {
   const out = new Float32Array(seconds * RATE)
   for (let i = 0; i < out.length; i++) {
     out[i] = 0.5 * Math.sin((2 * Math.PI * frequency * i) / RATE)
@@ -122,7 +130,7 @@ function kick(elapsed: number) {
 }
 
 /** The backing track: kick on the accents, snare on 2 and 4, hats on 8ths with ghost notes. */
-function backingTrack(bars: Song, seed: number): Sound {
+function backingTrack(bars: Song, seed: number): AudioBuffer {
   const nextRandom = random(seed)
   function noise() {
     return nextRandom() * 2 - 1
@@ -166,7 +174,7 @@ function playAlong(
   from: number,
   seconds: number,
   seed: number,
-): Sound {
+): AudioBuffer {
   const nextRandom = random(seed)
   // About ±12 ms of human timing (a Box–Muller normal).
   function jitter() {
@@ -198,7 +206,7 @@ function playAlong(
   return record(take, 0, seconds, CAMERA)
 }
 
-describe('findSync', () => {
+describe('findClipsSync', () => {
   it('finds the offset when the audio starts after the video', () => {
     const source = performance(25, 1)
     const video = record(source, 0, 20, CAMERA)
@@ -281,9 +289,7 @@ describe('findSync', () => {
     const empty = sound([new Float32Array(0)])
     expect(findSync(empty, tone(440, 1))).toBeNull()
   })
-})
 
-describe('findClipsSync', () => {
   it('finds no match when a clip has no sound', () => {
     expect(findClipsSync({ video: testClip(), audio: testClip() })).toBeNull()
     expect(findClipsSync({ video: null, audio: testClip() })).toBeNull()

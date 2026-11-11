@@ -1,4 +1,4 @@
-import type { Clips, Volumes } from './clip'
+import type { Clip, Clips, Volumes } from './clip'
 import { scheduleClips } from './playback'
 
 const SAMPLE_RATE = 48000
@@ -66,14 +66,11 @@ async function mixAudio(
  * untouched whenever possible (no quality loss) and a freshly encoded audio track holds
  * the synced mix.
  */
-export async function exportSynced(
+async function exportSynced(
+  video: Clip,
   clips: Clips,
   gains: Volumes,
 ): Promise<Blob> {
-  const video = clips.video
-  if (!video) {
-    throw new Error('There’s no video to export.')
-  }
   const { trim } = video
 
   const mb = await loadMediabunny()
@@ -138,11 +135,12 @@ export async function exportSynced(
 
 /** Exports the synced video and downloads it, named after the video file. */
 export async function saveExport(clips: Clips, gains: Volumes) {
-  if (!clips.video) {
+  const { video } = clips
+  if (!video) {
     return
   }
-  const blob = await exportSynced(clips, gains)
-  const name = clips.video.file.name.replace(/\.[^.]+$/, '')
+  const blob = await exportSynced(video, clips, gains)
+  const name = video.file.name.replace(/\.[^.]+$/, '')
   downloadBlob(blob, `${name}-synced.mp4`)
 }
 

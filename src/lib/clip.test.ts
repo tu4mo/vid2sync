@@ -6,7 +6,6 @@ import {
   clipSpan,
   clipsEnd,
   fadeClip,
-  fitFade,
   hasFade,
   moveClip,
   untrimClip,
@@ -16,6 +15,7 @@ import {
   updateClip,
   type Clip,
   type Fade,
+  type FadeSpan,
 } from './clip'
 
 describe('clipSpan', () => {
@@ -37,7 +37,16 @@ describe('hasFade', () => {
   })
 })
 
-describe('fitFade', () => {
+/** The fade-in as it applies to a clip `room` seconds long, with no fade-out. */
+function fitFade(start: FadeSpan, room: number) {
+  const clip = testClip({
+    trim: { start: 0, end: room },
+    fade: { start, end: { silent: 0, full: 0 } },
+  })
+  return clipFade(clip).start
+}
+
+describe('clipFade', () => {
   it('keeps a fade that fits', () => {
     expect(fitFade({ silent: 0.5, full: 1 }, 3)).toEqual({
       silent: 0.5,
@@ -56,9 +65,7 @@ describe('fitFade', () => {
       full: 1,
     })
   })
-})
 
-describe('clipFade', () => {
   it('keeps fades that fit the trimmed part', () => {
     const fade = {
       start: { silent: 0, full: 1 },

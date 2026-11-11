@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { NO_FADE } from './clip'
-import { fadeCurve, fadeGain, scheduleFade } from './fade'
+import { fadeGain, scheduleFade } from './fade'
 
 // On the timeline from 2 s to 6 s, fading in over its first second and out over its last two.
 const span = { start: 2, end: 6 }
@@ -22,17 +22,6 @@ describe('fadeGain', () => {
   it('holds outside the fade', () => {
     expect(fadeGain(-1)).toBe(0)
     expect(fadeGain(2)).toBe(1)
-  })
-})
-
-describe('fadeCurve', () => {
-  it('samples the gain in either direction', () => {
-    const up = fadeCurve(0, 1)
-    expect(up[0]).toBe(0)
-    expect(up[up.length - 1]).toBe(1)
-    const down = fadeCurve(1, 0)
-    expect(down[0]).toBe(1)
-    expect(down[down.length - 1]).toBeCloseTo(0)
   })
 })
 

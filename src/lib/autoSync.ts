@@ -1,7 +1,7 @@
 import { syncClips, syncOffsetOf, type Clips } from './clip'
 
 /** The parts of a decoded file's AudioBuffer that matching reads, so tests can fake one. */
-export type Sound = Pick<
+type Sound = Pick<
   AudioBuffer,
   'sampleRate' | 'length' | 'numberOfChannels' | 'getChannelData'
 >
@@ -278,7 +278,7 @@ function highest(count: number, scoreAt: (i: number) => number) {
  * doesn't just repeat. Compares the whole files, ignoring trims. Returns the sync offset in ms
  * (see `syncOffsetOf`), or null unless one match clearly beats every other.
  */
-export function findSync(video: Sound, audio: Sound): number | null {
+function findSync(video: Sound, audio: Sound): number | null {
   const videoEnergy = energyPerMs(video)
   const audioEnergy = energyPerMs(audio)
 

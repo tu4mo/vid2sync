@@ -73,7 +73,7 @@ export const NO_FADE: Fade = {
 const MIN_RAMP = 0.01
 
 /** The shortest a clip can be trimmed to. */
-export const MIN_CLIP = 0.05
+const MIN_CLIP = 0.05
 
 /** Rounds to the millisecond, so edits don't leave float noise in the clip's times. */
 export function roundMs(seconds: number) {
@@ -86,7 +86,7 @@ export function hasFade(span: FadeSpan): boolean {
 }
 
 /** Fits a fade into `room` seconds, keeping the silence before its ramp. */
-export function fitFade({ silent, full }: FadeSpan, room: number): FadeSpan {
+function fitFade({ silent, full }: FadeSpan, room: number): FadeSpan {
   const fitted = Math.min(Math.max(0, full), room)
   return {
     silent: Math.min(Math.max(0, silent), Math.max(0, fitted - MIN_RAMP)),
@@ -113,7 +113,7 @@ export function clipFade(clip: Clip): Fade {
 }
 
 /** The earliest offset a clip can have: its trimmed part can't start before 0:00. */
-export function minOffset(clip: Clip): number {
+function minOffset(clip: Clip): number {
   return -clip.trim.start
 }
 

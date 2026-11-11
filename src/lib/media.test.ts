@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { kindForFile, loadClip, routeFiles } from './media'
+import { loadClip, routeFiles } from './media'
 
 function fakeBuffer(channels: number[][], sampleRate: number) {
   const length = channels[0].length
@@ -37,29 +37,6 @@ function stubUrls() {
   })
   return revoke
 }
-
-describe('kindForFile', () => {
-  it('uses the MIME type', () => {
-    expect(kindForFile(new File([], 'a.bin', { type: 'video/mp4' }))).toBe(
-      'video',
-    )
-    expect(kindForFile(new File([], 'a.bin', { type: 'audio/wav' }))).toBe(
-      'audio',
-    )
-  })
-
-  it('falls back to the extension when there is no MIME type', () => {
-    expect(kindForFile(new File([], 'IMG_0001.MOV'))).toBe('video')
-    expect(kindForFile(new File([], 'take.aiff'))).toBe('audio')
-  })
-
-  it('returns null for other files', () => {
-    expect(
-      kindForFile(new File([], 'notes.txt', { type: 'text/plain' })),
-    ).toBeNull()
-    expect(kindForFile(new File([], 'README'))).toBeNull()
-  })
-})
 
 describe('loadClip', () => {
   afterEach(() => vi.unstubAllGlobals())
@@ -134,7 +111,33 @@ describe('loadClip', () => {
   })
 })
 
+/** The track routeFiles puts a lone file on; null if it's left out. */
+function kindForFile(file: File) {
+  return routeFiles([file]).imports[0]?.kind ?? null
+}
+
 describe('routeFiles', () => {
+  it('uses the MIME type', () => {
+    expect(kindForFile(new File([], 'a.bin', { type: 'video/mp4' }))).toBe(
+      'video',
+    )
+    expect(kindForFile(new File([], 'a.bin', { type: 'audio/wav' }))).toBe(
+      'audio',
+    )
+  })
+
+  it('falls back to the extension when there is no MIME type', () => {
+    expect(kindForFile(new File([], 'IMG_0001.MOV'))).toBe('video')
+    expect(kindForFile(new File([], 'take.aiff'))).toBe('audio')
+  })
+
+  it('returns null for other files', () => {
+    expect(
+      kindForFile(new File([], 'notes.txt', { type: 'text/plain' })),
+    ).toBeNull()
+    expect(kindForFile(new File([], 'README'))).toBeNull()
+  })
+
   const video = new File([], 'take.mov')
   const audio = new File([], 'take.wav')
 
