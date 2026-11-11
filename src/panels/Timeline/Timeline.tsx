@@ -1,11 +1,8 @@
-import {
-  AudioWave01Icon,
-  Loading03Icon,
-  Video01Icon,
-} from '@hugeicons/core-free-icons'
+import { AudioWave01Icon, Video01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { useEffect, useRef } from 'react'
 
+import { Spinner } from '../../components/Spinner/Spinner'
 import {
   TRACK_KINDS,
   clipSpan,
@@ -280,11 +277,7 @@ export function Timeline({
           role="status"
           aria-label="Working"
         >
-          <HugeiconsIcon
-            className="animate-spin text-accent"
-            icon={Loading03Icon}
-            size={20}
-          />
+          <Spinner />
         </div>
       )}
     </section>
