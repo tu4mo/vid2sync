@@ -160,7 +160,7 @@ export function Toolbar({
           <HugeiconsIcon icon={ZoomOutIcon} size={16} />
         </Button>
         <Slider
-          className="w-32"
+          className="w-28"
           aria-label="Zoom"
           min={0}
           max={100}
