@@ -11,6 +11,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Button } from '../../components/Button/Button'
 import type { AutoSync } from '../../lib/autoSync'
 import { TOOLBAR_HEIGHT_PX } from '../../lib/layout'
+import { NudgeButton } from './components/NudgeButton'
 import { Sparkles } from './components/Sparkles'
 import { Zoom } from './components/Zoom'
 
@@ -75,22 +76,6 @@ export function Toolbar({
 }: Props) {
   const empty = !hasClips
 
-  function nudgeButton(ms: number) {
-    const label = `Move ${Math.abs(ms)} ms ${ms > 0 ? 'later' : 'earlier'}`
-    return (
-      <Button
-        key={ms}
-        className="tabular-nums"
-        aria-label={label}
-        title={canNudge ? label : `${label} (select a clip first)`}
-        onClick={() => onNudge(ms)}
-        disabled={!canNudge}
-      >
-        {ms > 0 ? `+${ms}` : ms}
-      </Button>
-    )
-  }
-
   return (
     // A fieldset, so disabling it disables every control in it, each with its usual disabled look.
     // Three columns, the outer two equal, so the nudge and sync controls sit in the middle.
@@ -128,7 +113,9 @@ export function Toolbar({
         </Button>
       </div>
       <div className="flex items-center gap-2">
-        {NUDGES_BEFORE.map(nudgeButton)}
+        {NUDGES_BEFORE.map((ms) => (
+          <NudgeButton key={ms} ms={ms} canNudge={canNudge} onNudge={onNudge} />
+        ))}
         <Sparkles count={autoSyncCount}>
           <Button
             aria-label="Sync automatically"
@@ -143,7 +130,9 @@ export function Toolbar({
             <HugeiconsIcon icon={MagicWand01Icon} size={16} />
           </Button>
         </Sparkles>
-        {NUDGES_AFTER.map(nudgeButton)}
+        {NUDGES_AFTER.map((ms) => (
+          <NudgeButton key={ms} ms={ms} canNudge={canNudge} onNudge={onNudge} />
+        ))}
       </div>
       <div className="flex items-center gap-2 justify-self-end">
         <Button
