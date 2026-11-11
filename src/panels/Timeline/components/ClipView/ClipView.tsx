@@ -7,15 +7,15 @@ import {
   untrimClip,
   type Clip,
   type ClipEdit,
-  type Edge,
   type TrackKind,
-} from '../../../lib/clip'
-import { SYNC_TRANSITION_MS } from '../../../lib/layout'
-import { useDrag } from '../hooks/useDrag'
-import { volumeLevel } from '../lib/level'
+} from '../../../../lib/clip'
+import { SYNC_TRANSITION_MS } from '../../../../lib/layout'
+import { useDrag } from '../../hooks/useDrag'
+import { volumeLevel } from '../../lib/level'
 import { Envelope } from './Envelope'
 import { FadeHandle } from './FadeHandle'
 import { Waveform } from './Waveform'
+import { TrimHandle } from './TrimHandle'
 
 const WAVE_COLORS: Record<TrackKind, string> = {
   video: '#9cc4ff',
@@ -27,56 +27,6 @@ const CLIP_BACKGROUNDS: Record<TrackKind, string> = {
   video: 'bg-[color-mix(in_srgb,var(--color-video)_45%,var(--color-panel))]',
   audio: 'bg-[color-mix(in_srgb,var(--color-audio)_45%,var(--color-panel))]',
 }
-const TRIM_HANDLE_CLASSES: Record<Edge, string> = {
-  start: 'left-0',
-  end: 'right-0',
-}
-
-type TrimHandleProps = {
-  which: Edge
-  /** Where the edge is on the timeline. */
-  time: number
-  pixelsPerSecond: number
-  snap: (t: number) => number
-  onGrab: () => void
-  onChange: (t: number) => void
-  onReset: () => void
-}
-
-/** A clip edge that drags to trim it. */
-function TrimHandle({
-  which,
-  time,
-  pixelsPerSecond,
-  snap,
-  onGrab,
-  onChange,
-  onReset,
-}: TrimHandleProps) {
-  const drag = useDrag(
-    (e) => {
-      onGrab()
-      // Where the pointer and the edge were when the handle was grabbed.
-      return { x: e.clientX, t: time }
-    },
-    (e, d) => {
-      const t = d.t + (e.clientX - d.x) / pixelsPerSecond
-      onChange(e.shiftKey ? t : snap(t))
-    },
-  )
-
-  return (
-    <div
-      className={`absolute inset-y-0 z-20 w-2 cursor-ew-resize ${TRIM_HANDLE_CLASSES[which]}`}
-      title={`Trim the ${which} (drag, Shift to not snap; double-click to reset)`}
-      data-testid={`trim-${which}`}
-      data-time={time}
-      {...drag}
-      onDoubleClick={onReset}
-    />
-  )
-}
-
 type ClipViewProps = {
   kind: TrackKind
   clip: Clip

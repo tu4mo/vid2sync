@@ -21,7 +21,7 @@ import {
   TRACK_ICON_WIDTH_PX,
 } from '../../lib/layout'
 import { snapTo } from '../../lib/snap'
-import { ClipView } from './components/ClipView'
+import { ClipView } from './components/ClipView/ClipView'
 import { ImportPrompt } from './components/ImportPrompt'
 import { Playhead } from './components/Playhead'
 import { SyncLane } from './components/SyncLane'

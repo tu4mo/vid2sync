@@ -1,6 +1,6 @@
-import type { Edge, FadeSpan } from '../../../lib/clip'
-import { useDrag } from '../hooks/useDrag'
-import { ENVELOPE_INSET_PX, levelTop } from '../lib/level'
+import type { Edge, FadeSpan } from '../../../../lib/clip'
+import { useDrag } from '../../hooks/useDrag'
+import { ENVELOPE_INSET_PX, levelTop } from '../../lib/level'
 
 // The side of the clip each fade sits on.
 const SIDES = { start: 'left', end: 'right' } as const
