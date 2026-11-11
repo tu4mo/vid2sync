@@ -41,7 +41,7 @@ async function mount(audioOffset = 1, video: Clip | null = null) {
   }
   let clips = initial
   const screen = await render(
-    <Harness initial={initial} onChange={(c) => (clips = c)} />,
+    <Harness initial={initial} onChange={(changed) => (clips = changed)} />,
   )
   return { screen, clips: () => clips }
 }

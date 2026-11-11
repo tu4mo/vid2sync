@@ -27,8 +27,8 @@ export function scheduleFade(
   from: number,
   at: number,
 ) {
-  function contextTime(t: number) {
-    return at + t - from
+  function contextTime(time: number) {
+    return at + time - from
   }
 
   // The fade-in: silent, then ramping up from `rampStart` to `rampEnd`.
@@ -40,11 +40,11 @@ export function scheduleFade(
       param.setValueAtTime(0, at)
     }
     if (rampEnd > from) {
-      const t = Math.max(rampStart, from)
-      const startAt = contextTime(t)
+      const rampFrom = Math.max(rampStart, from)
+      const startAt = contextTime(rampFrom)
       const duration = contextTime(rampEnd) - startAt
       param.setValueCurveAtTime(
-        fadeCurve((t - rampStart) / (rampEnd - rampStart), 1),
+        fadeCurve((rampFrom - rampStart) / (rampEnd - rampStart), 1),
         startAt,
         duration,
       )
@@ -57,11 +57,11 @@ export function scheduleFade(
     const rampStart = span.end - fade.end.full
     const rampEnd = span.end - fade.end.silent
     if (rampEnd > from) {
-      const t = Math.max(rampStart, from)
+      const rampFrom = Math.max(rampStart, from)
       // Curves can't overlap, so rounding mustn't start this one before the fade-in ends.
-      const startAt = Math.max(contextTime(t), inEndAt)
+      const startAt = Math.max(contextTime(rampFrom), inEndAt)
       param.setValueCurveAtTime(
-        fadeCurve(1 - (t - rampStart) / (rampEnd - rampStart), 0),
+        fadeCurve(1 - (rampFrom - rampStart) / (rampEnd - rampStart), 0),
         startAt,
         contextTime(rampEnd) - startAt,
       )

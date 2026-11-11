@@ -13,9 +13,9 @@ import { clampZoom } from '../../../lib/zoom'
 // edge it gets before following it during playback scrolls the timeline.
 const REVEAL_MARGIN_PX = 40
 
-/** Where time `t` sits in the scroll container's content, at the given zoom. */
-function timeToX(t: number, pixelsPerSecond: number) {
-  return t * pixelsPerSecond + EDGE_PX
+/** Where `time` sits in the scroll container's content, at the given zoom. */
+function timeToX(time: number, pixelsPerSecond: number) {
+  return time * pixelsPerSecond + EDGE_PX
 }
 
 type Options = {
@@ -39,24 +39,26 @@ export function useTimelineScroll({
   onZoom,
 }: Options) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const zoomAnchor = useRef<{ t: number; x: number } | null>(null)
+  const zoomAnchor = useRef<{ time: number; x: number } | null>(null)
   const pixelsPerSecondRef = useRef(pixelsPerSecond)
   const [viewport, setViewport] = useState(800)
 
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el) {
+    const container = scrollRef.current
+    if (!container) {
       return
     }
-    const observer = new ResizeObserver(() => setViewport(el.clientWidth))
-    observer.observe(el)
+    const observer = new ResizeObserver(() =>
+      setViewport(container.clientWidth),
+    )
+    observer.observe(container)
     return () => observer.disconnect()
   }, [])
 
   // Ctrl/⌘ + wheel (and trackpad pinch) zooms around the cursor.
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el) {
+    const container = scrollRef.current
+    if (!container) {
       return
     }
     // oxlint-disable-next-line eslint/func-style -- a hoisted declaration would lose the null check above
@@ -74,25 +76,25 @@ export function useTimelineScroll({
       }
       const pending = zoomAnchor.current
       const from = pending
-        ? Math.max(0, timeToX(pending.t, current) - pending.x)
-        : el.scrollLeft
-      const x = e.clientX - el.getBoundingClientRect().left
-      zoomAnchor.current = { t: (from + x - EDGE_PX) / current, x }
+        ? Math.max(0, timeToX(pending.time, current) - pending.x)
+        : container.scrollLeft
+      const x = e.clientX - container.getBoundingClientRect().left
+      zoomAnchor.current = { time: (from + x - EDGE_PX) / current, x }
       pixelsPerSecondRef.current = next
       onZoom(next)
     }
-    el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
+    container.addEventListener('wheel', onWheel, { passive: false })
+    return () => container.removeEventListener('wheel', onWheel)
   }, [onZoom])
 
   // The toolbar zooms around the playhead, pulled into view if it's scrolled off. An effect event,
   // so the zoom effect doesn't rerun as the playhead moves.
   const playheadAnchor = useEffectEvent(
-    (el: HTMLElement, previous: number) => ({
-      t: time,
+    (container: HTMLElement, previous: number) => ({
+      time,
       x: Math.min(
-        el.clientWidth,
-        Math.max(0, timeToX(time, previous) - el.scrollLeft),
+        container.clientWidth,
+        Math.max(0, timeToX(time, previous) - container.scrollLeft),
       ),
     }),
   )
@@ -102,40 +104,40 @@ export function useTimelineScroll({
   useLayoutEffect(() => {
     const previous = pixelsPerSecondRef.current
     pixelsPerSecondRef.current = pixelsPerSecond
-    const el = scrollRef.current
-    if (!el) {
+    const container = scrollRef.current
+    if (!container) {
       return
     }
     // The wheel zooms around the cursor; the toolbar around the playhead.
-    const anchor = zoomAnchor.current ?? playheadAnchor(el, previous)
-    el.scrollLeft = timeToX(anchor.t, pixelsPerSecond) - anchor.x
+    const anchor = zoomAnchor.current ?? playheadAnchor(container, previous)
+    container.scrollLeft = timeToX(anchor.time, pixelsPerSecond) - anchor.x
     zoomAnchor.current = null
   }, [pixelsPerSecond])
 
-  /** Scrolls time `t` into view, if it's off screen. */
-  const reveal = useEffectEvent((t: number) => {
-    const el = scrollRef.current
-    const x = timeToX(t, pixelsPerSecond)
+  /** Scrolls `target` into view, if it's off screen. */
+  const reveal = useEffectEvent((target: number) => {
+    const container = scrollRef.current
+    const x = timeToX(target, pixelsPerSecond)
     if (
-      el &&
-      (x > el.scrollLeft + el.clientWidth - REVEAL_MARGIN_PX ||
-        x < el.scrollLeft)
+      container &&
+      (x > container.scrollLeft + container.clientWidth - REVEAL_MARGIN_PX ||
+        x < container.scrollLeft)
     ) {
-      el.scrollLeft = x - REVEAL_MARGIN_PX
+      container.scrollLeft = x - REVEAL_MARGIN_PX
     }
   })
 
   // Keep the playhead in view during playback: once it nears the right edge, scroll along with it,
   // so it stays put and the clips move instead.
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el || !playing || !followPlayhead) {
+    const container = scrollRef.current
+    if (!container || !playing || !followPlayhead) {
       return
     }
     const x = timeToX(time, pixelsPerSecond)
-    const right = el.scrollLeft + el.clientWidth
+    const right = container.scrollLeft + container.clientWidth
     if (x > right - REVEAL_MARGIN_PX && x <= right) {
-      el.scrollLeft = x - el.clientWidth + REVEAL_MARGIN_PX
+      container.scrollLeft = x - container.clientWidth + REVEAL_MARGIN_PX
     } else {
       reveal(time)
     }
@@ -155,8 +157,8 @@ export function useTimelineScroll({
     }
   }, [time, playing])
 
-  function markScrub(t: number) {
-    scrubbedTo.current = t
+  function markScrub(scrubTime: number) {
+    scrubbedTo.current = scrubTime
   }
 
   return {
@@ -164,7 +166,7 @@ export function useTimelineScroll({
     scrollRef,
     /** The scroll container's width. */
     viewport,
-    /** Marks a seek to `t` as coming from the pointer, so the view doesn't scroll for it. */
+    /** Marks a seek as coming from the pointer, so the view doesn't scroll for it. */
     markScrub,
   }
 }

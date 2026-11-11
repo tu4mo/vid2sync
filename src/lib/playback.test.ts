@@ -65,8 +65,8 @@ function clip(
 
 const clips: Clips = { video: clip(60), audio: clip(60) }
 
-function audioContext(ctx: FakeAudioContext) {
-  return ctx as unknown as BaseAudioContext
+function asAudioContext(audioContext: FakeAudioContext) {
+  return audioContext as unknown as BaseAudioContext
 }
 
 function output(kind: string) {
@@ -75,19 +75,19 @@ function output(kind: string) {
 
 describe('Playback', () => {
   let playback: Playback
-  let ctx: FakeAudioContext
+  let audioContext: FakeAudioContext
 
   beforeEach(() => {
     vi.stubGlobal('AudioContext', FakeAudioContext)
     playback = new Playback()
-    ctx = playback.ctx as unknown as FakeAudioContext
+    audioContext = playback.audioContext as unknown as FakeAudioContext
   })
 
   afterEach(() => vi.unstubAllGlobals())
 
   it('holds its position while paused', () => {
     playback.seek(5)
-    ctx.currentTime = 20
+    audioContext.currentTime = 20
     expect(playback.playing).toBe(false)
     expect(playback.now()).toBe(5)
     expect(playback.startedFrom()).toBe(5)
@@ -96,27 +96,27 @@ describe('Playback', () => {
   it('follows the audio clock after a short lead', () => {
     playback.setClips(clips)
     playback.play(5)
-    expect(ctx.resume).toHaveBeenCalled()
-    expect(ctx.sources).toHaveLength(2)
-    for (const source of ctx.sources) {
+    expect(audioContext.resume).toHaveBeenCalled()
+    expect(audioContext.sources).toHaveLength(2)
+    for (const source of audioContext.sources) {
       expect(source.start).toHaveBeenCalledWith(10.05, 5, 55)
     }
 
     // Inside the lead, time hasn't started moving yet.
     expect(playback.now()).toBe(5)
-    ctx.currentTime = 12.05
+    audioContext.currentTime = 12.05
     expect(playback.now()).toBeCloseTo(7)
   })
 
   it('stops the audio and keeps the position on pause', () => {
     playback.setClips(clips)
     playback.play(0)
-    ctx.currentTime = 13.05
+    audioContext.currentTime = 13.05
     playback.pause()
 
     expect(playback.playing).toBe(false)
     expect(playback.now()).toBeCloseTo(3)
-    for (const source of ctx.sources) {
+    for (const source of audioContext.sources) {
       expect(source.stop).toHaveBeenCalled()
     }
   })
@@ -127,18 +127,18 @@ describe('Playback', () => {
     playback.seek(30)
 
     expect(playback.startedFrom()).toBe(30)
-    expect(ctx.sources).toHaveLength(4)
-    expect(ctx.sources[0].stop).toHaveBeenCalled()
-    expect(ctx.sources[2].start).toHaveBeenCalledWith(10.05, 30, 30)
+    expect(audioContext.sources).toHaveLength(4)
+    expect(audioContext.sources[0].stop).toHaveBeenCalled()
+    expect(audioContext.sources[2].start).toHaveBeenCalledWith(10.05, 30, 30)
   })
 
   it('re-schedules from the current time when clips change during playback', () => {
     playback.play(0)
-    expect(ctx.sources).toHaveLength(0)
+    expect(audioContext.sources).toHaveLength(0)
 
-    ctx.currentTime = 12.05
+    audioContext.currentTime = 12.05
     playback.setClips(clips)
-    expect(ctx.sources).toHaveLength(2)
+    expect(audioContext.sources).toHaveLength(2)
     expect(playback.startedFrom()).toBeCloseTo(2)
   })
 
@@ -149,15 +149,15 @@ describe('Playback', () => {
 
     expect(playback.playing).toBe(false)
     expect(playback.now()).toBe(42)
-    for (const source of ctx.sources) {
+    for (const source of audioContext.sources) {
       expect(source.stop).toHaveBeenCalled()
     }
   })
 
   it('routes each track through its own gain', () => {
-    const [video, audio] = ctx.gains
-    for (const gain of ctx.gains) {
-      expect(gain.connect).toHaveBeenCalledWith(ctx.destination)
+    const [video, audio] = audioContext.gains
+    for (const gain of audioContext.gains) {
+      expect(gain.connect).toHaveBeenCalledWith(audioContext.destination)
     }
 
     playback.setGain('audio', 0.5)
@@ -168,45 +168,47 @@ describe('Playback', () => {
 
 describe('scheduleClips', () => {
   it('delays clips that start after the playhead', () => {
-    const ctx = new FakeAudioContext()
+    const audioContext = new FakeAudioContext()
     const tracks: Clips = { video: clip(10, 3), audio: null }
-    scheduleClips(audioContext(ctx), tracks, 1, 100, output)
-    expect(ctx.sources[0].start).toHaveBeenCalledWith(102, 0, 10)
-    expect(ctx.sources[0].connect).toHaveBeenCalledWith({ kind: 'video' })
+    scheduleClips(asAudioContext(audioContext), tracks, 1, 100, output)
+    expect(audioContext.sources[0].start).toHaveBeenCalledWith(102, 0, 10)
+    expect(audioContext.sources[0].connect).toHaveBeenCalledWith({
+      kind: 'video',
+    })
   })
 
   it('starts partway into clips the playhead is inside', () => {
-    const ctx = new FakeAudioContext()
+    const audioContext = new FakeAudioContext()
     const tracks: Clips = { video: null, audio: clip(10, 1) }
-    scheduleClips(audioContext(ctx), tracks, 4, 100, output)
-    expect(ctx.sources[0].start).toHaveBeenCalledWith(100, 3, 7)
+    scheduleClips(asAudioContext(audioContext), tracks, 4, 100, output)
+    expect(audioContext.sources[0].start).toHaveBeenCalledWith(100, 3, 7)
   })
 
   it('plays only the trimmed part of a clip', () => {
-    const ctx = new FakeAudioContext()
+    const audioContext = new FakeAudioContext()
     // The file sits at 1 s and is used from 2 s to 5 s into it: 3–6 s on the timeline.
     const trimmed = clip(10, 1, { start: 2, end: 5 })
     scheduleClips(
-      audioContext(ctx),
+      asAudioContext(audioContext),
       { video: trimmed, audio: null },
       0,
       100,
       output,
     )
-    expect(ctx.sources[0].start).toHaveBeenCalledWith(103, 2, 3)
+    expect(audioContext.sources[0].start).toHaveBeenCalledWith(103, 2, 3)
 
     scheduleClips(
-      audioContext(ctx),
+      asAudioContext(audioContext),
       { video: trimmed, audio: null },
       4,
       100,
       output,
     )
-    expect(ctx.sources[1].start).toHaveBeenCalledWith(100, 3, 2)
+    expect(audioContext.sources[1].start).toHaveBeenCalledWith(100, 3, 2)
 
     expect(
       scheduleClips(
-        audioContext(ctx),
+        asAudioContext(audioContext),
         { video: trimmed, audio: null },
         6,
         100,
@@ -216,37 +218,45 @@ describe('scheduleClips', () => {
   })
 
   it('skips clips that ended, have no audio, or have no output', () => {
-    const ctx = new FakeAudioContext()
+    const audioContext = new FakeAudioContext()
     const ended: Clips = {
       video: clip(2, 0),
       audio: { ...clip(10, 0), buffer: null },
     }
-    expect(scheduleClips(audioContext(ctx), ended, 2, 0, output)).toEqual([])
+    expect(
+      scheduleClips(asAudioContext(audioContext), ended, 2, 0, output),
+    ).toEqual([])
 
     const muted: Clips = { video: clip(10, 0), audio: clip(10, 0) }
-    const scheduled = scheduleClips(audioContext(ctx), muted, 0, 0, (kind) =>
-      kind === 'audio' ? output(kind) : null,
+    const scheduled = scheduleClips(
+      asAudioContext(audioContext),
+      muted,
+      0,
+      0,
+      (kind) => (kind === 'audio' ? output(kind) : null),
     )
     expect(scheduled).toHaveLength(1)
-    expect(ctx.sources[0].connect).toHaveBeenCalledWith({ kind: 'audio' })
+    expect(audioContext.sources[0].connect).toHaveBeenCalledWith({
+      kind: 'audio',
+    })
   })
 
   it('fades a clip through a gain of its own', () => {
-    const ctx = new FakeAudioContext()
+    const audioContext = new FakeAudioContext()
     const faded = clip(10, 2, undefined, {
       start: { silent: 0, full: 1 },
       end: { silent: 0, full: 0 },
     })
     scheduleClips(
-      audioContext(ctx),
+      asAudioContext(audioContext),
       { video: faded, audio: null },
       0,
       100,
       output,
     )
 
-    const [gain] = ctx.gains
-    expect(ctx.sources[0].connect).toHaveBeenCalledWith(gain)
+    const [gain] = audioContext.gains
+    expect(audioContext.sources[0].connect).toHaveBeenCalledWith(gain)
     expect(gain.connect).toHaveBeenCalledWith({ kind: 'video' })
     expect(gain.gain.setValueCurveAtTime).toHaveBeenCalledWith(
       expect.any(Float32Array),

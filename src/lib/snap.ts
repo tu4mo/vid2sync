@@ -1,15 +1,15 @@
-/** Moves `t` onto the nearest of `targets` within `tolerance`, or leaves it as is. */
+/** Moves `time` onto the nearest of `targets` within `tolerance`, or leaves it as is. */
 export function snapTo(
-  t: number,
+  time: number,
   targets: number[],
   tolerance: number,
 ): number {
-  let best = t
+  let best = time
   let distance = tolerance
   for (const target of targets) {
-    if (Math.abs(target - t) <= distance) {
+    if (Math.abs(target - time) <= distance) {
       best = target
-      distance = Math.abs(target - t)
+      distance = Math.abs(target - time)
     }
   }
   return best

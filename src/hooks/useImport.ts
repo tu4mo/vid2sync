@@ -13,7 +13,7 @@ function afterPaint() {
 }
 
 type Options = {
-  ctx: AudioContext
+  audioContext: AudioContext
   /**
    * The clips the batch joins. They can't change while it loads, since the timeline, toolbar and
    * shortcuts are disabled meanwhile.
@@ -34,7 +34,7 @@ type Options = {
  * matches the clips by their sound.
  */
 export function useImport({
-  ctx,
+  audioContext,
   clips,
   pause,
   onLoad,
@@ -53,7 +53,9 @@ export function useImport({
     const offset = roundMs(pause())
     setImporting(true)
     const results = await Promise.allSettled(
-      routes.imports.map(({ file, kind }) => loadClip(file, kind, ctx)),
+      routes.imports.map(({ file, kind }) =>
+        loadClip(file, kind, audioContext),
+      ),
     )
     let next = clips
     routes.imports.forEach(({ kind }, i) => {

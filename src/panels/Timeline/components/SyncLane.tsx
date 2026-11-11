@@ -43,7 +43,7 @@ export function SyncLane({ video, audio, viewport, onEdit }: Props) {
     for (const kind of TRACK_KINDS) {
       const offset = next[kind]?.offset
       if (offset !== undefined && next[kind] !== current[kind]) {
-        onEdit(kind, (c) => moveClip(c, offset))
+        onEdit(kind, (clip) => moveClip(clip, offset))
       }
     }
     return syncOffsetOf(next) ?? target

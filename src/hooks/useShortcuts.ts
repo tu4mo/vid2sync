@@ -24,7 +24,7 @@ type Options = {
   playing: boolean
   play: () => void
   pause: () => void
-  seek: (t: number) => void
+  seek: (time: number) => void
   onEdit: (kind: TrackKind, edit: ClipEdit) => void
   onSelect: (kind: TrackKind | null) => void
   onRemove: (kind: TrackKind) => void
@@ -65,20 +65,22 @@ export function useShortcuts({
       }
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault()
-      const dir = e.key === 'ArrowLeft' ? -1 : 1
+      const direction = e.key === 'ArrowLeft' ? -1 : 1
       if (selected && clips[selected]) {
         const step = e.shiftKey ? NUDGE_CLIP_SHIFT : NUDGE_CLIP
-        onEdit(selected, (c) => moveClip(c, c.offset + dir * step))
+        onEdit(selected, (clip) =>
+          moveClip(clip, clip.offset + direction * step),
+        )
       } else {
         const step = e.shiftKey ? NUDGE_PLAYHEAD_SHIFT : NUDGE_PLAYHEAD
-        seek(time + dir * step)
+        seek(time + direction * step)
       }
     } else if (e.key === 'i') {
-      onEdit(trimTarget, (c) => trimClip(c, 'start', time))
+      onEdit(trimTarget, (clip) => trimClip(clip, 'start', time))
     } else if (e.key === 'o') {
-      onEdit(trimTarget, (c) => trimClip(c, 'end', time))
+      onEdit(trimTarget, (clip) => trimClip(clip, 'end', time))
     } else if (e.key === 'x') {
-      onEdit(trimTarget, (c) => untrimClip(c))
+      onEdit(trimTarget, (clip) => untrimClip(clip))
     } else if (e.key === 'Home') {
       seek(0)
     } else if (e.key === 'Escape') {

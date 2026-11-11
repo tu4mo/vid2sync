@@ -76,8 +76,8 @@ const MIN_RAMP = 0.01
 export const MIN_CLIP = 0.05
 
 /** Rounds to the millisecond, so edits don't leave float noise in the clip's times. */
-export function roundMs(t: number) {
-  return Math.round(t * 1000) / 1000
+export function roundMs(seconds: number) {
+  return Math.round(seconds * 1000) / 1000
 }
 
 /** Fits a fade into `room` seconds, keeping the silence before its ramp. */
@@ -116,11 +116,11 @@ export function minOffset(clip: Clip): number {
 export function clipsEnd(clips: Clips): number {
   return Math.max(
     0,
-    ...TRACK_KINDS.map((k) => (clips[k] ? clipSpan(clips[k]).end : 0)),
+    ...TRACK_KINDS.map((kind) => (clips[kind] ? clipSpan(clips[kind]).end : 0)),
   )
 }
 
-/** A change to a clip, such as `(c) => moveClip(c, 2)`. */
+/** A change to a clip, such as `(clip) => moveClip(clip, 2)`. */
 export type ClipEdit = (clip: Clip) => Clip
 
 /** Applies `edit` to the clip on the `kind` track, if there is one. */
@@ -138,22 +138,22 @@ export function moveClip(clip: Clip, offset: number): Clip {
   return { ...clip, offset: roundMs(Math.max(minOffset(clip), offset)) }
 }
 
-/** Moves the trimmed part's start or end to timeline time `t`, within the file and 0:00. */
-export function trimClip(clip: Clip, edge: Edge, t: number): Clip {
-  const local = roundMs(t - clip.offset)
+/** Moves the trimmed part's start or end to `time` on the timeline, within the file and 0:00. */
+export function trimClip(clip: Clip, edge: Edge, time: number): Clip {
+  const clipTime = roundMs(time - clip.offset)
   const trim =
     edge === 'start'
       ? {
           ...clip.trim,
           start: Math.min(
-            Math.max(0, -clip.offset, local),
+            Math.max(0, -clip.offset, clipTime),
             clip.trim.end - MIN_CLIP,
           ),
         }
       : {
           ...clip.trim,
           end: Math.max(
-            Math.min(clip.duration, local),
+            Math.min(clip.duration, clipTime),
             clip.trim.start + MIN_CLIP,
           ),
         }

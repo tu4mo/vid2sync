@@ -14,8 +14,8 @@ import { useDrag } from '../../hooks/useDrag'
 import { volumeLevel } from '../../lib/level'
 import { Envelope } from './Envelope'
 import { FadeHandle } from './FadeHandle'
-import { Waveform } from './Waveform'
 import { TrimHandle } from './TrimHandle'
+import { Waveform } from './Waveform'
 
 const WAVE_COLORS: Record<TrackKind, string> = {
   video: '#9cc4ff',
@@ -36,7 +36,7 @@ type ClipViewProps = {
   onSelect: (kind: TrackKind) => void
   onEdit: (kind: TrackKind, edit: ClipEdit) => void
   /** Snaps a timeline time to nearby edges and the playhead. */
-  snap: (t: number) => number
+  snap: (time: number) => number
   /** Glides into a new place rather than jumping. */
   gliding: boolean
   onVolumeChange: (kind: TrackKind, volume: number) => void
@@ -59,14 +59,14 @@ export function ClipView({
       onSelect(kind)
       return { lastX: e.clientX, offset: clip.offset }
     },
-    (e, d) => {
+    (e, dragState) => {
       // Shift slows the drag down 10× for fine alignment.
-      const dx = (e.clientX - d.lastX) * (e.shiftKey ? 0.1 : 1)
-      d.lastX = e.clientX
+      const deltaX = (e.clientX - dragState.lastX) * (e.shiftKey ? 0.1 : 1)
+      dragState.lastX = e.clientX
       // Unclamped (moveClip clamps at 0:00), so after pushing past 0:00 the clip waits for the pointer to come back to it.
-      d.offset += dx / pixelsPerSecond
-      const offset = d.offset
-      onEdit(kind, (c) => moveClip(c, offset))
+      dragState.offset += deltaX / pixelsPerSecond
+      const offset = dragState.offset
+      onEdit(kind, (current) => moveClip(current, offset))
     },
   )
   const span = clipSpan(clip)
@@ -121,7 +121,7 @@ export function ClipView({
         width={width}
         pixelsPerSecond={pixelsPerSecond}
         onGrab={() => onSelect(kind)}
-        onChange={(v) => onVolumeChange(kind, v)}
+        onChange={(level) => onVolumeChange(kind, level)}
       />
       {(['start', 'end'] as const).map((which) => (
         <FadeHandle
@@ -135,7 +135,9 @@ export function ClipView({
           active={selected}
           snap={snap}
           onGrab={() => onSelect(kind)}
-          onChange={(w, next) => onEdit(kind, (c) => fadeClip(c, w, next))}
+          onChange={(edge, next) =>
+            onEdit(kind, (current) => fadeClip(current, edge, next))
+          }
         />
       ))}
       {(['start', 'end'] as const).map((which) => (
@@ -146,8 +148,10 @@ export function ClipView({
           pixelsPerSecond={pixelsPerSecond}
           snap={snap}
           onGrab={() => onSelect(kind)}
-          onChange={(t) => onEdit(kind, (c) => trimClip(c, which, t))}
-          onReset={() => onEdit(kind, (c) => untrimClip(c, which))}
+          onChange={(time) =>
+            onEdit(kind, (current) => trimClip(current, which, time))
+          }
+          onReset={() => onEdit(kind, (current) => untrimClip(current, which))}
         />
       ))}
     </div>

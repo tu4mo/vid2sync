@@ -13,7 +13,7 @@ import { scheduleFade } from './fade'
  * `output` returns where a track's audio goes, or null to leave the track out.
  */
 export function scheduleClips(
-  ctx: BaseAudioContext,
+  audioContext: BaseAudioContext,
   clips: Clips,
   from: number,
   at: number,
@@ -40,12 +40,12 @@ export function scheduleClips(
       continue
     }
 
-    const source = ctx.createBufferSource()
+    const source = audioContext.createBufferSource()
     source.buffer = clip.buffer
     const fade = clipFade(clip)
     if (fade.start.full > 0 || fade.end.full > 0) {
       // Each source gets its own gain for the fades, under the track's volume.
-      const fadeGain = ctx.createGain()
+      const fadeGain = audioContext.createGain()
       fadeGain.connect(destination)
       scheduleFade(fadeGain.gain, clipSpan(clip), fade, from, at)
       source.connect(fadeGain)
@@ -69,18 +69,21 @@ const LEAD = 0.05
  * The timeline position is derived from that same clock.
  */
 export class Playback {
-  readonly ctx = new AudioContext()
+  readonly audioContext = new AudioContext()
   playing = false
   private clips: Clips = { video: null, audio: null }
-  private anchorCtx = 0
+  private anchorContextTime = 0
   private anchorTime = 0
   private sources: AudioBufferSourceNode[] = []
   private gains: Record<TrackKind, GainNode>
 
   constructor() {
-    this.gains = { video: this.ctx.createGain(), audio: this.ctx.createGain() }
+    this.gains = {
+      video: this.audioContext.createGain(),
+      audio: this.audioContext.createGain(),
+    }
     for (const gain of Object.values(this.gains)) {
-      gain.connect(this.ctx.destination)
+      gain.connect(this.audioContext.destination)
     }
   }
 
@@ -88,7 +91,10 @@ export class Playback {
     if (!this.playing) {
       return this.anchorTime
     }
-    return this.anchorTime + Math.max(0, this.ctx.currentTime - this.anchorCtx)
+    return (
+      this.anchorTime +
+      Math.max(0, this.audioContext.currentTime - this.anchorContextTime)
+    )
   }
 
   /** Where the current playback started: the last play, seek or clip change. */
@@ -106,15 +112,15 @@ export class Playback {
 
   play(from: number) {
     this.stopSources()
-    void this.ctx.resume()
-    this.anchorCtx = this.ctx.currentTime + LEAD
+    void this.audioContext.resume()
+    this.anchorContextTime = this.audioContext.currentTime + LEAD
     this.anchorTime = from
     this.playing = true
     this.sources = scheduleClips(
-      this.ctx,
+      this.audioContext,
       this.clips,
       from,
-      this.anchorCtx,
+      this.anchorContextTime,
       (kind) => this.gains[kind],
     )
   }
@@ -125,24 +131,28 @@ export class Playback {
     this.stopSources()
   }
 
-  /** Stops playback with the position parked at `t`. */
-  stopAt(t: number) {
+  /** Stops playback with the position parked at `target`. */
+  stopAt(target: number) {
     this.playing = false
-    this.anchorTime = t
+    this.anchorTime = target
     this.stopSources()
   }
 
-  seek(t: number) {
+  seek(target: number) {
     if (this.playing) {
-      this.play(t)
+      this.play(target)
     } else {
-      this.anchorTime = t
+      this.anchorTime = target
     }
   }
 
   setGain(kind: TrackKind, gain: number) {
     // Short ramp so dragging a volume slider doesn't click.
-    this.gains[kind].gain.setTargetAtTime(gain, this.ctx.currentTime, 0.01)
+    this.gains[kind].gain.setTargetAtTime(
+      gain,
+      this.audioContext.currentTime,
+      0.01,
+    )
   }
 
   private stopSources() {

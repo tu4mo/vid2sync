@@ -69,13 +69,13 @@ type Props = {
   onSelect: (kind: TrackKind | null) => void
   /** Moves, trims or fades the clip on the `kind` track. */
   onEdit: (kind: TrackKind, edit: ClipEdit) => void
-  onSeek: (t: number) => void
+  onSeek: (time: number) => void
   /**
    * Called with the timeline's length when playback reaches the end of the empty timeline past
    * the clips. That only happens when it was started past them: running off the end of the clips
    * is stopped in `usePlayback`.
    */
-  onPlayPastTimeline: (t: number) => void
+  onPlayPastTimeline: (timelineEnd: number) => void
   onVolumeChange: (kind: TrackKind, volume: number) => void
   /** Imports each file onto the track its type belongs on, or a single file onto `kind`. */
   onImport: (files: File[]) => void
@@ -112,9 +112,12 @@ export function Timeline({
 
   function seekToPointer(clientX: number) {
     const rect = contentRef.current?.getBoundingClientRect()
-    const t = Math.max(0, rect ? (clientX - rect.left) / pixelsPerSecond : 0)
-    markScrub(t)
-    onSeek(t)
+    const pointerTime = Math.max(
+      0,
+      rect ? (clientX - rect.left) / pixelsPerSecond : 0,
+    )
+    markScrub(pointerTime)
+    onSeek(pointerTime)
   }
 
   const scrub = useDrag(
@@ -142,8 +145,8 @@ export function Timeline({
   // Trim edges and fades snap to the playhead, the clips' edges and the files' edges.
   const snapTimes = [
     time,
-    ...TRACK_KINDS.flatMap((k) => {
-      const clip = clips[k]
+    ...TRACK_KINDS.flatMap((kind) => {
+      const clip = clips[kind]
       if (!clip) {
         return []
       }
@@ -159,8 +162,12 @@ export function Timeline({
     snapTimesRef.current = snapTimes
     pixelsPerSecondRef.current = pixelsPerSecond
   })
-  function snap(t: number) {
-    return snapTo(t, snapTimesRef.current, SNAP_PX / pixelsPerSecondRef.current)
+  function snap(candidate: number) {
+    return snapTo(
+      candidate,
+      snapTimesRef.current,
+      SNAP_PX / pixelsPerSecondRef.current,
+    )
   }
 
   const hasClips = !!(clips.video || clips.audio)

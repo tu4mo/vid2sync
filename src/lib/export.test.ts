@@ -164,12 +164,14 @@ describe('exportSynced', () => {
     }
     await exportSynced(clips, gains)
 
-    const ctx = mixContext()!
-    expect(ctx.sources.map((s) => s.start.mock.calls[0])).toEqual([
+    const audioContext = mixContext()!
+    expect(
+      audioContext.sources.map((source) => source.start.mock.calls[0]),
+    ).toEqual([
       [0, 3, 3],
       [0, 5, 25],
     ])
-    expect(ctx.gains.map((g) => g.gain.value)).toEqual([1, 0.5])
+    expect(audioContext.gains.map((gain) => gain.gain.value)).toEqual([1, 0.5])
   })
 
   it('leaves muted tracks out of the mix', async () => {

@@ -11,9 +11,9 @@ type TrimHandleProps = {
   /** Where the edge is on the timeline. */
   time: number
   pixelsPerSecond: number
-  snap: (t: number) => number
+  snap: (time: number) => number
   onGrab: () => void
-  onChange: (t: number) => void
+  onChange: (time: number) => void
   onReset: () => void
 }
 
@@ -31,11 +31,12 @@ export function TrimHandle({
     (e) => {
       onGrab()
       // Where the pointer and the edge were when the handle was grabbed.
-      return { x: e.clientX, t: time }
+      return { pointerX: e.clientX, time }
     },
-    (e, d) => {
-      const t = d.t + (e.clientX - d.x) / pixelsPerSecond
-      onChange(e.shiftKey ? t : snap(t))
+    (e, dragState) => {
+      const edgeTime =
+        dragState.time + (e.clientX - dragState.pointerX) / pixelsPerSecond
+      onChange(e.shiftKey ? edgeTime : snap(edgeTime))
     },
   )
 

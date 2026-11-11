@@ -84,13 +84,16 @@ describe('updateClip', () => {
   it('edits the clip on the track', () => {
     const clips = { video: testClip(), audio: null }
     expect(
-      updateClip(clips, 'video', (c) => moveClip(c, 2)).video?.offset,
+      updateClip(clips, 'video', (current) => moveClip(current, 2)).video
+        ?.offset,
     ).toBe(2)
   })
 
   it('leaves an empty track alone', () => {
     const clips = { video: null, audio: null }
-    expect(updateClip(clips, 'audio', (c) => moveClip(c, 2))).toBe(clips)
+    expect(updateClip(clips, 'audio', (current) => moveClip(current, 2))).toBe(
+      clips,
+    )
   })
 })
 

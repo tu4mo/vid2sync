@@ -11,16 +11,16 @@ function computePeaks(buffer: AudioBuffer): Peaks {
   const count = Math.ceil(buffer.length / bucket)
   const min = new Float32Array(count)
   const max = new Float32Array(count)
-  for (let c = 0; c < buffer.numberOfChannels; c++) {
-    const data = buffer.getChannelData(c)
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const data = buffer.getChannelData(channel)
     for (let i = 0; i < count; i++) {
-      const [lo, hi] = sampleRange(
+      const [low, high] = sampleRange(
         data,
         i * bucket,
         Math.min(data.length, (i + 1) * bucket),
       )
-      min[i] = Math.min(min[i], lo)
-      max[i] = Math.max(max[i], hi)
+      min[i] = Math.min(min[i], low)
+      max[i] = Math.max(max[i], high)
     }
   }
   return { perSecond: buffer.sampleRate / bucket, min, max }
@@ -28,25 +28,25 @@ function computePeaks(buffer: AudioBuffer): Peaks {
 
 /** The lowest and highest sample from `start` up to `end`, counting from 0 (silence). */
 function sampleRange(data: Float32Array, start: number, end: number) {
-  let lo = 0
-  let hi = 0
-  for (let s = start; s < end; s++) {
-    lo = Math.min(lo, data[s])
-    hi = Math.max(hi, data[s])
+  let low = 0
+  let high = 0
+  for (let sample = start; sample < end; sample++) {
+    low = Math.min(low, data[sample])
+    high = Math.max(high, data[sample])
   }
-  return [lo, hi] as const
+  return [low, high] as const
 }
 
 /** Reads the file's duration from its metadata; 0 when the browser can't tell. */
 function readDuration(url: string, kind: TrackKind): Promise<number> {
   return new Promise((resolve) => {
-    const el = document.createElement(kind)
-    el.preload = 'metadata'
-    el.addEventListener('loadedmetadata', () =>
-      resolve(Number.isFinite(el.duration) ? el.duration : 0),
+    const media = document.createElement(kind)
+    media.preload = 'metadata'
+    media.addEventListener('loadedmetadata', () =>
+      resolve(Number.isFinite(media.duration) ? media.duration : 0),
     )
-    el.addEventListener('error', () => resolve(0))
-    el.src = url
+    media.addEventListener('error', () => resolve(0))
+    media.src = url
   })
 }
 
@@ -57,14 +57,14 @@ function readDuration(url: string, kind: TrackKind): Promise<number> {
 export async function loadClip(
   file: File,
   kind: TrackKind,
-  ctx: AudioContext,
+  audioContext: AudioContext,
 ): Promise<Clip> {
   const url = URL.createObjectURL(file)
   const [metaDuration, buffer] = await Promise.all([
     readDuration(url, kind),
     file
       .arrayBuffer()
-      .then((data) => ctx.decodeAudioData(data))
+      .then((data) => audioContext.decodeAudioData(data))
       .catch(() => null),
   ])
 
@@ -140,7 +140,7 @@ export function routeFiles(files: File[]): FileRoutes {
     const kind = kindForFile(file)
     if (!kind) {
       error = `“${file.name}” doesn’t look like a video or audio file.`
-    } else if (imports.some((i) => i.kind === kind)) {
+    } else if (imports.some((imported) => imported.kind === kind)) {
       error = `Only one ${kind} file can be imported at a time.`
     } else {
       imports.push({ file, kind })

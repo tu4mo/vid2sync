@@ -26,7 +26,7 @@ type DotProps = {
   clipWidth: number
   pixelsPerSecond: number
   active: boolean
-  snap: (t: number) => number
+  snap: (time: number) => number
   title: string
   onGrab: () => void
   onMove: (distance: number) => void
@@ -54,13 +54,16 @@ function Dot({
     (e) => {
       onGrab()
       // Where the pointer was and how far in the dot was when it was grabbed.
-      return { x: e.clientX, distance }
+      return { pointerX: e.clientX, distance }
     },
-    (e, d) => {
+    (e, dragState) => {
       // Inward is right for a fade-in and left for a fade-out.
-      const dir = which === 'start' ? 1 : -1
-      const t = edge + dir * d.distance + (e.clientX - d.x) / pixelsPerSecond
-      onMove(dir * ((e.shiftKey ? t : snap(t)) - edge))
+      const inward = which === 'start' ? 1 : -1
+      const pointTime =
+        edge +
+        inward * dragState.distance +
+        (e.clientX - dragState.pointerX) / pixelsPerSecond
+      onMove(inward * ((e.shiftKey ? pointTime : snap(pointTime)) - edge))
     },
   )
   const x = Math.min(
@@ -101,7 +104,7 @@ type Props = {
   pixelsPerSecond: number
   /** Shows the dots even when the pointer isn't over the clip. */
   active: boolean
-  snap: (t: number) => number
+  snap: (time: number) => number
   onGrab: () => void
   onChange: (which: Edge, span: FadeSpan) => void
 }

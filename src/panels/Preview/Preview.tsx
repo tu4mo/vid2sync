@@ -25,12 +25,12 @@ export function Preview({ clip, time, playing, volume }: Props) {
 
   // The video element only plays its own sound when Web Audio couldn't decode it.
   useEffect(() => {
-    const el = ref.current
-    if (!el) {
+    const video = ref.current
+    if (!video) {
       return
     }
-    el.muted = !!clip?.buffer
-    el.volume = Math.min(1, volume)
+    video.muted = !!clip?.buffer
+    video.volume = Math.min(1, volume)
   }, [volume, clip])
 
   return (

@@ -19,16 +19,16 @@ export function usePlayback(clips: Clips, volume: Volumes) {
   /** Pauses, and returns where the playhead stopped. */
   function pause() {
     playback.pause()
-    const t = playback.now()
-    setTime(t)
+    const stoppedAt = playback.now()
+    setTime(stoppedAt)
     setPlaying(false)
-    return t
+    return stoppedAt
   }
 
-  /** Stops playback with the playhead parked at `t`. */
-  function stopAt(t: number) {
-    playback.stopAt(t)
-    setTime(t)
+  /** Stops playback with the playhead parked at `target`. */
+  function stopAt(target: number) {
+    playback.stopAt(target)
+    setTime(target)
     setPlaying(false)
   }
 
@@ -40,8 +40,8 @@ export function usePlayback(clips: Clips, volume: Volumes) {
     setPlaying(true)
   }
 
-  function seek(t: number) {
-    const clamped = Math.max(0, t)
+  function seek(target: number) {
+    const clamped = Math.max(0, target)
     playback.seek(clamped)
     setTime(clamped)
   }
@@ -53,21 +53,21 @@ export function usePlayback(clips: Clips, volume: Volumes) {
     if (!playing) {
       return
     }
-    let raf = 0
+    let frame = 0
     function tick() {
-      const t = playback.now()
+      const now = playback.now()
       // Stop when playback runs off the end of the clips, but not when it was started past it.
       // Started past it, the Timeline stops it at the end of the empty timeline instead
       // (`onPlayPastTimeline`).
-      if (t >= end && playback.startedFrom() < end) {
+      if (now >= end && playback.startedFrom() < end) {
         stopAtEnd()
         return
       }
-      setTime(t)
-      raf = requestAnimationFrame(tick)
+      setTime(now)
+      frame = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
   }, [playing, end])
 
   useEffect(() => {
@@ -91,6 +91,6 @@ export function usePlayback(clips: Clips, volume: Volumes) {
     stopAt,
     seek,
     /** For decoding files' audio. */
-    ctx: playback.ctx,
+    audioContext: playback.audioContext,
   }
 }

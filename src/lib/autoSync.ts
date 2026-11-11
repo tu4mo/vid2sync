@@ -52,15 +52,15 @@ function energyPerMs(sound: Sound): Float64Array {
   const { sampleRate, length, numberOfChannels } = sound
   const count = Math.floor((length * 1000) / sampleRate)
   const energy = new Float64Array(count)
-  for (let c = 0; c < numberOfChannels; c++) {
-    const data = sound.getChannelData(c)
+  for (let channel = 0; channel < numberOfChannels; channel++) {
+    const data = sound.getChannelData(channel)
     for (let i = 0; i < count; i++) {
       // Rounded rather than a fixed hop, so rates like 44.1 kHz don't drift.
       const start = Math.floor((i * sampleRate) / 1000)
       const end = Math.floor(((i + 1) * sampleRate) / 1000)
       let sum = 0
-      for (let s = start; s < end; s++) {
-        sum += data[s] * data[s]
+      for (let sample = start; sample < end; sample++) {
+        sum += data[sample] * data[sample]
       }
       energy[i] += sum / ((end - start) * numberOfChannels)
     }
@@ -85,37 +85,37 @@ function onsets(energy: Float64Array, hopMs: number, windowMs: number) {
   let mean = 0
   let rises = 0
   // The first window has nothing before it, so it can't rise.
-  for (let j = 1; j < count; j++) {
-    const at = j * hopMs
+  for (let step = 1; step < count; step++) {
+    const at = step * hopMs
     const before = prefix[at] - prefix[Math.max(0, at - windowMs)]
     const now = prefix[at + windowMs] - prefix[at]
-    out[j] = Math.max(0, Math.log((now + floor) / (before + floor)))
-    mean += out[j]
-    if (out[j] >= CLEAR_RISE) {
+    out[step] = Math.max(0, Math.log((now + floor) / (before + floor)))
+    mean += out[step]
+    if (out[step] >= CLEAR_RISE) {
       rises++
     }
   }
   mean /= Math.max(1, count)
-  for (let j = 0; j < count; j++) {
-    out[j] -= mean
+  for (let step = 0; step < count; step++) {
+    out[step] -= mean
   }
   return { values: out, rises }
 }
 
-/** Blurs `x` with a Gaussian of `sigma` steps. */
-function blur(x: Float64Array, sigma: number): Float64Array {
+/** Blurs `signal` with a Gaussian of `sigma` steps. */
+function blur(signal: Float64Array, sigma: number): Float64Array {
   const radius = Math.ceil(sigma * 3)
   const kernel = Float64Array.from({ length: radius * 2 + 1 }, (_, k) =>
     Math.exp(-((k - radius) ** 2) / (2 * sigma * sigma)),
   )
-  const out = new Float64Array(x.length)
-  for (let i = 0; i < x.length; i++) {
+  const out = new Float64Array(signal.length)
+  for (let i = 0; i < signal.length; i++) {
     let sum = 0
     let weight = 0
     for (let k = -radius; k <= radius; k++) {
       const j = i + k
-      if (j >= 0 && j < x.length) {
-        sum += x[j] * kernel[k + radius]
+      if (j >= 0 && j < signal.length) {
+        sum += signal[j] * kernel[k + radius]
         weight += kernel[k + radius]
       }
     }
@@ -125,17 +125,17 @@ function blur(x: Float64Array, sigma: number): Float64Array {
 }
 
 /** Fades `x` in and out with a raised cosine over `TAPER_MS` at each end, in place. */
-function taper(x: Float64Array): Float64Array {
+function taper(signal: Float64Array): Float64Array {
   const length = Math.min(
     Math.round(TAPER_MS / COARSE_HOP_MS),
-    Math.floor(x.length / 4),
+    Math.floor(signal.length / 4),
   )
   for (let i = 0; i < length; i++) {
     const gain = 0.5 - 0.5 * Math.cos((Math.PI * i) / length)
-    x[i] *= gain
-    x[x.length - 1 - i] *= gain
+    signal[i] *= gain
+    signal[signal.length - 1 - i] *= gain
   }
-  return x
+  return signal
 }
 
 /** In-place radix-2 FFT; `inverse` skips the 1/n scale, which the peak search doesn't need. */
@@ -220,25 +220,27 @@ function overlap(a: Float64Array, b: Float64Array, lag: number) {
 function agreement(a: Float64Array, b: Float64Array, lag: number) {
   const start = Math.max(0, lag)
   const end = Math.min(a.length, lag + b.length)
-  let sa = 0
-  let sb = 0
+  let sumA = 0
+  let sumB = 0
   for (let i = start; i < end; i++) {
-    sa += a[i]
-    sb += b[i - lag]
+    sumA += a[i]
+    sumB += b[i - lag]
   }
-  const ma = sa / (end - start)
-  const mb = sb / (end - start)
-  let ab = 0
-  let aa = 0
-  let bb = 0
+  const meanA = sumA / (end - start)
+  const meanB = sumB / (end - start)
+  let covariance = 0
+  let varianceA = 0
+  let varianceB = 0
   for (let i = start; i < end; i++) {
-    const x = a[i] - ma
-    const y = b[i - lag] - mb
-    ab += x * y
-    aa += x * x
-    bb += y * y
+    const deviationA = a[i] - meanA
+    const deviationB = b[i - lag] - meanB
+    covariance += deviationA * deviationB
+    varianceA += deviationA * deviationA
+    varianceB += deviationB * deviationB
   }
-  return aa > 0 && bb > 0 ? ab / Math.sqrt(aa * bb) : 0
+  return varianceA > 0 && varianceB > 0
+    ? covariance / Math.sqrt(varianceA * varianceB)
+    : 0
 }
 
 /**
@@ -258,19 +260,19 @@ export function findSync(video: Sound, audio: Sound): number | null {
   if (coarseVideo.rises < MIN_RISES || coarseAudio.rises < MIN_RISES) {
     return null
   }
-  const a = taper(blur(coarseVideo.values, SMOOTH_MS / COARSE_HOP_MS))
-  const b = taper(blur(coarseAudio.values, SMOOTH_MS / COARSE_HOP_MS))
-  const scores = crossCorrelate(a, b)
+  const videoOnsets = taper(blur(coarseVideo.values, SMOOTH_MS / COARSE_HOP_MS))
+  const audioOnsets = taper(blur(coarseAudio.values, SMOOTH_MS / COARSE_HOP_MS))
+  const scores = crossCorrelate(videoOnsets, audioOnsets)
   const minOverlap = Math.min(
     MIN_OVERLAP_MS / COARSE_HOP_MS,
-    a.length,
-    b.length,
+    videoOnsets.length,
+    audioOnsets.length,
   )
   // Score i is for the audio file starting i - shift steps after the video.
-  const shift = b.length - 1
+  const shift = audioOnsets.length - 1
   let best = -1
   for (let i = 0; i < scores.length; i++) {
-    if (overlap(a, b, i - shift) < minOverlap) {
+    if (overlap(videoOnsets, audioOnsets, i - shift) < minOverlap) {
       scores[i] = -Infinity
     } else if (best < 0 || scores[i] > scores[best]) {
       best = i
@@ -289,14 +291,14 @@ export function findSync(video: Sound, audio: Sound): number | null {
   const coarseLag = best - shift
   if (
     scores[best] < rival * MIN_PEAK_RATIO ||
-    agreement(a, b, coarseLag) < MIN_AGREEMENT
+    agreement(videoOnsets, audioOnsets, coarseLag) < MIN_AGREEMENT
   ) {
     return null
   }
 
   // Second pass: 1 ms steps, around the first pass's match.
-  const fa = onsets(videoEnergy, FINE_HOP_MS, FINE_WINDOW_MS).values
-  const fb = onsets(audioEnergy, FINE_HOP_MS, FINE_WINDOW_MS).values
+  const fineVideo = onsets(videoEnergy, FINE_HOP_MS, FINE_WINDOW_MS).values
+  const fineAudio = onsets(audioEnergy, FINE_HOP_MS, FINE_WINDOW_MS).values
   const centre = coarseLag * COARSE_HOP_MS
   let fineLag = centre
   let fineBest = -Infinity
@@ -306,10 +308,10 @@ export function findSync(video: Sound, audio: Sound): number | null {
     lag++
   ) {
     const start = Math.max(0, lag)
-    const end = Math.min(fa.length, lag + fb.length)
+    const end = Math.min(fineVideo.length, lag + fineAudio.length)
     let sum = 0
     for (let i = start; i < end; i++) {
-      sum += fa[i] * fb[i - lag]
+      sum += fineVideo[i] * fineAudio[i - lag]
     }
     if (sum > fineBest) {
       fineBest = sum

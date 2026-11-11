@@ -44,21 +44,21 @@ async function mixAudio(
   start: number,
   duration: number,
 ): Promise<AudioBuffer> {
-  const ctx = new OfflineAudioContext(
+  const audioContext = new OfflineAudioContext(
     2,
     Math.ceil(duration * SAMPLE_RATE),
     SAMPLE_RATE,
   )
-  scheduleClips(ctx, clips, start, 0, (kind) => {
+  scheduleClips(audioContext, clips, start, 0, (kind) => {
     if (gains[kind] <= 0) {
       return null
     }
-    const gain = ctx.createGain()
+    const gain = audioContext.createGain()
     gain.gain.value = gains[kind]
-    gain.connect(ctx.destination)
+    gain.connect(audioContext.destination)
     return gain
   })
-  return ctx.startRendering()
+  return audioContext.startRendering()
 }
 
 /**
@@ -111,7 +111,7 @@ export async function exportSynced(
     ])
     if (!conversion.utilizedTracks.some((track) => track.type === 'video')) {
       const discarded = conversion.discardedTracks.find(
-        (d) => d.track.type === 'video',
+        (entry) => entry.track.type === 'video',
       )
       const reason = discarded?.reason ?? 'no video track found'
       throw new Error(`The video stream can’t be written to MP4 (${reason}).`)
@@ -148,9 +148,9 @@ export async function saveExport(clips: Clips, gains: Volumes) {
 
 function downloadBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  a.click()
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  link.click()
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }

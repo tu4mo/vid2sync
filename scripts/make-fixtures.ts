@@ -33,15 +33,19 @@ try {
     const SAMPLE_RATE = 48000
     const FPS = 30
 
-    function tone(freq: number, seconds: number) {
-      const ctx = new OfflineAudioContext(2, seconds * SAMPLE_RATE, SAMPLE_RATE)
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.frequency.value = freq
+    function tone(frequency: number, seconds: number) {
+      const audioContext = new OfflineAudioContext(
+        2,
+        seconds * SAMPLE_RATE,
+        SAMPLE_RATE,
+      )
+      const oscillator = audioContext.createOscillator()
+      const gain = audioContext.createGain()
+      oscillator.frequency.value = frequency
       gain.gain.value = 0.5
-      osc.connect(gain).connect(ctx.destination)
-      osc.start()
-      return ctx.startRendering()
+      oscillator.connect(gain).connect(audioContext.destination)
+      oscillator.start()
+      return audioContext.startRendering()
     }
 
     // oxlint-disable-next-line unicorn/consistent-function-scoping -- runs in the page, so it can't move out of evaluate()
@@ -61,7 +65,7 @@ try {
       target: new mb.BufferTarget(),
     })
     const canvas = new OffscreenCanvas(320, 180)
-    const g = canvas.getContext('2d')!
+    const drawing = canvas.getContext('2d')!
     const frames = new mb.CanvasSource(canvas, {
       codec: 'avc',
       bitrate: 500_000,
@@ -72,13 +76,13 @@ try {
     mp4.addAudioTrack(sound)
     await mp4.start()
     for (let i = 0; i < 3 * FPS; i++) {
-      g.fillStyle = `hsl(${i * 4} 60% 35%)`
-      g.fillRect(0, 0, 320, 180)
-      g.fillStyle = '#fff'
-      g.font = 'bold 72px sans-serif'
-      g.textAlign = 'center'
-      g.textBaseline = 'middle'
-      g.fillText(String(i), 160, 90)
+      drawing.fillStyle = `hsl(${i * 4} 60% 35%)`
+      drawing.fillRect(0, 0, 320, 180)
+      drawing.fillStyle = '#fff'
+      drawing.font = 'bold 72px sans-serif'
+      drawing.textAlign = 'center'
+      drawing.textBaseline = 'middle'
+      drawing.fillText(String(i), 160, 90)
       await frames.add(i / FPS, 1 / FPS)
     }
     frames.close()

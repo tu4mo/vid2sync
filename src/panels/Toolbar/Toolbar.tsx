@@ -39,7 +39,7 @@ type Props = {
   followPlayhead: boolean
   onPlay: () => void
   onPause: () => void
-  onSeek: (t: number) => void
+  onSeek: (time: number) => void
   onExport: () => void
   /** Moves the clips to this sync offset (see `syncOffsetOf`). */
   onAutoSync: (syncOffset: number) => void

@@ -9,7 +9,7 @@ function fakeBuffer(channels: number[][], sampleRate: number) {
     length,
     duration: length / sampleRate,
     numberOfChannels: channels.length,
-    getChannelData: (c: number) => Float32Array.from(channels[c]),
+    getChannelData: (channel: number) => Float32Array.from(channels[channel]),
   } as unknown as AudioBuffer
 }
 
@@ -17,14 +17,14 @@ function fakeBuffer(channels: number[][], sampleRate: number) {
 function stubMediaElement(event: 'loadedmetadata' | 'error', duration: number) {
   vi.stubGlobal('document', {
     createElement: () => {
-      const el = new EventTarget() as EventTarget & Record<string, unknown>
-      Object.defineProperty(el, 'src', {
+      const media = new EventTarget() as EventTarget & Record<string, unknown>
+      Object.defineProperty(media, 'src', {
         set: () => {
-          queueMicrotask(() => el.dispatchEvent(new Event(event)))
+          queueMicrotask(() => media.dispatchEvent(new Event(event)))
         },
       })
-      el.duration = duration
-      return el
+      media.duration = duration
+      return media
     },
   })
 }
@@ -77,11 +77,11 @@ describe('loadClip', () => {
       ],
       400,
     )
-    const ctx = {
+    const audioContext = {
       decodeAudioData: async () => buffer,
     } as unknown as AudioContext
 
-    const clip = await loadClip(file, 'audio', ctx)
+    const clip = await loadClip(file, 'audio', audioContext)
 
     expect(clip).toMatchObject({
       file,
@@ -100,21 +100,21 @@ describe('loadClip', () => {
     stubUrls()
     stubMediaElement('error', NaN)
     const buffer = fakeBuffer([[0, 0, 0, 0]], 2)
-    const ctx = {
+    const audioContext = {
       decodeAudioData: async () => buffer,
     } as unknown as AudioContext
 
-    expect((await loadClip(file, 'audio', ctx)).duration).toBe(2)
+    expect((await loadClip(file, 'audio', audioContext)).duration).toBe(2)
   })
 
   it('keeps clips without decodable audio', async () => {
     stubUrls()
     stubMediaElement('loadedmetadata', 5)
-    const ctx = {
+    const audioContext = {
       decodeAudioData: () => Promise.reject(new Error('no audio')),
     } as unknown as AudioContext
 
-    expect(await loadClip(file, 'video', ctx)).toMatchObject({
+    expect(await loadClip(file, 'video', audioContext)).toMatchObject({
       buffer: null,
       peaks: null,
     })
@@ -123,11 +123,11 @@ describe('loadClip', () => {
   it('rejects files with no readable duration and frees their URL', async () => {
     const revoke = stubUrls()
     stubMediaElement('loadedmetadata', Infinity)
-    const ctx = {
+    const audioContext = {
       decodeAudioData: () => Promise.reject(new Error('no audio')),
     } as unknown as AudioContext
 
-    await expect(loadClip(file, 'video', ctx)).rejects.toThrow(
+    await expect(loadClip(file, 'video', audioContext)).rejects.toThrow(
       'Could not read “take.wav”. Is it a supported video format?',
     )
     expect(revoke).toHaveBeenCalledWith('blob:test')

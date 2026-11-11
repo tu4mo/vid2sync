@@ -32,7 +32,7 @@ function distance(dot: Locator) {
 async function clipStart(page: Page, kind: string) {
   const left = await page
     .getByTestId(`clip-${kind}`)
-    .evaluate((el) => parseFloat(el.style.left))
+    .evaluate((clip) => parseFloat(clip.style.left))
   return left / pixelsPerSecond
 }
 
@@ -274,9 +274,9 @@ test('import, sync, play, trim and export', async ({ page }) => {
 
   // The audio starts 0.5 s into the export, silent until 0.6 s, then ramps up linearly until 0.7 s.
   const faded = await exportAndAnalyze(page)
-  // The peak of the 10 ms from `t`.
-  function levelAt(t: number) {
-    return faded.levels[Math.round(t / LEVEL_SECONDS)]
+  // The peak of the 10 ms from `time`.
+  function levelAt(time: number) {
+    return faded.levels[Math.round(time / LEVEL_SECONDS)]
   }
   expect(levelAt(0.55)).toBeLessThan(0.03)
   // Up to halfway through, a linear fade reaches ½ (an equal-power one would reach √½).
@@ -342,7 +342,7 @@ const LEVEL_SECONDS = 0.01
 async function analyzeExport(base64: string) {
   const url = '/node_modules/mediabunny/dist/bundles/mediabunny.mjs'
   const mb: typeof import('mediabunny') = await import(url)
-  const data = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+  const data = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0))
   const input = new mb.Input({
     source: new mb.BufferSource(data),
     formats: mb.ALL_FORMATS,
@@ -369,7 +369,7 @@ async function analyzeExport(base64: string) {
     }
   }
 
-  const onsetIndex = samples.findIndex((v) => Math.abs(v) > 0.05)
+  const onsetIndex = samples.findIndex((sample) => Math.abs(sample) > 0.05)
   // Measure a steady 0.3 s window after the onset.
   const window = samples.slice(
     onsetIndex + sampleRate * 0.1,

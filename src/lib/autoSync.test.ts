@@ -14,32 +14,33 @@ function sound(
     sampleRate,
     length: channels[0].length,
     numberOfChannels: channels.length,
-    getChannelData: (c) => channels[c],
+    getChannelData: (channel) => channels[channel],
   }
 }
 
 /** A seeded random number generator, so the tests are the same every run. */
 function random(seed: number) {
-  let s = seed
+  let state = seed
   return () => {
-    s = (s * 1664525 + 1013904223) % 2 ** 32
-    return s / 2 ** 32
+    state = (state * 1664525 + 1013904223) % 2 ** 32
+    return state / 2 ** 32
   }
 }
 
 /** A performance: decaying noise bursts (hits) at random times, as one long signal. */
 function performance(seconds: number, seed: number, hitsPerSecond = 3) {
-  const rand = random(seed)
+  const nextRandom = random(seed)
   const out = new Float32Array(seconds * RATE)
-  let t = rand() * 0.3
-  while (t < seconds) {
-    const start = Math.floor(t * RATE)
-    const level = 0.2 + rand() * 0.8
-    const decay = 0.02 + rand() * 0.1
+  let hitTime = nextRandom() * 0.3
+  while (hitTime < seconds) {
+    const start = Math.floor(hitTime * RATE)
+    const level = 0.2 + nextRandom() * 0.8
+    const decay = 0.02 + nextRandom() * 0.1
     for (let i = 0; start + i < out.length && i < decay * 5 * RATE; i++) {
-      out[start + i] += (rand() * 2 - 1) * level * Math.exp(-i / RATE / decay)
+      out[start + i] +=
+        (nextRandom() * 2 - 1) * level * Math.exp(-i / RATE / decay)
     }
-    t += (0.3 + rand() * 1.4) / hitsPerSecond
+    hitTime += (0.3 + nextRandom() * 1.4) / hitsPerSecond
   }
   return out
 }
@@ -59,21 +60,21 @@ function record(
     seed,
   }: { gain: number; smooth: number; hiss: number; seed: number },
 ): Sound {
-  const rand = random(seed)
+  const nextRandom = random(seed)
   const out = new Float32Array(seconds * RATE)
   const offset = Math.round(from * RATE)
-  let y = 0
+  let filtered = 0
   for (let i = 0; i < out.length; i++) {
-    y += (1 - smooth) * ((source[offset + i] ?? 0) - y)
-    out[i] = y * gain + (rand() * 2 - 1) * hiss
+    filtered += (1 - smooth) * ((source[offset + i] ?? 0) - filtered)
+    out[i] = filtered * gain + (nextRandom() * 2 - 1) * hiss
   }
   return sound([out, out.slice()])
 }
 
-function tone(freq: number, seconds: number): Sound {
+function tone(frequency: number, seconds: number): Sound {
   const out = new Float32Array(seconds * RATE)
   for (let i = 0; i < out.length; i++) {
-    out[i] = 0.5 * Math.sin((2 * Math.PI * freq * i) / RATE)
+    out[i] = 0.5 * Math.sin((2 * Math.PI * frequency * i) / RATE)
   }
   return sound([out])
 }
@@ -89,22 +90,24 @@ const BAR = BEAT * 4
 
 /** A song's bars, made up from `seed`: in each, the 8ths both parts accent, and whether it's a break. */
 function song(seed: number, bars: number) {
-  const rand = random(seed)
+  const nextRandom = random(seed)
   return Array.from({ length: bars }, () => ({
-    accents: [0, 1, 2, 3, 4, 5, 6, 7].filter((e) => e === 0 || rand() < 0.3),
-    rest: rand() < 0.08,
+    accents: [0, 1, 2, 3, 4, 5, 6, 7].filter(
+      (eighth) => eighth === 0 || nextRandom() < 0.3,
+    ),
+    rest: nextRandom() < 0.08,
   }))
 }
 type Song = ReturnType<typeof song>
 
-/** Adds a decaying sound at `t` seconds: `wave` gives each sample from its time since the hit. */
+/** Adds a decaying sound at `time` seconds: `wave` gives each sample from its time since the hit. */
 function hit(
   out: Float32Array,
-  t: number,
+  time: number,
   seconds: number,
   wave: (since: number) => number,
 ) {
-  const start = Math.round(t * RATE)
+  const start = Math.round(time * RATE)
   for (
     let i = Math.max(0, -start);
     i < seconds * RATE && start + i < out.length;
@@ -114,39 +117,39 @@ function hit(
   }
 }
 
-function kick(s: number) {
-  return 0.8 * Math.sin(2 * Math.PI * 55 * s) * Math.exp(-s / 0.08)
+function kick(elapsed: number) {
+  return 0.8 * Math.sin(2 * Math.PI * 55 * elapsed) * Math.exp(-elapsed / 0.08)
 }
 
 /** The backing track: kick on the accents, snare on 2 and 4, hats on 8ths with ghost notes. */
 function backingTrack(bars: Song, seed: number): Sound {
-  const rand = random(seed)
+  const nextRandom = random(seed)
   function noise() {
-    return rand() * 2 - 1
+    return nextRandom() * 2 - 1
   }
-  function snare(s: number) {
-    return 0.5 * noise() * Math.exp(-s / 0.05)
+  function snare(elapsed: number) {
+    return 0.5 * noise() * Math.exp(-elapsed / 0.05)
   }
   const out = new Float32Array(Math.ceil(bars.length * BAR * RATE))
   bars.forEach(({ accents, rest }, bar) => {
     if (rest) {
       return
     }
-    const t = bar * BAR
-    for (const e of accents) {
-      hit(out, t + (e * BEAT) / 2, 0.4, kick)
+    const barStart = bar * BAR
+    for (const accent of accents) {
+      hit(out, barStart + (accent * BEAT) / 2, 0.4, kick)
     }
-    hit(out, t + BEAT, 0.3, snare)
-    hit(out, t + 3 * BEAT, 0.3, snare)
-    for (let e = 0; e < 16; e++) {
+    hit(out, barStart + BEAT, 0.3, snare)
+    hit(out, barStart + 3 * BEAT, 0.3, snare)
+    for (let sixteenth = 0; sixteenth < 16; sixteenth++) {
       // Hats on the 8ths, and 16th ghost notes here and there, at varying levels.
-      if (e % 2 === 0 || rand() < 0.2) {
-        const level = 0.05 + rand() * 0.15
+      if (sixteenth % 2 === 0 || nextRandom() < 0.2) {
+        const level = 0.05 + nextRandom() * 0.15
         hit(
           out,
-          t + (e * BEAT) / 4,
+          barStart + (sixteenth * BEAT) / 4,
           0.05,
-          (s) => level * noise() * Math.exp(-s / 0.01),
+          (elapsed) => level * noise() * Math.exp(-elapsed / 0.01),
         )
       }
     }
@@ -164,31 +167,31 @@ function playAlong(
   seconds: number,
   seed: number,
 ): Sound {
-  const rand = random(seed)
+  const nextRandom = random(seed)
   // About ±12 ms of human timing (a Box–Muller normal).
   function jitter() {
     return (
       0.012 *
-      Math.sqrt(-2 * Math.log(rand() + 1e-9)) *
-      Math.cos(2 * Math.PI * rand())
+      Math.sqrt(-2 * Math.log(nextRandom() + 1e-9)) *
+      Math.cos(2 * Math.PI * nextRandom())
     )
   }
   // A G major chord, with a scratch of pick noise at the start.
-  function strum(s: number) {
+  function strum(elapsed: number) {
     return (
       0.3 *
-      Math.exp(-s / 0.25) *
-      (Math.sin(2 * Math.PI * 196 * s) +
-        Math.sin(2 * Math.PI * 247 * s) +
-        Math.sin(2 * Math.PI * 294 * s) +
-        (s < 0.01 ? rand() * 2 - 1 : 0))
+      Math.exp(-elapsed / 0.25) *
+      (Math.sin(2 * Math.PI * 196 * elapsed) +
+        Math.sin(2 * Math.PI * 247 * elapsed) +
+        Math.sin(2 * Math.PI * 294 * elapsed) +
+        (elapsed < 0.01 ? nextRandom() * 2 - 1 : 0))
     )
   }
   const take = new Float32Array(Math.ceil(seconds * RATE))
   bars.forEach(({ accents, rest }, bar) => {
-    for (const e of rest ? [] : accents) {
-      if (rand() > 0.1) {
-        hit(take, bar * BAR + (e * BEAT) / 2 - from + jitter(), 0.6, strum)
+    for (const accent of rest ? [] : accents) {
+      if (nextRandom() > 0.1) {
+        hit(take, bar * BAR + (accent * BEAT) / 2 - from + jitter(), 0.6, strum)
       }
     }
   })
@@ -262,8 +265,8 @@ describe('findSync', () => {
 
   it('finds no match in a steady beat, which lines up at every beat', () => {
     const beat = new Float32Array(20 * RATE)
-    for (let t = 0.1; t < 20; t += 0.5) {
-      const start = Math.floor(t * RATE)
+    for (let beatTime = 0.1; beatTime < 20; beatTime += 0.5) {
+      const start = Math.floor(beatTime * RATE)
       for (let i = 0; i < 0.03 * RATE; i++) {
         beat[start + i] = Math.sin(i / 3) * Math.exp(-i / 400)
       }

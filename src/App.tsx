@@ -47,10 +47,8 @@ export function App() {
   /** Whether the clips are gliding to where auto-sync put them, rather than jumping. */
   const [gliding, setGliding] = useState(false)
 
-  const { time, playing, end, play, pause, stopAt, seek, ctx } = usePlayback(
-    clips,
-    volume,
-  )
+  const { time, playing, end, play, pause, stopAt, seek, audioContext } =
+    usePlayback(clips, volume)
 
   function editClip(kind: TrackKind, edit: ClipEdit) {
     setClips((prev) => updateClip(prev, kind, edit))
@@ -63,12 +61,12 @@ export function App() {
   /** Moves the selected clip by `ms`. */
   function nudgeSelected(ms: number) {
     if (selected) {
-      editClip(selected, (c) => moveClip(c, c.offset + ms / 1000))
+      editClip(selected, (clip) => moveClip(clip, clip.offset + ms / 1000))
     }
   }
 
-  function changeVolume(kind: TrackKind, v: number) {
-    setVolume((prev) => ({ ...prev, [kind]: v }))
+  function changeVolume(kind: TrackKind, level: number) {
+    setVolume((prev) => ({ ...prev, [kind]: level }))
   }
 
   function removeClip(kind: TrackKind) {
@@ -92,7 +90,7 @@ export function App() {
   }
 
   const { importing, importFiles } = useImport({
-    ctx,
+    audioContext,
     clips,
     pause,
     onLoad: setClips,
@@ -106,8 +104,8 @@ export function App() {
     setExporting(true)
     try {
       await saveExport(clips, volume)
-    } catch (e) {
-      setError(`Export failed: ${errorMessage(e)}`)
+    } catch (exportError) {
+      setError(`Export failed: ${errorMessage(exportError)}`)
     }
     setExporting(false)
   }
@@ -177,7 +175,9 @@ export function App() {
               onSeek={seek}
               onExport={() => void exportVideo()}
               onZoom={setPixelsPerSecond}
-              onToggleFollowPlayhead={() => setFollowPlayhead((f) => !f)}
+              onToggleFollowPlayhead={() =>
+                setFollowPlayhead((follow) => !follow)
+              }
             />
 
             <Timeline

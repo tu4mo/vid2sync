@@ -24,8 +24,11 @@ function path(points: Point[]): string {
  */
 function ramp(from: number, to: number, rising: boolean, level: number) {
   return Array.from({ length: CURVE_POINTS + 1 }, (_, i): Point => {
-    const p = i / CURVE_POINTS
-    return [from + p * (to - from), 1 - level * fadeGain(rising ? p : 1 - p)]
+    const progress = i / CURVE_POINTS
+    return [
+      from + progress * (to - from),
+      1 - level * fadeGain(rising ? progress : 1 - progress),
+    ]
   })
 }
 
@@ -59,15 +62,18 @@ export function Envelope({
       const height = clip.clientHeight - 2 * ENVELOPE_INSET_PX
       return { lastY: e.clientY, volume, height, sent: volume }
     },
-    (e, d) => {
+    (e, dragState) => {
       // Shift slows the drag down 10× for fine adjustment.
-      const dy = (d.lastY - e.clientY) * (e.shiftKey ? 0.1 : 1)
-      d.lastY = e.clientY
-      d.volume = Math.min(Math.max(d.volume + dy / d.height, 0), MAX_VOLUME)
-      const rounded = Math.round(d.volume * 100) / 100
+      const deltaY = (dragState.lastY - e.clientY) * (e.shiftKey ? 0.1 : 1)
+      dragState.lastY = e.clientY
+      dragState.volume = Math.min(
+        Math.max(dragState.volume + deltaY / dragState.height, 0),
+        MAX_VOLUME,
+      )
+      const rounded = Math.round(dragState.volume * 100) / 100
       // Most moves don't change the rounded volume, so they needn't re-render.
-      if (rounded !== d.sent) {
-        d.sent = rounded
+      if (rounded !== dragState.sent) {
+        dragState.sent = rounded
         onChange(rounded)
       }
     },
