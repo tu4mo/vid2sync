@@ -9,7 +9,7 @@
 
 - Use descriptive names, not single letters or abbreviations. Short names are fine where they're the convention: event handlers' `e`, loop indexes, coordinates, and textbook maths notation inside a numeric routine.
 - Prefer `const` and building new values over `let` and mutation. Mutating a local value is fine in a hot loop, as long as nothing outside the function sees it. Never mutate arguments.
-- Export only what app code imports. Tests go through the public functions, so never export a helper, constant or type just for a test.
+- Export only what app code imports. Tests go through the public functions, so never export a helper, constant or type just for a test. `npm run lint` checks this with `knip --production`.
 - Destructure component props in the function signature. oxlint has no rule for this.
 - Make reusable JSX its own component in its own file, not a function inside another component.
 - Write Tailwind classes out in full (`'bg-accent'`, not `` `bg-${color}` ``) so Tailwind finds them in the source. To vary a class, pick between whole class strings, as `Button`'s variants do.
