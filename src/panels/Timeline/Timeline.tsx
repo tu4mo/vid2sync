@@ -1,5 +1,3 @@
-import { AudioWave01Icon, Video01Icon } from '@hugeicons/core-free-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
 import { useEffect, useRef } from 'react'
 
 import { Spinner } from '../../components/Spinner/Spinner'
@@ -11,41 +9,17 @@ import {
   type TrackKind,
   type Volumes,
 } from '../../lib/clip'
-import {
-  EDGE_PX,
-  ROWS,
-  TRACK_ICON_INSET_PX,
-  TRACK_ICON_WIDTH_PX,
-} from '../../lib/layout'
+import { EDGE_PX, ROWS } from '../../lib/layout'
 import { SNAP_PX, snapTo } from '../../lib/snap'
-import { ClipView } from './components/ClipView/ClipView'
 import { ImportPrompt } from './components/ImportPrompt'
 import { Playhead } from './components/Playhead'
 import { SyncLane } from './components/SyncLane'
+import { TrackIcon } from './components/TrackIcon'
+import { TrackLane } from './components/TrackLane'
 import { useDrag } from './hooks/useDrag'
 import { useTimelineScroll } from './hooks/useTimelineScroll'
 
 const TAIL_SECONDS = 10
-const DROP_WHAT: Record<TrackKind, string> = {
-  video: 'a video file',
-  audio: 'an audio file',
-}
-const LABELS: Record<TrackKind, string> = { video: 'Video', audio: 'Audio' }
-const ICONS = { video: Video01Icon, audio: AudioWave01Icon }
-
-/** A track's icon, at the start of its lane, under the clips. */
-function TrackIcon({ kind }: { kind: TrackKind }) {
-  return (
-    <div
-      className="flex items-center justify-center text-dim/50"
-      style={{ marginLeft: TRACK_ICON_INSET_PX, width: TRACK_ICON_WIDTH_PX }}
-      role="img"
-      aria-label={LABELS[kind]}
-    >
-      <HugeiconsIcon icon={ICONS[kind]} size={24} />
-    </div>
-  )
-}
 
 type Props = {
   clips: Clips
@@ -166,46 +140,19 @@ export function Timeline({
   }
 
   const hasClips = !!(clips.video || clips.audio)
-
-  function lane(kind: TrackKind) {
-    const clip = clips[kind]
-    return (
-      <div className="relative flex items-center">
-        {/* With both tracks empty, the timeline-wide prompt covers it. */}
-        {/* Sticky, not placed from `scrollLeft`, which lags the scroll by a frame. The outer box spans the padding too, so the prompt starts at the viewport's edge; sticky offsets count from inside the padding, so it's taken back off. */}
-        {!clip && hasClips && (
-          <div
-            className="pointer-events-none absolute inset-y-0"
-            style={{ left: -EDGE_PX, right: -EDGE_PX }}
-          >
-            <div
-              className="sticky flex h-full items-center justify-center"
-              style={{ left: -EDGE_PX, width: viewport }}
-            >
-              <ImportPrompt
-                accept={`${kind}/*`}
-                what={DROP_WHAT[kind]}
-                onImport={onImport}
-              />
-            </div>
-          </div>
-        )}
-        {clip && (
-          <ClipView
-            kind={kind}
-            clip={clip}
-            pixelsPerSecond={pixelsPerSecond}
-            selected={selected === kind}
-            volume={volume[kind]}
-            onSelect={onSelect}
-            onEdit={onEdit}
-            snap={snap}
-            gliding={gliding}
-            onVolumeChange={onVolumeChange}
-          />
-        )}
-      </div>
-    )
+  // What both lanes take: each picks its own clip, selection and volume out of these.
+  const laneProps = {
+    clips,
+    selected,
+    volume,
+    viewport,
+    pixelsPerSecond,
+    gliding,
+    snap,
+    onSelect,
+    onEdit,
+    onVolumeChange,
+    onImport,
   }
 
   return (
@@ -255,14 +202,14 @@ export function Timeline({
             {...scrub}
           >
             <div />
-            {lane('video')}
+            <TrackLane kind="video" {...laneProps} />
             <SyncLane
               video={clips.video}
               audio={clips.audio}
               viewport={viewport}
               onEdit={onEdit}
             />
-            {lane('audio')}
+            <TrackLane kind="audio" {...laneProps} />
             <div />
 
             {hasClips && (
