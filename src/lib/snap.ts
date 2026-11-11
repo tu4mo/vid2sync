@@ -7,13 +7,13 @@ export function snapTo(
   targets: number[],
   tolerance: number,
 ): number {
-  let best = time
-  let distance = tolerance
-  for (const target of targets) {
-    if (Math.abs(target - time) <= distance) {
-      best = target
-      distance = Math.abs(target - time)
-    }
-  }
-  return best
+  const inReach = targets.filter(
+    (target) => Math.abs(target - time) <= tolerance,
+  )
+  // The last of equally near targets wins.
+  return inReach.reduce(
+    (best, target) =>
+      Math.abs(target - time) <= Math.abs(best - time) ? target : best,
+    inReach[0] ?? time,
+  )
 }

@@ -9,11 +9,9 @@ const CURVE_POINTS = 64
 
 /** Samples the gain from fade progress `from` to `to`, as a value curve for an AudioParam. */
 export function fadeCurve(from: number, to: number): Float32Array {
-  const curve = new Float32Array(CURVE_POINTS)
-  for (let i = 0; i < CURVE_POINTS; i++) {
-    curve[i] = fadeGain(from + ((to - from) * i) / (CURVE_POINTS - 1))
-  }
-  return curve
+  return Float32Array.from({ length: CURVE_POINTS }, (_, i) =>
+    fadeGain(from + ((to - from) * i) / (CURVE_POINTS - 1)),
+  )
 }
 
 /**
@@ -31,26 +29,33 @@ export function scheduleFade(
     return at + time - from
   }
 
-  // The fade-in: silent, then ramping up from `rampStart` to `rampEnd`.
-  let inEndAt = -Infinity
-  if (fade.start.full > 0) {
+  /**
+   * The fade-in: silent, then ramping up from `rampStart` to `rampEnd`. Returns the context time
+   * its curve ends, or -Infinity when there's none.
+   */
+  function scheduleFadeIn() {
+    if (fade.start.full <= 0) {
+      return -Infinity
+    }
     const rampStart = span.start + fade.start.silent
     const rampEnd = span.start + fade.start.full
     if (from < rampStart) {
       param.setValueAtTime(0, at)
     }
-    if (rampEnd > from) {
-      const rampFrom = Math.max(rampStart, from)
-      const startAt = contextTime(rampFrom)
-      const duration = contextTime(rampEnd) - startAt
-      param.setValueCurveAtTime(
-        fadeCurve((rampFrom - rampStart) / (rampEnd - rampStart), 1),
-        startAt,
-        duration,
-      )
-      inEndAt = startAt + duration
+    if (rampEnd <= from) {
+      return -Infinity
     }
+    const rampFrom = Math.max(rampStart, from)
+    const startAt = contextTime(rampFrom)
+    const duration = contextTime(rampEnd) - startAt
+    param.setValueCurveAtTime(
+      fadeCurve((rampFrom - rampStart) / (rampEnd - rampStart), 1),
+      startAt,
+      duration,
+    )
+    return startAt + duration
   }
+  const inEndAt = scheduleFadeIn()
 
   // The fade-out: ramping down from `rampStart` to `rampEnd`, then silent.
   if (fade.end.full > 0) {

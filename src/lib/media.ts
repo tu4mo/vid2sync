@@ -8,31 +8,33 @@ const PEAKS_PER_SECOND = 200
  */
 function computePeaks(buffer: AudioBuffer): Peaks {
   const bucket = Math.max(1, Math.floor(buffer.sampleRate / PEAKS_PER_SECOND))
-  const count = Math.ceil(buffer.length / bucket)
-  const min = new Float32Array(count)
-  const max = new Float32Array(count)
-  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-    const data = buffer.getChannelData(channel)
-    for (let i = 0; i < count; i++) {
-      const [low, high] = sampleRange(
-        data,
-        i * bucket,
-        Math.min(data.length, (i + 1) * bucket),
-      )
-      min[i] = Math.min(min[i], low)
-      max[i] = Math.max(max[i], high)
-    }
+  const channels = Array.from(
+    { length: buffer.numberOfChannels },
+    (_, channel) => buffer.getChannelData(channel),
+  )
+  const ranges = Array.from(
+    { length: Math.ceil(buffer.length / bucket) },
+    (_, i) => sampleRange(channels, i * bucket, (i + 1) * bucket),
+  )
+  return {
+    perSecond: buffer.sampleRate / bucket,
+    min: Float32Array.from(ranges, ([low]) => low),
+    max: Float32Array.from(ranges, ([, high]) => high),
   }
-  return { perSecond: buffer.sampleRate / bucket, min, max }
 }
 
-/** The lowest and highest sample from `start` up to `end`, counting from 0 (silence). */
-function sampleRange(data: Float32Array, start: number, end: number) {
+/**
+ * The lowest and highest sample from `start` up to `end` across `channels`, counting from 0
+ * (silence).
+ */
+function sampleRange(channels: Float32Array[], start: number, end: number) {
   let low = 0
   let high = 0
-  for (let sample = start; sample < end; sample++) {
-    low = Math.min(low, data[sample])
-    high = Math.max(high, data[sample])
+  for (const data of channels) {
+    for (let sample = start; sample < Math.min(data.length, end); sample++) {
+      low = Math.min(low, data[sample])
+      high = Math.max(high, data[sample])
+    }
   }
   return [low, high] as const
 }
@@ -133,18 +135,27 @@ export type FileRoutes = {
  * kind is left out rather than racing the first.
  */
 export function routeFiles(files: File[]): FileRoutes {
-  const imports: FileRoutes['imports'] = []
-  // A drop can hold no files, as when dragging from Photos goes wrong.
-  let error = files.length === 0 ? 'The drop didn’t contain a file.' : null
-  for (const file of files) {
-    const kind = kindForFile(file)
-    if (!kind) {
-      error = `“${file.name}” doesn’t look like a video or audio file.`
-    } else if (imports.some((imported) => imported.kind === kind)) {
-      error = `Only one ${kind} file can be imported at a time.`
-    } else {
-      imports.push({ file, kind })
-    }
-  }
-  return { imports, error }
+  return files.reduce<FileRoutes>(
+    (routes, file) => {
+      const kind = kindForFile(file)
+      if (!kind) {
+        return {
+          ...routes,
+          error: `“${file.name}” doesn’t look like a video or audio file.`,
+        }
+      }
+      if (routes.imports.some((imported) => imported.kind === kind)) {
+        return {
+          ...routes,
+          error: `Only one ${kind} file can be imported at a time.`,
+        }
+      }
+      return { ...routes, imports: [...routes.imports, { file, kind }] }
+    },
+    {
+      imports: [],
+      // A drop can hold no files, as when dragging from Photos goes wrong.
+      error: files.length === 0 ? 'The drop didn’t contain a file.' : null,
+    },
+  )
 }

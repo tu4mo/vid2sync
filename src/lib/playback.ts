@@ -19,11 +19,10 @@ export function scheduleClips(
   at: number,
   output: (kind: TrackKind) => AudioNode | null,
 ): AudioBufferSourceNode[] {
-  const sources: AudioBufferSourceNode[] = []
-  for (const kind of TRACK_KINDS) {
+  return TRACK_KINDS.flatMap((kind) => {
     const clip = clips[kind]
     if (!clip?.buffer) {
-      continue
+      return []
     }
     // Where to stop reading the file; the decoded audio can be a little shorter than the file.
     const end = Math.min(clip.trim.end, clip.buffer.duration)
@@ -33,11 +32,11 @@ export function scheduleClips(
     const readFrom = clip.trim.start + Math.max(0, -untilStart)
     if (readFrom >= end) {
       // The playhead is past the clip.
-      continue
+      return []
     }
     const destination = output(kind)
     if (!destination) {
-      continue
+      return []
     }
 
     const source = audioContext.createBufferSource()
@@ -54,9 +53,8 @@ export function scheduleClips(
     }
     // Wait until the clip starts (or start now if the playhead is inside it), then play to the end.
     source.start(at + Math.max(0, untilStart), readFrom, end - readFrom)
-    sources.push(source)
-  }
-  return sources
+    return [source]
+  })
 }
 
 // Schedule playback this far ahead of the audio clock. A start time that has already passed
