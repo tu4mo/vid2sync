@@ -102,14 +102,13 @@ export function Timeline({
   onZoom,
 }: Props) {
   const contentRef = useRef<HTMLDivElement>(null)
-  const { scrollRef, onScroll, viewport, scrollLeft, markScrub } =
-    useTimelineScroll({
-      time,
-      playing,
-      followPlayhead,
-      pixelsPerSecond,
-      onZoom,
-    })
+  const { scrollRef, viewport, markScrub } = useTimelineScroll({
+    time,
+    playing,
+    followPlayhead,
+    pixelsPerSecond,
+    onZoom,
+  })
 
   function seekToPointer(clientX: number) {
     const rect = contentRef.current?.getBoundingClientRect()
@@ -165,8 +164,6 @@ export function Timeline({
   }
 
   const hasClips = !!(clips.video || clips.audio)
-  // The scrolled-into-view part of a lane, in px.
-  const view = { start: scrollLeft - EDGE_PX, width: viewport }
 
   function lane(kind: TrackKind) {
     const clip = clips[kind]
@@ -242,7 +239,6 @@ export function Timeline({
           className="relative overflow-x-auto overflow-y-hidden overscroll-x-contain"
           style={{ paddingInline: EDGE_PX }}
           ref={scrollRef}
-          onScroll={onScroll}
         >
           {/* The rows match ROWS: scrub strip, video, sync, audio, scrub strip. */}
           <div
@@ -256,8 +252,7 @@ export function Timeline({
             <SyncLane
               video={clips.video}
               audio={clips.audio}
-              pixelsPerSecond={pixelsPerSecond}
-              view={view}
+              viewport={viewport}
               onEdit={onEdit}
             />
             {lane('audio')}

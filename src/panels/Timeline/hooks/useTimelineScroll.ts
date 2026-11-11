@@ -4,7 +4,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type UIEvent,
 } from 'react'
 
 import { EDGE_PX } from '../../../lib/layout'
@@ -43,7 +42,6 @@ export function useTimelineScroll({
   const zoomAnchor = useRef<{ t: number; x: number } | null>(null)
   const pixelsPerSecondRef = useRef(pixelsPerSecond)
   const [viewport, setViewport] = useState(800)
-  const [scrollLeft, setScrollLeft] = useState(0)
 
   useEffect(() => {
     const el = scrollRef.current
@@ -112,9 +110,6 @@ export function useTimelineScroll({
     const anchor = zoomAnchor.current ?? playheadAnchor(el, previous)
     el.scrollLeft = timeToX(anchor.t, pixelsPerSecond) - anchor.x
     zoomAnchor.current = null
-    // The scroll event that would update this only fires after paint. Until then, the waveform is
-    // drawn for the old scroll position and the screen briefly shows a gap.
-    setScrollLeft(el.scrollLeft)
   }, [pixelsPerSecond])
 
   /** Scrolls time `t` into view, if it's off screen. */
@@ -160,9 +155,6 @@ export function useTimelineScroll({
     }
   }, [time, playing])
 
-  function onScroll(e: UIEvent<HTMLElement>) {
-    setScrollLeft(e.currentTarget.scrollLeft)
-  }
   function markScrub(t: number) {
     scrubbedTo.current = t
   }
@@ -170,11 +162,8 @@ export function useTimelineScroll({
   return {
     /** For the scroll container. */
     scrollRef,
-    /** For the scroll container. */
-    onScroll,
     /** The scroll container's width. */
     viewport,
-    scrollLeft,
     /** Marks a seek to `t` as coming from the pointer, so the view doesn't scroll for it. */
     markScrub,
   }

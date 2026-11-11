@@ -20,8 +20,7 @@ function Harness({
     <SyncLane
       video={clips.video}
       audio={clips.audio}
-      pixelsPerSecond={100}
-      view={{ start: 0, width: 1000 }}
+      viewport={1000}
       onEdit={(kind, edit) => {
         setClips((prev) => {
           const clip = prev[kind]
@@ -53,8 +52,7 @@ describe('SyncLane', () => {
       <SyncLane
         video={testClip()}
         audio={null}
-        pixelsPerSecond={100}
-        view={{ start: 0, width: 1000 }}
+        viewport={1000}
         onEdit={() => {}}
       />,
     )
