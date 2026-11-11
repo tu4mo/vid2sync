@@ -1,7 +1,6 @@
 import type { ComponentProps } from 'react'
 
-// Full class names, so Tailwind finds them in the source. Variants own every class they set, so a
-// className passed in never has to win a conflict with them.
+// Variants own every class they set, so a className passed in never has to win a conflict with them.
 const VARIANTS = {
   default:
     'border-line bg-panel-2 enabled:hover:border-line-strong enabled:active:bg-panel',
