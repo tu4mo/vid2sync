@@ -20,7 +20,7 @@ test('says why auto-sync can’t match steady tones, and moves nothing', async (
   page,
   timeline,
 }) => {
-  const autoSync = page.getByTestId('auto-sync')
+  const autoSync = page.getByRole('button', { name: 'Sync automatically' })
   await expect(autoSync).toHaveAttribute(
     'title',
     'Couldn’t sync the clips automatically',

@@ -43,7 +43,11 @@ async function mount(audioOffset = 1, video: Clip | null = null) {
   const screen = await render(
     <Harness initial={initial} onChange={(changed) => (clips = changed)} />,
   )
-  return { screen, clips: () => clips }
+  // The label, a button showing the offset, until it's clicked into a field.
+  const label = screen
+    .getByRole('group', { name: 'Sync offset' })
+    .getByRole('button')
+  return { screen, label, clips: () => clips }
 }
 
 describe('SyncLane', () => {
@@ -56,7 +60,6 @@ describe('SyncLane', () => {
         onEdit={() => {}}
       />,
     )
-    expect(screen.container.querySelector('[data-testid="sync"]')).toBeNull()
     expect(screen.container.querySelector('button')).toBeNull()
   })
 
@@ -65,54 +68,48 @@ describe('SyncLane', () => {
     [1.25, '250 ms ahead of audio'],
     [0.9, '100 ms behind audio'],
   ])('describes audio at %s s as "%s"', async (audioOffset, text) => {
-    const { screen } = await mount(audioOffset)
-    await expect.element(screen.getByTestId('sync')).toHaveTextContent(text)
+    const { label } = await mount(audioOffset)
+    await expect.element(label).toHaveTextContent(text)
   })
 
   it('moves the video instead when the audio would go before 0:00', async () => {
-    const { screen, clips } = await mount(0, testClip({ offset: 0 }))
+    const { screen, label, clips } = await mount(0, testClip({ offset: 0 }))
 
-    await screen.getByTestId('sync').click()
+    await label.click()
     await screen.getByRole('textbox').fill('-5')
     await userEvent.keyboard('{Enter}')
-    await expect
-      .element(screen.getByTestId('sync'))
-      .toHaveTextContent('5 ms behind audio')
+    await expect.element(label).toHaveTextContent('5 ms behind audio')
     // Close to, not exactly, 0: the audio's earliest offset is -trim.start, which is -0.
     expect(clips().audio!.offset).toBeCloseTo(0)
     expect(clips().video!.offset).toBe(0.005)
   })
 
   it('sets the sync offset typed into the field', async () => {
-    const { screen, clips } = await mount(1)
-    await screen.getByTestId('sync').click()
+    const { screen, label, clips } = await mount(1)
+    await label.click()
 
     const field = screen.getByRole('textbox', { name: 'Audio offset (ms)' })
     await expect.element(field).toHaveValue('0')
     await field.fill('120')
     await userEvent.keyboard('{Enter}')
 
-    await expect
-      .element(screen.getByTestId('sync'))
-      .toHaveTextContent('120 ms ahead of audio')
+    await expect.element(label).toHaveTextContent('120 ms ahead of audio')
     expect(clips().audio!.offset).toBe(1.12)
   })
 
   it('ignores a field left empty or not a number', async () => {
-    const { screen, clips } = await mount(1.01)
-    await screen.getByTestId('sync').click()
+    const { screen, label, clips } = await mount(1.01)
+    await label.click()
     await screen.getByRole('textbox').fill('abc')
     await userEvent.keyboard('{Enter}')
 
-    await expect
-      .element(screen.getByTestId('sync'))
-      .toHaveTextContent('10 ms ahead of audio')
+    await expect.element(label).toHaveTextContent('10 ms ahead of audio')
     expect(clips().audio!.offset).toBe(1.01)
   })
 
   it('steps live with the arrow keys and puts the sync offset back on Escape', async () => {
-    const { screen, clips } = await mount(1)
-    await screen.getByTestId('sync').click()
+    const { screen, label, clips } = await mount(1)
+    await label.click()
     const field = screen.getByRole('textbox')
 
     await userEvent.keyboard('{ArrowUp}{ArrowUp}')
@@ -124,15 +121,13 @@ describe('SyncLane', () => {
     expect(clips().audio!.offset).toBe(0.992)
 
     await userEvent.keyboard('{Escape}')
-    await expect
-      .element(screen.getByTestId('sync'))
-      .toHaveTextContent('In sync')
+    await expect.element(label).toHaveTextContent('In sync')
     expect(clips().audio!.offset).toBe(1)
   })
 
   it('steps from the typed value with the arrow keys', async () => {
-    const { screen, clips } = await mount(1)
-    await screen.getByTestId('sync').click()
+    const { screen, label, clips } = await mount(1)
+    await label.click()
     const field = screen.getByRole('textbox')
     await field.fill('40')
 
@@ -141,8 +136,6 @@ describe('SyncLane', () => {
     expect(clips().audio!.offset).toBe(1.041)
 
     await userEvent.keyboard('{Enter}')
-    await expect
-      .element(screen.getByTestId('sync'))
-      .toHaveTextContent('41 ms ahead of audio')
+    await expect.element(label).toHaveTextContent('41 ms ahead of audio')
   })
 })

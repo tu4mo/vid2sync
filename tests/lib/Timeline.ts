@@ -6,6 +6,11 @@ import { SNAP_PX } from '../../src/lib/snap.ts'
 /** How far past its target a snapping drag ends: well inside the app's snap distance. */
 const SNAP_SLACK_PX = SNAP_PX / 3
 
+const CLIP_LABELS: Record<TrackKind, string> = {
+  video: 'Video clip',
+  audio: 'Audio clip',
+}
+
 type Drag = {
   /** Timeline seconds to the right, converted at the current zoom. */
   seconds?: number
@@ -25,12 +30,18 @@ export class Timeline {
     this.page = page
   }
 
+  get region() {
+    return this.page.getByRole('region', { name: 'Timeline' })
+  }
+
   clip(kind: TrackKind) {
-    return this.page.getByTestId(`clip-${kind}`)
+    return this.page.getByRole('group', { name: CLIP_LABELS[kind] })
   }
 
   get sync() {
-    return this.page.getByTestId('sync')
+    return this.page
+      .getByRole('group', { name: 'Sync offset' })
+      .getByRole('button')
   }
 
   /** The field the sync label turns into when clicked. */
@@ -39,9 +50,7 @@ export class Timeline {
   }
 
   async pixelsPerSecond() {
-    const zoom = await this.page
-      .getByTestId('timeline')
-      .getAttribute('data-pixels-per-second')
+    const zoom = await this.region.getAttribute('data-pixels-per-second')
     return Number(zoom)
   }
 

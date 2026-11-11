@@ -72,6 +72,8 @@ export function SyncLane({ video, audio, viewport, onEdit }: Props) {
         >
           <div
             className="pointer-events-auto flex items-center gap-1 rounded-md bg-panel px-1 text-xs font-semibold text-accent tabular-nums"
+            role="group"
+            aria-label="Sync offset"
             // Keep the timeline from scrubbing (and deselecting) under the label.
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -120,7 +122,6 @@ export function SyncLane({ video, audio, viewport, onEdit }: Props) {
               <button
                 type="button"
                 className="cursor-pointer rounded-md px-0.5 py-1 whitespace-nowrap [text-box:trim-both_cap_alphabetic] hover:underline"
-                data-testid="sync"
                 title="Click to edit in ms (positive puts the video ahead of the audio)"
                 onClick={() =>
                   setEditing({

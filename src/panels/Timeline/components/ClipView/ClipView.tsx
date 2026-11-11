@@ -17,6 +17,10 @@ import { FadeHandle } from './FadeHandle'
 import { TrimHandle } from './TrimHandle'
 import { Waveform } from './Waveform'
 
+const LABELS: Record<TrackKind, string> = {
+  video: 'Video clip',
+  audio: 'Audio clip',
+}
 const WAVE_COLORS: Record<TrackKind, string> = {
   video: '#9cc4ff',
   audio: '#8ef0b8',
@@ -84,7 +88,8 @@ export function ClipView({
           ? 'after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-md after:border-2 after:border-accent'
           : ''
       }`}
-      data-testid={`clip-${kind}`}
+      role="group"
+      aria-label={LABELS[kind]}
       data-start={span.start}
       style={{
         left,

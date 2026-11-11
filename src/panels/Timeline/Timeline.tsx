@@ -44,7 +44,6 @@ function TrackIcon({ kind }: { kind: TrackKind }) {
       style={{ marginLeft: TRACK_ICON_INSET_PX, width: TRACK_ICON_WIDTH_PX }}
       role="img"
       aria-label={LABELS[kind]}
-      data-testid={`track-${kind}`}
     >
       <HugeiconsIcon icon={ICONS[kind]} size={24} />
     </div>
@@ -174,7 +173,7 @@ export function Timeline({
   function lane(kind: TrackKind) {
     const clip = clips[kind]
     return (
-      <div className="relative flex items-center" data-testid={`lane-${kind}`}>
+      <div className="relative flex items-center">
         {/* With both tracks empty, the timeline-wide prompt covers it. */}
         {/* Sticky, not placed from `scrollLeft`, which lags the scroll by a frame. The outer box spans the padding too, so the prompt starts at the viewport's edge; sticky offsets count from inside the padding, so it's taken back off. */}
         {!clip && hasClips && (
@@ -213,10 +212,10 @@ export function Timeline({
   }
 
   return (
-    <div
+    <section
       className="relative flex min-h-0 flex-1 flex-col"
+      aria-label="Timeline"
       aria-busy={disabled}
-      data-testid="timeline"
       data-pixels-per-second={pixelsPerSecond}
     >
       {/* Inert while disabled, so nothing can be clicked, focused or tabbed to. Isolated, so nothing inside, however high its z-index, draws over the spinner. */}
@@ -288,6 +287,6 @@ export function Timeline({
           />
         </div>
       )}
-    </div>
+    </section>
   )
 }

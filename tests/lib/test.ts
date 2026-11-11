@@ -23,10 +23,7 @@ export const test = base.extend<{ timeline: Timeline }>({
     const timeline = new Timeline(page)
     await expect(timeline.clip('video').getByTestId('waveform')).toBeVisible()
     await expect(timeline.clip('audio').getByTestId('waveform')).toBeVisible()
-    await expect(page.getByTestId('timeline')).toHaveAttribute(
-      'aria-busy',
-      'false',
-    )
+    await expect(timeline.region).toHaveAttribute('aria-busy', 'false')
 
     const zoomIn = page.getByRole('button', { name: 'Zoom in' })
     for (let i = 0; i < ZOOM_IN_STEPS; i++) {

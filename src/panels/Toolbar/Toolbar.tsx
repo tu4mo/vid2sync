@@ -83,7 +83,6 @@ export function Toolbar({
         className="tabular-nums"
         aria-label={label}
         title={canNudge ? label : `${label} (select a clip first)`}
-        data-testid={`nudge-${ms}`}
         onClick={() => onNudge(ms)}
         disabled={!canNudge}
       >
@@ -133,7 +132,6 @@ export function Toolbar({
         <Sparkles count={autoSyncCount}>
           <Button
             aria-label="Sync automatically"
-            data-testid="auto-sync"
             onClick={() => {
               if (autoSync.status === 'matched') {
                 onAutoSync(autoSync.syncOffset)

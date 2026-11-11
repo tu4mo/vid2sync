@@ -33,15 +33,19 @@ function mount(disabled = false) {
 describe('Timeline', () => {
   it('shows the clips, with no spinner, when not disabled', async () => {
     const screen = await mount()
-    await expect.element(screen.getByTestId('clip-video')).toBeVisible()
+    await expect
+      .element(screen.getByRole('group', { name: 'Video clip' }))
+      .toBeVisible()
     expect(screen.container.querySelector('[role="status"]')).toBeNull()
   })
 
   it('disables the clips under a spinner', async () => {
     const screen = await mount(true)
     await expect.element(screen.getByRole('status')).toBeVisible()
-    await expect.element(screen.getByTestId('clip-video')).toBeVisible()
-    const clip = screen.getByTestId('clip-video').element()
+    await expect
+      .element(screen.getByRole('group', { name: 'Video clip' }))
+      .toBeVisible()
+    const clip = screen.getByRole('group', { name: 'Video clip' }).element()
     expect(clip.closest('[inert]')).not.toBeNull()
   })
 })
