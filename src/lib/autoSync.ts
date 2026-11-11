@@ -1,4 +1,4 @@
-import type { Clips } from './clip'
+import { syncClips, syncOffsetOf, type Clips } from './clip'
 
 /** The parts of a decoded file's AudioBuffer that matching reads, so tests can fake one. */
 export type Sound = Pick<
@@ -335,10 +335,8 @@ export type AutoSync =
   | { status: 'none'; reason: string }
 
 /** The auto-sync button's state, from the clips and the sync offset found when they were imported. */
-export function autoSyncFor(
-  { video, audio }: Clips,
-  syncOffset: number | null,
-): AutoSync {
+export function autoSyncFor(clips: Clips, syncOffset: number | null): AutoSync {
+  const { video, audio } = clips
   if (!video || !audio) {
     return {
       status: 'none',
@@ -347,6 +345,10 @@ export function autoSyncFor(
   }
   if (syncOffset === null) {
     return { status: 'none', reason: 'Couldn’t sync the clips automatically' }
+  }
+  // Compared after syncing, so a match the clamp can't reach doesn't stay offered forever.
+  if (syncOffsetOf(syncClips(clips, syncOffset)) === syncOffsetOf(clips)) {
+    return { status: 'none', reason: 'The clips are already synced' }
   }
   return { status: 'matched', syncOffset }
 }

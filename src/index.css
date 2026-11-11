@@ -17,7 +17,7 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-logo: 'Bruno Ace SC', var(--font-sans);
 
-  --animate-sparkle: sparkle 600ms ease-out both;
+  --animate-sparkle: sparkle 1000ms ease-out both;
 
   /* Flies a sparkle out to (--sparkle-x, --sparkle-y), twinkling up and then fading as it goes. */
   @keyframes sparkle {

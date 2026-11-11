@@ -315,4 +315,22 @@ describe('autoSyncFor', () => {
       syncOffset: -3707,
     })
   })
+
+  it('says the clips are already synced when they sit at the match', () => {
+    expect(
+      autoSyncFor(
+        { video: testClip({ offset: 1 }), audio: testClip({ offset: 1.5 }) },
+        500,
+      ),
+    ).toEqual({ status: 'none', reason: 'The clips are already synced' })
+  })
+
+  it('says the clips are already synced when the match is as close as they can get', () => {
+    expect(
+      autoSyncFor(
+        { video: testClip(), audio: testClip({ offset: 10 }) },
+        20000,
+      ),
+    ).toEqual({ status: 'none', reason: 'The clips are already synced' })
+  })
 })
