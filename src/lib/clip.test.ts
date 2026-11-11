@@ -6,6 +6,7 @@ import {
   clipsEnd,
   fadeClip,
   fitFade,
+  hasFade,
   moveClip,
   untrimClip,
   syncClips,
@@ -28,6 +29,13 @@ describe('clipSpan', () => {
 function faded(fade: Fade) {
   return { trim: { start: 1, end: 4 }, fade } as Clip
 }
+
+describe('hasFade', () => {
+  it('is true only when the span ramps to full past its edge', () => {
+    expect(hasFade({ silent: 0, full: 1 })).toBe(true)
+    expect(hasFade({ silent: 0, full: 0 })).toBe(false)
+  })
+})
 
 describe('fitFade', () => {
   it('keeps a fade that fits', () => {

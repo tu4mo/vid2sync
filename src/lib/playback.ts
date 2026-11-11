@@ -2,6 +2,7 @@ import {
   TRACK_KINDS,
   clipFade,
   clipSpan,
+  hasFade,
   type Clips,
   type TrackKind,
 } from './clip'
@@ -42,7 +43,7 @@ export function scheduleClips(
     const source = audioContext.createBufferSource()
     source.buffer = clip.buffer
     const fade = clipFade(clip)
-    if (fade.start.full > 0 || fade.end.full > 0) {
+    if (hasFade(fade.start) || hasFade(fade.end)) {
       // Each source gets its own gain for the fades, under the track's volume.
       const fadeGain = audioContext.createGain()
       fadeGain.connect(destination)

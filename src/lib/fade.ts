@@ -1,4 +1,4 @@
-import type { Fade, TimeRange } from './clip'
+import { hasFade, type Fade, type TimeRange } from './clip'
 
 /** The gain at `progress` (0 to 1) through a linear fade-in. A fade-out runs it backwards. */
 export function fadeGain(progress: number): number {
@@ -34,7 +34,7 @@ export function scheduleFade(
    * its curve ends, or -Infinity when there's none.
    */
   function scheduleFadeIn() {
-    if (fade.start.full <= 0) {
+    if (!hasFade(fade.start)) {
       return -Infinity
     }
     const rampStart = span.start + fade.start.silent
@@ -58,7 +58,7 @@ export function scheduleFade(
   const inEndAt = scheduleFadeIn()
 
   // The fade-out: ramping down from `rampStart` to `rampEnd`, then silent.
-  if (fade.end.full > 0) {
+  if (hasFade(fade.end)) {
     const rampStart = span.end - fade.end.full
     const rampEnd = span.end - fade.end.silent
     if (rampEnd > from) {

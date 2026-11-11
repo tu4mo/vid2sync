@@ -1,4 +1,4 @@
-import { MAX_VOLUME, type Fade } from '../../../../lib/clip'
+import { MAX_VOLUME, hasFade, type Fade } from '../../../../lib/clip'
 import { fadeGain } from '../../../../lib/fade'
 import { STICKY_UNDER_PLAY_LEFT_PX } from '../../../../lib/layout'
 import { useDrag } from '../../hooks/useDrag'
@@ -83,8 +83,8 @@ export function Envelope({
   // Where the line between the fades starts and ends, in pixels across the clip.
   const lineFrom = fade.start.full * pixelsPerSecond
   const lineTo = width - fade.end.full * pixelsPerSecond
-  const hasIn = fade.start.full > 0
-  const hasOut = fade.end.full > 0
+  const hasIn = hasFade(fade.start)
+  const hasOut = hasFade(fade.end)
   const rampIn: Point[] = hasIn
     ? ramp(fade.start.silent * pixelsPerSecond, lineFrom, true, level)
     : [[0, 1 - level]]

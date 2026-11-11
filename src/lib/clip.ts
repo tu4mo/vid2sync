@@ -80,6 +80,11 @@ export function roundMs(seconds: number) {
   return Math.round(seconds * 1000) / 1000
 }
 
+/** Whether a fade does anything: a span that ramps to full at 0 is no fade. */
+export function hasFade(span: FadeSpan): boolean {
+  return span.full > 0
+}
+
 /** Fits a fade into `room` seconds, keeping the silence before its ramp. */
 export function fitFade({ silent, full }: FadeSpan, room: number): FadeSpan {
   const fitted = Math.min(Math.max(0, full), room)
