@@ -53,7 +53,7 @@ try {
       return new Promise<string>((resolve) => {
         const reader = new FileReader()
         reader.addEventListener('load', () =>
-          resolve((reader.result as string).split(',')[1]),
+          resolve(String(reader.result).split(',')[1]),
         )
         reader.readAsDataURL(new Blob([buffer]))
       })

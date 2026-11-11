@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 /** Each sparkle's direction (degrees, 0 is right, clockwise), distance (px), size (px) and delay (ms). */
 const SPARKLES = [
@@ -26,7 +26,7 @@ function Burst() {
           '--sparkle-x': `${Math.cos(radians) * distance}px`,
           '--sparkle-y': `${Math.sin(radians) * distance}px`,
           'animationDelay': `${delay}ms`,
-        } as CSSProperties
+        }
         return (
           <svg
             key={angle}

@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import type { ComponentProps, CSSProperties } from 'react'
+import type { ComponentProps } from 'react'
 
 // The native slider draws a border around its track, so it's drawn here instead. WebKit has no
 // pseudo-element for the filled part, so the track paints it as a gradient up to --fill.
@@ -26,7 +26,7 @@ export function Slider({ min, max, value, className, style, ...props }: Props) {
     <input
       type="range"
       className={clsx(CLASSES, className)}
-      style={{ '--fill': `${fill}%`, ...style } as CSSProperties}
+      style={{ '--fill': `${fill}%`, ...style }}
       min={min}
       max={max}
       value={value}

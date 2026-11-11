@@ -88,9 +88,11 @@ export class Timeline {
    * Space and Enter itself.
    */
   async blur() {
-    await this.page.evaluate(() =>
-      (document.activeElement as HTMLElement | null)?.blur(),
-    )
+    await this.page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+    })
   }
 
   /**
