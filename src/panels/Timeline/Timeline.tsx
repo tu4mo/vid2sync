@@ -20,7 +20,7 @@ import {
   TRACK_ICON_INSET_PX,
   TRACK_ICON_WIDTH_PX,
 } from '../../lib/layout'
-import { snapTo } from '../../lib/snap'
+import { SNAP_PX, snapTo } from '../../lib/snap'
 import { ClipView } from './components/ClipView/ClipView'
 import { ImportPrompt } from './components/ImportPrompt'
 import { Playhead } from './components/Playhead'
@@ -29,7 +29,6 @@ import { useDrag } from './hooks/useDrag'
 import { useTimelineScroll } from './hooks/useTimelineScroll'
 
 const TAIL_SECONDS = 10
-const SNAP_PX = 6
 const DROP_WHAT: Record<TrackKind, string> = {
   video: 'a video file',
   audio: 'an audio file',
@@ -214,7 +213,12 @@ export function Timeline({
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col" aria-busy={disabled}>
+    <div
+      className="relative flex min-h-0 flex-1 flex-col"
+      aria-busy={disabled}
+      data-testid="timeline"
+      data-pixels-per-second={pixelsPerSecond}
+    >
       {/* Inert while disabled, so nothing can be clicked, focused or tabbed to. Isolated, so nothing inside, however high its z-index, draws over the spinner. */}
       <div
         className="relative isolate grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-panel"

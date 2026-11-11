@@ -85,6 +85,7 @@ export function ClipView({
           : ''
       }`}
       data-testid={`clip-${kind}`}
+      data-start={span.start}
       style={{
         left,
         width,

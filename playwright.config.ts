@@ -5,6 +5,7 @@ const PORT = 5289
 
 export default defineConfig({
   testDir: 'tests',
+  fullyParallel: true,
   timeout: 60_000,
   reporter: 'list',
   use: {

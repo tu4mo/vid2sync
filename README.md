@@ -24,11 +24,11 @@ npm run build          # type-check and build
 npm run lint           # oxlint
 npm run format         # oxfmt
 npm test               # unit and browser tests (Vitest)
-npm run test:e2e       # Playwright smoke test (starts its own server on port 5289)
+npm run test:e2e       # Playwright end-to-end tests (they start their own server on port 5289)
 npm run test:fixtures  # regenerate tests/fixtures/clip.mp4 and tone.wav
 ```
 
-The smoke test (`tests/smoke.spec.ts`) runs the whole flow in Chromium: import, sync, mute and volume, play/pause, trimming, and export. It then decodes the exported file to check its duration, where the audio starts, and the audio's pitch and level.
+The end-to-end tests (`tests/*.spec.ts`) cover each feature in Chromium: import, sync, volume, play/pause, trimming, fades, deleting, and export. Each starts from the fixture clips imported through a shared fixture (`tests/lib/test.ts`). The export tests decode the exported file to check its duration, where the audio starts, and the audio's pitch and level.
 
 Pushing to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`): it lints, builds and runs the tests, then publishes `dist` only if they all pass. The build uses relative paths, so it works at `https://<user>.github.io/<repo>/` under any repo name.
 

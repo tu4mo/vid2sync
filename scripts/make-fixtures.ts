@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
-// Generates the smoke test's media in tests/fixtures. Run with `npm run test:fixtures`.
+// Generates the end-to-end tests' media in tests/fixtures. Run with `npm run test:fixtures`.
 //   clip.mp4  3 s, 320×180 @ 30 fps H.264 (keyframe every 2 s) + AAC 440 Hz tone at 0.5
 //   tone.wav  2 s, 48 kHz stereo 16-bit PCM, 880 Hz tone at 0.5
 // Encoding needs WebCodecs, so it runs in Playwright's Chromium.
