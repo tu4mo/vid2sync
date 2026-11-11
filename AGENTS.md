@@ -11,6 +11,7 @@
 - Prefer `const` and building new values over `let` and mutation. Mutating a local value is fine in a hot loop, as long as nothing outside the function sees it. Never mutate arguments.
 - Destructure component props in the function signature. oxlint has no rule for this.
 - Make reusable JSX its own component in its own file, not a function inside another component.
+- Write Tailwind classes out in full (`'bg-accent'`, not `` `bg-${color}` ``) so Tailwind finds them in the source. To vary a class, pick between whole class strings, as `Button`'s variants do.
 - The React Compiler memoizes for you, so don't add `memo`, `useCallback` or `useMemo`. Use `useEffectEvent` for a function an effect calls but shouldn't re-run on. It silently skips components it can't compile (such as ones with `try`/`finally` or a dynamic `import()`), so keep those out of components.
 
 ## Formatting
