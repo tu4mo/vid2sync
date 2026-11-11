@@ -1,6 +1,3 @@
-// Types only; `loadMediabunny` loads the module on first export.
-import type { AudioCodec } from 'mediabunny'
-
 import type { Clips, Volumes } from './clip'
 import { scheduleClips } from './playback'
 
@@ -37,32 +34,6 @@ async function loadMediabunny() {
   }
 }
 
-type Mediabunny = Awaited<ReturnType<typeof loadMediabunny>>
-
-function createMp4Output(mb: Mediabunny) {
-  const target = new mb.BufferTarget()
-  const output = new mb.Output({
-    format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }),
-    target,
-  })
-  return { output, target }
-}
-
-/**
- * An encoder for the export's audio. The encoder delay is measured with this too, so the
- * measurement matches the encoder that writes the export.
- */
-function createAudioSource(
-  mb: Mediabunny,
-  codec: AudioCodec,
-  startTimestamp = 0,
-) {
-  return new mb.AudioBufferSource(
-    { codec, quality: new mb.Quality('high') },
-    { startTimestamp },
-  )
-}
-
 /**
  * Renders what you hear from timeline time `start` for `duration` seconds, using the same
  * clip placement as live playback. Gaps are silent.
@@ -88,48 +59,6 @@ async function mixAudio(
     return gain
   })
   return ctx.startRendering()
-}
-
-const encoderDelays = new Map<AudioCodec, number>()
-
-/**
- * Encoders prepend "priming" silence (2112 samples for Apple's AAC), which would make the
- * exported audio late. Measure it once by encoding a tone with a known onset, so it can be
- * cancelled with a negative start timestamp (written as an MP4 edit list).
- */
-async function measureEncoderDelay(
-  mb: Mediabunny,
-  codec: AudioCodec,
-): Promise<number> {
-  const cached = encoderDelays.get(codec)
-  if (cached !== undefined) {
-    return cached
-  }
-
-  const onset = 0.1
-  const tone = new OfflineAudioContext(2, SAMPLE_RATE / 2, SAMPLE_RATE)
-  const osc = tone.createOscillator()
-  osc.connect(tone.destination)
-  osc.start(onset)
-
-  const { output, target } = createMp4Output(mb)
-  const source = createAudioSource(mb, codec)
-  output.addAudioTrack(source)
-  await output.start()
-  await source.add(await tone.startRendering())
-  source.close()
-  await output.finalize()
-
-  const decoded = await new OfflineAudioContext(
-    2,
-    1,
-    SAMPLE_RATE,
-  ).decodeAudioData(target.buffer!)
-  const data = decoded.getChannelData(0)
-  const index = data.findIndex((v) => Math.abs(v) > 0.1)
-  const delay = index < 0 ? 0 : Math.max(0, index / decoded.sampleRate - onset)
-  encoderDelays.set(codec, delay)
-  return delay
 }
 
 /**
@@ -161,8 +90,12 @@ export async function exportSynced(
     formats: mb.ALL_FORMATS,
   })
   try {
-    const { output, target } = createMp4Output(mb)
-    const [conversion, encoderDelay, mix] = await Promise.all([
+    const target = new mb.BufferTarget()
+    const output = new mb.Output({
+      format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }),
+      target,
+    })
+    const [conversion, mix] = await Promise.all([
       // The conversion copies the video and handles cuts that don't land on a keyframe,
       // keeping the exact start and end. Our own mixed audio track is added next to it.
       mb.Conversion.init({
@@ -174,7 +107,6 @@ export async function exportSynced(
         trim,
         showWarnings: false,
       }),
-      measureEncoderDelay(mb, audioCodec),
       mixAudio(clips, gains, video.offset + trim.start, trim.end - trim.start),
     ])
     if (!conversion.utilizedTracks.some((track) => track.type === 'video')) {
@@ -184,7 +116,11 @@ export async function exportSynced(
       const reason = discarded?.reason ?? 'no video track found'
       throw new Error(`The video stream can’t be written to MP4 (${reason}).`)
     }
-    const audioSource = createAudioSource(mb, audioCodec, -encoderDelay)
+    // Mediabunny cancels the encoder's priming delay itself, so the mix starts at 0.
+    const audioSource = new mb.AudioBufferSource({
+      codec: audioCodec,
+      quality: new mb.Quality('high'),
+    })
     output.addAudioTrack(audioSource)
     await output.start()
 

@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Clip, Clips } from './clip'
+import { exportSynced, saveExport } from './export'
 import { testClip } from './testClip'
 
 const SAMPLE_RATE = 48000
-// 2112 samples of AAC priming, as Apple's encoder writes it.
-const PRIMING = 2112
 
 const mb = vi.hoisted(() => {
   const state = {
@@ -14,7 +13,6 @@ const mb = vi.hoisted(() => {
       discardedTracks: { track: { type: string }; reason: string }[]
       execute: () => Promise<void>
     },
-    audioSources: [] as { options: unknown }[],
     inputs: [] as { dispose: ReturnType<typeof vi.fn> }[],
   }
   return {
@@ -36,11 +34,6 @@ const mb = vi.hoisted(() => {
       AudioBufferSource: class {
         add = vi.fn(async () => {})
         close = vi.fn()
-        options: unknown
-        constructor(_config: unknown, options?: unknown) {
-          this.options = options
-          state.audioSources.push(this)
-        }
       },
       Input: class {
         dispose = vi.fn()
@@ -57,10 +50,8 @@ const mb = vi.hoisted(() => {
 
 vi.mock('mediabunny', () => mb.module)
 
-/** The decoded tone has its onset pushed back by the priming samples. */
 class FakeOfflineAudioContext {
   static created: FakeOfflineAudioContext[] = []
-  static decoded = 0
   destination = {}
   sources: { buffer: unknown; start: ReturnType<typeof vi.fn> }[] = []
   gains: { connect: ReturnType<typeof vi.fn>; gain: { value: number } }[] = []
@@ -70,10 +61,6 @@ class FakeOfflineAudioContext {
   constructor(_channels: number, length: number) {
     this.length = length
     FakeOfflineAudioContext.created.push(this)
-  }
-
-  createOscillator() {
-    return { connect: vi.fn(), start: vi.fn() }
   }
 
   createGain() {
@@ -91,18 +78,11 @@ class FakeOfflineAudioContext {
   async startRendering() {
     return { length: this.length }
   }
-
-  async decodeAudioData() {
-    FakeOfflineAudioContext.decoded++
-    const data = new Float32Array(SAMPLE_RATE / 2)
-    data.fill(1, SAMPLE_RATE / 10 + PRIMING)
-    return { sampleRate: SAMPLE_RATE, getChannelData: () => data }
-  }
 }
 
-/** The context that rendered the mix (the others measured the encoder delay). */
+/** The context that rendered the mix. */
 function mixContext() {
-  return FakeOfflineAudioContext.created.find((c) => c.sources.length > 0)
+  return FakeOfflineAudioContext.created[0]
 }
 
 function clip(
@@ -121,14 +101,9 @@ function clip(
 const gains = { video: 1, audio: 0.5 }
 
 describe('exportSynced', () => {
-  let exportSynced: typeof import('./export').exportSynced
-  let saveExport: typeof import('./export').saveExport
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.stubGlobal('OfflineAudioContext', FakeOfflineAudioContext)
     FakeOfflineAudioContext.created = []
-    FakeOfflineAudioContext.decoded = 0
-    mb.state.audioSources = []
     mb.state.inputs = []
     mb.state.conversion = {
       utilizedTracks: [{ type: 'video' }],
@@ -137,9 +112,6 @@ describe('exportSynced', () => {
     }
     mb.module.Conversion.init.mockClear()
     mb.module.getFirstEncodableAudioCodec.mockResolvedValue('aac')
-    // A fresh module, so the encoder delay cache starts empty.
-    vi.resetModules()
-    ;({ exportSynced, saveExport } = await import('./export'))
   })
 
   afterEach(() => vi.unstubAllGlobals())
@@ -204,21 +176,6 @@ describe('exportSynced', () => {
     const clips: Clips = { video: clip(0, 10), audio: clip(0, 10) }
     await exportSynced(clips, { video: 0, audio: 1 })
     expect(mixContext()?.sources).toHaveLength(1)
-  })
-
-  it('cancels the encoder delay, measuring it once per codec', async () => {
-    const clips: Clips = { video: clip(0, 10), audio: null }
-    await exportSynced(clips, gains)
-    await exportSynced(clips, gains)
-
-    expect(FakeOfflineAudioContext.decoded).toBe(1)
-    // The measurement's tone, then the two exports, shifted back by the measured delay.
-    const delayed = { startTimestamp: expect.closeTo(-PRIMING / SAMPLE_RATE) }
-    expect(mb.state.audioSources.map((s) => s.options)).toEqual([
-      { startTimestamp: 0 },
-      delayed,
-      delayed,
-    ])
   })
 
   it('explains why the video stream can’t be written', async () => {
