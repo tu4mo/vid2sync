@@ -19,3 +19,7 @@
 ## Formatting
 
 - Format with `npm run format` (oxfmt) and check with `npm run format:check`. Never run Prettier: without a config of its own, it rewrites every file in a different style.
+
+## Commits
+
+- Keep commit messages short.
