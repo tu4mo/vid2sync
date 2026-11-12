@@ -24,7 +24,6 @@ import {
   TOOLBAR_HEIGHT_PX,
   TIMELINE_MIN_HEIGHT_PX,
 } from './lib/layout'
-import { MIN_PIXELS_PER_SECOND } from './lib/zoom'
 import { Preview } from './panels/Preview/Preview'
 import { Timeline } from './panels/Timeline/Timeline'
 import { Toolbar } from './panels/Toolbar/Toolbar'
@@ -39,7 +38,7 @@ export function App() {
   const [volume, setVolume] = useState<Volumes>({ video: 1, audio: 1 })
   const [selected, setSelected] = useState<TrackKind | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [pixelsPerSecond, setPixelsPerSecond] = useState(MIN_PIXELS_PER_SECOND)
+  const [zoom, setZoom] = useState(0)
   const [followPlayhead, setFollowPlayhead] = useState(true)
   const [exporting, setExporting] = useState(false)
   /** The sync offset auto-sync found when the clips were imported, or null when it couldn't sync them. */
@@ -174,13 +173,13 @@ export function App() {
               autoSyncCount={autoSyncCount}
               canNudge={!!(selected && clips[selected])}
               onNudge={nudgeSelected}
-              pixelsPerSecond={pixelsPerSecond}
+              zoom={zoom}
               followPlayhead={followPlayhead}
               onPlay={play}
               onPause={pause}
               onSeek={seek}
               onExport={() => void exportVideo()}
-              onZoom={setPixelsPerSecond}
+              onZoom={setZoom}
               onToggleFollowPlayhead={() =>
                 setFollowPlayhead((follow) => !follow)
               }
@@ -193,7 +192,7 @@ export function App() {
               selected={selected}
               time={time}
               end={end}
-              pixelsPerSecond={pixelsPerSecond}
+              zoom={zoom}
               playing={playing}
               followPlayhead={followPlayhead}
               disabled={busy}
@@ -203,7 +202,7 @@ export function App() {
               onSeek={seek}
               onPlayPastTimeline={stopAt}
               onImport={importFiles}
-              onZoom={setPixelsPerSecond}
+              onZoom={setZoom}
             />
           </div>
         </Panel>

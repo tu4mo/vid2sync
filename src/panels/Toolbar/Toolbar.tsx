@@ -37,7 +37,8 @@ type Props = {
   hasClips: boolean
   canExport: boolean
   autoSync: AutoSync
-  pixelsPerSecond: number
+  /** The zoom level, 0–`MAX_ZOOM`. */
+  zoom: number
   followPlayhead: boolean
   onPlay: () => void
   onPause: () => void
@@ -51,7 +52,7 @@ type Props = {
   canNudge: boolean
   /** Moves the selected clip by this many ms. */
   onNudge: (ms: number) => void
-  onZoom: (pixelsPerSecond: number) => void
+  onZoom: (zoom: number) => void
   onToggleFollowPlayhead: () => void
 }
 
@@ -61,7 +62,7 @@ export function Toolbar({
   hasClips,
   canExport,
   autoSync,
-  pixelsPerSecond,
+  zoom,
   followPlayhead,
   onPlay,
   onPause,
@@ -145,11 +146,7 @@ export function Toolbar({
         >
           <HugeiconsIcon icon={CenterFocusIcon} size={16} />
         </Button>
-        <Zoom
-          pixelsPerSecond={pixelsPerSecond}
-          disabled={empty}
-          onZoom={onZoom}
-        />
+        <Zoom zoom={zoom} disabled={empty} onZoom={onZoom} />
       </div>
     </fieldset>
   )

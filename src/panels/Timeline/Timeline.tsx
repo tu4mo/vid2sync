@@ -20,7 +20,8 @@ type Props = {
   selected: TrackKind | null
   time: number
   end: number
-  pixelsPerSecond: number
+  /** The zoom level, 0–`MAX_ZOOM`. */
+  zoom: number
   playing: boolean
   /** Scrolls to keep the playhead in view during playback. */
   followPlayhead: boolean
@@ -41,7 +42,7 @@ type Props = {
   onVolumeChange: (kind: TrackKind, volume: number) => void
   /** Imports each file onto the track its type belongs on, or a single file onto `kind`. */
   onImport: (files: File[]) => void
-  onZoom: (pixelsPerSecond: number) => void
+  onZoom: (zoom: number) => void
 }
 
 export function Timeline({
@@ -50,7 +51,7 @@ export function Timeline({
   selected,
   time,
   end,
-  pixelsPerSecond,
+  zoom,
   playing,
   followPlayhead,
   disabled,
@@ -64,13 +65,15 @@ export function Timeline({
   onZoom,
 }: Props) {
   const contentRef = useRef<HTMLDivElement>(null)
-  const { scrollRef, viewport, markScrub } = useTimelineScroll({
-    time,
-    playing,
-    followPlayhead,
-    pixelsPerSecond,
-    onZoom,
-  })
+  const { scrollRef, viewport, pixelsPerSecond, markScrub } = useTimelineScroll(
+    {
+      time,
+      playing,
+      followPlayhead,
+      zoom,
+      onZoom,
+    },
+  )
 
   function seekToPointer(clientX: number) {
     const rect = contentRef.current?.getBoundingClientRect()

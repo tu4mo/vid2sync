@@ -8,8 +8,8 @@ function fixture(name: string) {
   return new URL(`../fixtures/${name}`, import.meta.url).pathname
 }
 
-/** How many times the `timeline` fixture zooms in, so a few pixels of drag is a fine step. */
-const ZOOM_IN_STEPS = 6
+/** The zoom level the `timeline` fixture sets (50 px/s), so a few pixels of drag is a fine step. */
+const ZOOM = 10
 
 export const test = base.extend<{ timeline: Timeline }>({
   // The app with the fixture video and audio imported through the file chooser, zoomed in, and
@@ -25,10 +25,7 @@ export const test = base.extend<{ timeline: Timeline }>({
     await expect(timeline.clip('audio').getByTestId('waveform')).toBeVisible()
     await expect(timeline.region).toHaveAttribute('aria-busy', 'false')
 
-    const zoomIn = page.getByRole('button', { name: 'Zoom in' })
-    for (let i = 0; i < ZOOM_IN_STEPS; i++) {
-      await zoomIn.click()
-    }
+    await page.getByRole('slider', { name: 'Zoom' }).fill(String(ZOOM))
     await timeline.blur()
     await provide(timeline)
   },

@@ -13,7 +13,7 @@ async function mount(canNudge: boolean) {
       canExport
       autoSync={{ status: 'matched', syncOffset: 0 }}
       autoSyncCount={0}
-      pixelsPerSecond={100}
+      zoom={8}
       followPlayhead
       onPlay={() => {}}
       onPause={() => {}}

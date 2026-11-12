@@ -7,11 +7,14 @@ import {
 } from 'react'
 
 import { EDGE_PX } from '../../../lib/layout'
-import { clampZoom } from '../../../lib/zoom'
+import { stepZoom, zoomToPixelsPerSecond } from '../../../lib/zoom'
 
 // How far from the left edge a playhead scrolled back into view lands, and how close to the right
 // edge it gets before following it during playback scrolls the timeline.
 const REVEAL_MARGIN_PX = 40
+
+/** How far the wheel moves to step a zoom level. */
+const WHEEL_PX_PER_ZOOM = 25
 
 /** Where `time` sits in the scroll container's content, at the given zoom. */
 function timeToX(time: number, pixelsPerSecond: number) {
@@ -23,8 +26,9 @@ type Options = {
   playing: boolean
   /** Scrolls to keep the playhead in view during playback. */
   followPlayhead: boolean
-  pixelsPerSecond: number
-  onZoom: (pixelsPerSecond: number) => void
+  /** The zoom level, 0–`MAX_ZOOM`. */
+  zoom: number
+  onZoom: (zoom: number) => void
 }
 
 /**
@@ -35,12 +39,15 @@ export function useTimelineScroll({
   time,
   playing,
   followPlayhead,
-  pixelsPerSecond,
+  zoom,
   onZoom,
 }: Options) {
+  const pixelsPerSecond = zoomToPixelsPerSecond(zoom)
   const scrollRef = useRef<HTMLDivElement>(null)
   const zoomAnchor = useRef<{ time: number; x: number } | null>(null)
-  const pixelsPerSecondRef = useRef(pixelsPerSecond)
+  const zoomRef = useRef(zoom)
+  /** Wheel movement not yet enough to step a zoom level. */
+  const wheelDelta = useRef(0)
   const [viewport, setViewport] = useState(800)
 
   useEffect(() => {
@@ -67,20 +74,30 @@ export function useTimelineScroll({
         return
       }
       e.preventDefault()
+      // Wheel and pinch deltas come in all sizes: a pinch sends many small ones, a
+      // mouse wheel click one big one. So add them up, step a level for each
+      // WHEEL_PX_PER_ZOOM and keep the rest.
+      wheelDelta.current -= e.deltaY
+      const steps = Math.trunc(wheelDelta.current / WHEEL_PX_PER_ZOOM)
+      wheelDelta.current -= steps * WHEEL_PX_PER_ZOOM
       // Wheel events can outpace renders, so work from the zoom and scroll
       // the last event asked for, not what's been rendered yet.
-      const current = pixelsPerSecondRef.current
-      const next = clampZoom(current * Math.exp(-e.deltaY * 0.01))
+      const current = zoomRef.current
+      const next = stepZoom(current, steps)
       if (next === current) {
         return
       }
+      const currentPixelsPerSecond = zoomToPixelsPerSecond(current)
       const pending = zoomAnchor.current
       const from = pending
-        ? Math.max(0, timeToX(pending.time, current) - pending.x)
+        ? Math.max(0, timeToX(pending.time, currentPixelsPerSecond) - pending.x)
         : container.scrollLeft
       const x = e.clientX - container.getBoundingClientRect().left
-      zoomAnchor.current = { time: (from + x - EDGE_PX) / current, x }
-      pixelsPerSecondRef.current = next
+      zoomAnchor.current = {
+        time: (from + x - EDGE_PX) / currentPixelsPerSecond,
+        x,
+      }
+      zoomRef.current = next
       onZoom(next)
     }
     container.addEventListener('wheel', onWheel, { passive: false })
@@ -102,17 +119,18 @@ export function useTimelineScroll({
   // Sync the ref before paint, so the next wheel event can't pair the new
   // scroll position with the old zoom.
   useLayoutEffect(() => {
-    const previous = pixelsPerSecondRef.current
-    pixelsPerSecondRef.current = pixelsPerSecond
+    const previous = zoomToPixelsPerSecond(zoomRef.current)
+    zoomRef.current = zoom
     const container = scrollRef.current
     if (!container) {
       return
     }
     // The wheel zooms around the cursor; the toolbar around the playhead.
     const anchor = zoomAnchor.current ?? playheadAnchor(container, previous)
-    container.scrollLeft = timeToX(anchor.time, pixelsPerSecond) - anchor.x
+    container.scrollLeft =
+      timeToX(anchor.time, zoomToPixelsPerSecond(zoom)) - anchor.x
     zoomAnchor.current = null
-  }, [pixelsPerSecond])
+  }, [zoom])
 
   /** Scrolls `target` into view, if it's off screen. */
   const reveal = useEffectEvent((target: number) => {
@@ -166,6 +184,7 @@ export function useTimelineScroll({
     scrollRef,
     /** The scroll container's width. */
     viewport,
+    pixelsPerSecond,
     /** Marks a seek as coming from the pointer, so the view doesn't scroll for it. */
     markScrub,
   }
