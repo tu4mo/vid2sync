@@ -28,6 +28,8 @@ type DotProps = {
   clipWidth: number
   pixelsPerSecond: number
   active: boolean
+  /** Hides the dot, fading it in when it's shown, rather than unmounting it, which would skip the fade. */
+  hidden?: boolean
   snap: (time: number) => number
   title: string
   onGrab: () => void
@@ -45,6 +47,7 @@ function Dot({
   clipWidth,
   pixelsPerSecond,
   active,
+  hidden = false,
   snap,
   title,
   onGrab,
@@ -77,7 +80,8 @@ function Dot({
     <div
       className={clsx(
         'absolute z-30 flex size-4 cursor-ew-resize items-center justify-center transition-opacity',
-        !active && 'opacity-0 group-hover:opacity-100',
+        hidden && 'pointer-events-none opacity-0',
+        !hidden && !active && 'opacity-0 group-hover:opacity-100',
       )}
       style={{
         [side]: x,
@@ -149,16 +153,15 @@ export function FadeHandle({
         onMove={(full) => onChange(which, { ...span, full })}
         onReset={() => onChange(which, { silent: 0, full: 0 })}
       />
-      {span.full > 0 && (
-        <Dot
-          {...dot}
-          point="silent"
-          distance={span.silent}
-          title={`${SILENT_LABELS[which]}, silent toward the edge (drag, Shift to not snap; double-click to put it at the edge)`}
-          onMove={(silent) => onChange(which, { ...span, silent })}
-          onReset={() => onChange(which, { ...span, silent: 0 })}
-        />
-      )}
+      <Dot
+        {...dot}
+        point="silent"
+        distance={span.silent}
+        hidden={span.full === 0}
+        title={`${SILENT_LABELS[which]}, silent toward the edge (drag, Shift to not snap; double-click to put it at the edge)`}
+        onMove={(silent) => onChange(which, { ...span, silent })}
+        onReset={() => onChange(which, { ...span, silent: 0 })}
+      />
     </>
   )
 }
