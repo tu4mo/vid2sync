@@ -2,7 +2,6 @@
 import 'react'
 
 declare module 'react' {
-  /** Lets `style` set CSS custom properties, such as `{ '--fill': '50%' }`, without a cast. */
   // oxlint-disable-next-line typescript/consistent-type-definitions -- module augmentation needs an interface
   interface CSSProperties {
     [property: `--${string}`]: string | number
