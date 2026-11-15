@@ -1,5 +1,5 @@
 name: Test
-description: Install dependencies and Chromium, then run the unit and e2e tests. Uploads test-results/ if they fail.
+description: Install dependencies and Chromium, lint, check formatting, then run the unit and e2e tests. Uploads test-results/ if they fail.
 
 runs:
   using: composite
@@ -9,6 +9,10 @@ runs:
         node-version: 26
         cache: npm
     - run: npm ci
+      shell: bash
+    - run: npm run lint
+      shell: bash
+    - run: npm run format:check
       shell: bash
     - run: npx playwright install --with-deps chromium
       shell: bash
