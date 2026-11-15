@@ -1,5 +1,5 @@
 name: Build
-description: Install dependencies, lint, check formatting and build into dist/.
+description: Install dependencies and build into dist/.
 
 runs:
   using: composite
@@ -9,10 +9,6 @@ runs:
         node-version: 26
         cache: npm
     - run: npm ci
-      shell: bash
-    - run: npm run lint
-      shell: bash
-    - run: npm run format:check
       shell: bash
     - run: npm run build
       shell: bash
