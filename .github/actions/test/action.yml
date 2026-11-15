@@ -1,0 +1,24 @@
+name: Test
+description: Install dependencies and Chromium, then run the unit and e2e tests. Uploads test-results/ if they fail.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 24
+        cache: npm
+    - run: npm ci
+      shell: bash
+    - run: npx playwright install --with-deps chromium
+      shell: bash
+    - run: npm test
+      shell: bash
+    - run: npm run test:e2e
+      shell: bash
+    - if: failure()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: test-results
+        path: test-results
+        retention-days: 7

@@ -1,0 +1,18 @@
+name: Build
+description: Install dependencies, lint, check formatting and build into dist/.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 24
+        cache: npm
+    - run: npm ci
+      shell: bash
+    - run: npm run lint
+      shell: bash
+    - run: npm run format:check
+      shell: bash
+    - run: npm run build
+      shell: bash
