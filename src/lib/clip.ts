@@ -10,6 +10,33 @@ export type Volumes = Record<TrackKind, number>
 /** The loudest a track can be turned up to, as a gain. */
 export const MAX_VOLUME = 2
 
+/** A span of the timeline, in seconds. */
+export type TimeRange = {
+  start: number
+  end: number
+}
+
+/** One end of a clip or range: its start or its end. */
+export type Edge = keyof TimeRange
+
+/**
+ * One fade, as distances in from its clip edge in seconds: silent up to `silent`, ramping to
+ * full volume at `full`.
+ */
+export type FadeSpan = {
+  silent: number
+  full: number
+}
+
+/** A clip's fade-in (`start`) and fade-out (`end`). */
+export type Fade = Record<Edge, FadeSpan>
+
+/** No fade at either end. */
+export const NO_FADE: Fade = {
+  start: { silent: 0, full: 0 },
+  end: { silent: 0, full: 0 },
+}
+
 /** A clip's waveform, as the sample range of each short bucket of audio. */
 export type Peaks = {
   /** Buckets per second of audio, for mapping a bucket to its time. */
@@ -42,34 +69,10 @@ export type Clip = {
 /** The clip on each track, or null for an empty track. */
 export type Clips = Record<TrackKind, Clip | null>
 
-/** A span of the timeline, in seconds. */
-export type TimeRange = {
-  start: number
-  end: number
-}
+/** A change to a clip, such as `(clip) => moveClip(clip, 2)`. */
+export type ClipEdit = (clip: Clip) => Clip
 
-/** One end of a clip or range: its start or its end. */
-export type Edge = keyof TimeRange
-
-/**
- * One fade, as distances in from its clip edge in seconds: silent up to `silent`, ramping to
- * full volume at `full`.
- */
-export type FadeSpan = {
-  silent: number
-  full: number
-}
-
-/** A clip's fade-in (`start`) and fade-out (`end`). */
-export type Fade = Record<Edge, FadeSpan>
-
-/** No fade at either end. */
-export const NO_FADE: Fade = {
-  start: { silent: 0, full: 0 },
-  end: { silent: 0, full: 0 },
-}
-
-// The shortest a ramp can be after a silence, so a fade never turns into a hard cut.
+/** The shortest a ramp can be after a silence, so a fade never turns into a hard cut. */
 const MIN_RAMP = 0.01
 
 /** The shortest a clip can be trimmed to. */
@@ -117,6 +120,11 @@ function minOffset(clip: Clip): number {
   return -clip.trim.start
 }
 
+/** The earliest the trim can start, in seconds into the file: the file's start, or 0:00. */
+function minTrimStart(clip: Clip): number {
+  return Math.max(0, -clip.offset)
+}
+
 /** Where the last clip ends on the timeline; 0 with no clips. */
 export function clipsEnd(clips: Clips): number {
   return Math.max(
@@ -124,9 +132,6 @@ export function clipsEnd(clips: Clips): number {
     ...TRACK_KINDS.map((kind) => (clips[kind] ? clipSpan(clips[kind]).end : 0)),
   )
 }
-
-/** A change to a clip, such as `(clip) => moveClip(clip, 2)`. */
-export type ClipEdit = (clip: Clip) => Clip
 
 /** Applies `edit` to the clip on the `kind` track, if there is one. */
 export function updateClip(
@@ -146,29 +151,26 @@ export function moveClip(clip: Clip, offset: number): Clip {
 /** Moves the trimmed part's start or end to `time` on the timeline, within the file and 0:00. */
 export function trimClip(clip: Clip, edge: Edge, time: number): Clip {
   const clipTime = roundMs(time - clip.offset)
+  const { start, end } = clip.trim
   const trim =
     edge === 'start'
       ? {
-          ...clip.trim,
           start: Math.min(
-            Math.max(0, -clip.offset, clipTime),
-            clip.trim.end - MIN_CLIP,
+            Math.max(minTrimStart(clip), clipTime),
+            end - MIN_CLIP,
           ),
+          end,
         }
       : {
-          ...clip.trim,
-          end: Math.max(
-            Math.min(clip.duration, clipTime),
-            clip.trim.start + MIN_CLIP,
-          ),
+          start,
+          end: Math.max(Math.min(clip.duration, clipTime), start + MIN_CLIP),
         }
   return { ...clip, trim }
 }
 
 /** Puts one end of the trim, or with no edge both, back at the file's edge. */
 export function untrimClip(clip: Clip, edge?: Edge): Clip {
-  // The start can only go back as far as 0:00.
-  const edges = { start: Math.max(0, -clip.offset), end: clip.duration }
+  const edges = { start: minTrimStart(clip), end: clip.duration }
   const trim = edge ? { ...clip.trim, [edge]: edges[edge] } : edges
   return { ...clip, trim }
 }
@@ -202,17 +204,17 @@ export function syncClips(clips: Clips, syncOffset: number): Clips {
   if (!video || !audio) {
     return clips
   }
-  const clamped = Math.min(
+  const clampedMs = Math.min(
     Math.max(syncOffset, -Math.floor(audio.duration * 1000)),
     Math.floor(video.duration * 1000),
   )
-  const target = video.offset + clamped / 1000
+  const gap = clampedMs / 1000
   const audioMin = minOffset(audio)
-  if (target >= audioMin) {
-    return { video, audio: moveClip(audio, target) }
+  if (video.offset + gap >= audioMin) {
+    return { video, audio: moveClip(audio, video.offset + gap) }
   }
   return {
-    video: moveClip(video, audioMin - clamped / 1000),
+    video: moveClip(video, audioMin - gap),
     audio: moveClip(audio, audioMin),
   }
 }
