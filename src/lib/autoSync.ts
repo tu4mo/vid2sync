@@ -1,4 +1,30 @@
+/**
+ * Auto-sync: works out how far apart the video's own sound and a separately recorded audio file
+ * are, so they can be lined up.
+ *
+ * The idea: both files catch the moments the sound suddenly gets louder, such as a clap, a drum
+ * hit or the start of a word. Those moments happen at the same times in both, even when the mics
+ * sound nothing alike, or when someone played along to the track in headphones and the video only
+ * hears them. So we:
+ *
+ * 1. measure how loud each file is, millisecond by millisecond,
+ * 2. mark where each one suddenly gets louder (its "jumps"),
+ * 3. slide one file's jumps along the other's and score how well they line up at every offset,
+ * 4. keep the best offset only if it clearly beats all the others,
+ * 5. then look again around it, more precisely.
+ *
+ * The general maths (blurring, scoring every offset at once) is in `signal.ts`.
+ */
 import { syncClips, syncOffsetOf, type Clips } from './clip'
+import {
+  blur,
+  centred,
+  correlation,
+  crossCorrelate,
+  dotProduct,
+  fadeEdges,
+  overlap,
+} from './signal'
 
 /** The parts of a decoded file's AudioBuffer that matching reads, so tests can fake one. */
 type Sound = Pick<
@@ -6,328 +32,240 @@ type Sound = Pick<
   'sampleRate' | 'length' | 'numberOfChannels' | 'getChannelData'
 >
 
-// The first pass compares the whole files at 10 ms steps; the second refines around its best
-// match at 1 ms steps.
-const COARSE_HOP_MS = 10
-const COARSE_WINDOW_MS = 20
-const FINE_HOP_MS = 1
-const FINE_WINDOW_MS = 5
-/** How far either side of the first pass's match the second pass looks. */
-const FINE_SEARCH_MS = 15
+// Finding jumps
+
 /**
- * The first pass blurs the rises by this much (a Gaussian's sigma), so someone playing along by
- * ear, a few ms off each beat, still lines up.
+ * How finely each pass looks. A jump compares a window `windowMs` long with the window just
+ * before it, once every `stepMs`. The rough pass tries every offset between the files, so it
+ * takes big steps to stay fast; the precise pass only checks around the rough pass's answer.
  */
-const SMOOTH_MS = 20
+const ROUGH = { stepMs: 10, windowMs: 20 }
+const PRECISE = { stepMs: 1, windowMs: 5 }
+type Pass = typeof ROUGH
+
 /**
- * How far the first pass evens out the cross-spectrum (0 is plain correlation, 1 is full
- * GCC-PHAT). A steady beat piles into a few frequencies; evening them out lets the parts that
- * don't repeat, such as breaks, fills and where the playing stops, decide the match. Full
- * evening out amplifies what the blur removed, so it stops short of 1.
+ * Sound quieter than this share of the file's average loudness counts as silence, so hiss
+ * getting slightly louder isn't a jump.
+ */
+const SILENCE = 1e-3
+/** Getting this many times louder from one window to the next is a clear jump. */
+const CLEAR_JUMP = 2
+/** Each file needs this many clear jumps to match on; a steady tone or hum has none. */
+const MIN_CLEAR_JUMPS = 3
+
+// Scoring offsets
+
+/** Jumps are blurred by this much, so someone playing along by ear, a few ms off, still lines up. */
+const BLUR_MS = 20
+/** Jumps fade in and out over this long at each end of a file (see `roughPattern`). */
+const FADE_EDGES_MS = 3000
+/**
+ * How much the scoring plays down what repeats (0 not at all, 1 fully). A steady beat lines up
+ * well at every bar; playing it down lets what doesn't repeat, such as breaks, fills and where the
+ * playing stops, decide. Fully would also amplify the jitter the blur smoothed out, so it stops
+ * short of 1.
  */
 const WHITENING = 0.7
-/** Rises closer than this to the best match count as the same match, not a rival. */
-const RIVAL_GAP_MS = 60
-/** The clips must overlap this much at a match for it to count. */
+/** The files must overlap at least this long at an offset for it to count (or all of the shorter one). */
 const MIN_OVERLAP_MS = 1000
-/**
- * The first pass fades the rises in and out over this long at each end of a file (or a quarter
- * of it, when shorter). A recording starts and stops abruptly, and evening out the
- * cross-spectrum would otherwise make those edges line up, as if they were shared sounds.
- */
-const TAPER_MS = 3000
-/** The best match must beat the runner-up by this factor, so a steady beat doesn't pass. */
-const MIN_PEAK_RATIO = 1.5
-/** How closely the clips' rises in loudness must agree at the match (a correlation, 0–1). */
+
+// Choosing a winner
+
+/** The best offset must score this many times higher than any rival. */
+const WINNER_MARGIN = 1.5
+/** Offsets this close to the best are the same match, slightly off, not rivals. */
+const RIVAL_GAP_MS = 60
+/** At the winning offset, the jumps must rise and fall together at least this much (0–1). */
 const MIN_AGREEMENT = 0.2
-/** A rise from silence counts from this level, relative to the file's average, so hiss doesn't. */
-const FLOOR = 1e-3
-/** A step this much louder than the one before (double the energy) counts as a clear rise. */
-const CLEAR_RISE = Math.log(2)
-/** Each file needs this many clear rises to match on; a steady tone or hum has none. */
-const MIN_RISES = 3
+/** How far either side of the rough answer the precise pass looks. */
+const PRECISE_SEARCH_MS = 15
 
-/** The sum of the squares of `data` from `start` up to `end`. */
-function sumOfSquares(data: Float32Array, start: number, end: number) {
-  let sum = 0
-  for (let sample = start; sample < end; sample++) {
-    sum += data[sample] * data[sample]
-  }
-  return sum
-}
+/** An offset to try, in ms the audio file starts after the video, and how well it lines up. */
+type Candidate = { offsetMs: number; score: number }
 
-/** The mean square of each millisecond of sound, averaged across channels. */
-function energyPerMs(sound: Sound): Float64Array {
-  const { sampleRate, length, numberOfChannels } = sound
+/** How loud `sound` is during each millisecond: the average of its squared samples, over all channels. */
+function loudnessPerMs(sound: Sound): Float64Array {
+  const { sampleRate, numberOfChannels } = sound
   const channels = Array.from({ length: numberOfChannels }, (_, channel) =>
     sound.getChannelData(channel),
   )
-  return Float64Array.from(
-    { length: Math.floor((length * 1000) / sampleRate) },
-    (_, i) => {
-      // Rounded rather than a fixed hop, so rates like 44.1 kHz don't drift.
-      const start = Math.floor((i * sampleRate) / 1000)
-      const end = Math.floor(((i + 1) * sampleRate) / 1000)
-      return channels.reduce(
-        (total, data) =>
-          total +
-          sumOfSquares(data, start, end) / ((end - start) * numberOfChannels),
-        0,
-      )
-    },
-  )
+  const durationMs = Math.floor((sound.length * 1000) / sampleRate)
+  return Float64Array.from({ length: durationMs }, (_, ms) => {
+    // Worked out for each ms rather than stepping a fixed count, so rates like 44.1 kHz don't drift.
+    const start = Math.floor((ms * sampleRate) / 1000)
+    const end = Math.floor(((ms + 1) * sampleRate) / 1000)
+    let sum = 0
+    for (const samples of channels) {
+      for (let i = start; i < end; i++) {
+        sum += samples[i] * samples[i]
+      }
+    }
+    return sum / ((end - start) * numberOfChannels)
+  })
 }
 
 /**
- * How sharply the sound gets louder at each step: the log of a window's energy over the window
- * before it, or 0 when it gets quieter. Being a ratio, it doesn't care how loud each mic was.
- * Centred on its mean, so stretches with no rises don't add to the correlation; `rises` counts
- * the clear ones.
+ * How suddenly `loudness` gets louder, once every `stepMs`: how many times louder each window is
+ * than the one just before it, on a log scale, so 0 is no louder (getting quieter counts as 0
+ * too). Being a ratio, it doesn't matter how loud each mic was.
  */
-function onsets(energy: Float64Array, hopMs: number, windowMs: number) {
-  // A running sum is sequential, so it's filled in place.
-  const prefix = new Float64Array(energy.length + 1)
-  for (let i = 0; i < energy.length; i++) {
-    prefix[i + 1] = prefix[i] + energy[i]
+function loudnessJumps(
+  loudness: Float64Array,
+  { stepMs, windowMs }: Pass,
+): Float64Array {
+  // A running total, so any window's loudness is one subtraction rather than a loop.
+  const runningTotal = new Float64Array(loudness.length + 1)
+  for (let ms = 0; ms < loudness.length; ms++) {
+    runningTotal[ms + 1] = runningTotal[ms] + loudness[ms]
   }
-  const floor = (prefix[energy.length] / Math.max(1, energy.length)) * FLOOR
-  const count = Math.max(0, Math.floor((energy.length - windowMs) / hopMs) + 1)
-  const rises = Float64Array.from({ length: count }, (_, step) => {
-    // The first window has nothing before it, so it can't rise.
+  function windowLoudness(startMs: number, endMs: number) {
+    return runningTotal[endMs] - runningTotal[Math.max(0, startMs)]
+  }
+  const silence =
+    (runningTotal[loudness.length] / Math.max(1, loudness.length)) * SILENCE
+  const count = Math.max(
+    0,
+    Math.floor((loudness.length - windowMs) / stepMs) + 1,
+  )
+  return Float64Array.from({ length: count }, (_, step) => {
+    // The first window has nothing before it, so it can't be a jump.
     if (step === 0) {
       return 0
     }
-    const at = step * hopMs
-    const before = prefix[at] - prefix[Math.max(0, at - windowMs)]
-    const now = prefix[at + windowMs] - prefix[at]
-    return Math.max(0, Math.log((now + floor) / (before + floor)))
-  })
-  const mean = rises.reduce((sum, rise) => sum + rise, 0) / Math.max(1, count)
-  return {
-    values: rises.map((rise) => rise - mean),
-    rises: rises.filter((rise) => rise >= CLEAR_RISE).length,
-  }
-}
-
-/** Blurs `signal` with a Gaussian of `sigma` steps. */
-function blur(signal: Float64Array, sigma: number): Float64Array {
-  const radius = Math.ceil(sigma * 3)
-  const kernel = Float64Array.from({ length: radius * 2 + 1 }, (_, k) =>
-    Math.exp(-((k - radius) ** 2) / (2 * sigma * sigma)),
-  )
-  return signal.map((_, i) => {
-    let sum = 0
-    let weight = 0
-    for (let k = -radius; k <= radius; k++) {
-      const j = i + k
-      if (j >= 0 && j < signal.length) {
-        sum += signal[j] * kernel[k + radius]
-        weight += kernel[k + radius]
-      }
-    }
-    return sum / weight
+    const at = step * stepMs
+    const before = windowLoudness(at - windowMs, at)
+    const now = windowLoudness(at, at + windowMs)
+    return Math.max(0, Math.log((now + silence) / (before + silence)))
   })
 }
 
-/** Fades `signal` in and out with a raised cosine over `TAPER_MS` at each end. */
-function taper(signal: Float64Array): Float64Array {
-  const length = Math.min(
-    Math.round(TAPER_MS / COARSE_HOP_MS),
-    Math.floor(signal.length / 4),
-  )
-  return signal.map((value, i) => {
-    const fromEdge = Math.min(i, signal.length - 1 - i)
-    return fromEdge < length
-      ? value * (0.5 - 0.5 * Math.cos((Math.PI * fromEdge) / length))
-      : value
-  })
-}
-
-/** In-place radix-2 FFT; `inverse` skips the 1/n scale, which the peak search doesn't need. */
-function fft(re: Float64Array, im: Float64Array, inverse: boolean) {
-  const n = re.length
-  for (let i = 1, j = 0; i < n; i++) {
-    let bit = n >> 1
-    for (; j & bit; bit >>= 1) {
-      j ^= bit
-    }
-    j ^= bit
-    if (i < j) {
-      ;[re[i], re[j]] = [re[j], re[i]]
-      ;[im[i], im[j]] = [im[j], im[i]]
-    }
-  }
-  for (let size = 2; size <= n; size <<= 1) {
-    const angle = ((inverse ? 2 : -2) * Math.PI) / size
-    const wRe = Math.cos(angle)
-    const wIm = Math.sin(angle)
-    const half = size >> 1
-    for (let start = 0; start < n; start += size) {
-      let uRe = 1
-      let uIm = 0
-      for (let k = 0; k < half; k++) {
-        const a = start + k
-        const b = a + half
-        const tRe = re[b] * uRe - im[b] * uIm
-        const tIm = re[b] * uIm + im[b] * uRe
-        re[b] = re[a] - tRe
-        im[b] = im[a] - tIm
-        re[a] += tRe
-        im[a] += tIm
-        const next = uRe * wRe - uIm * wIm
-        uIm = uRe * wIm + uIm * wRe
-        uRe = next
-      }
-    }
-  }
+function hasEnoughJumps(jumps: Float64Array) {
+  const clear = jumps.filter((jump) => jump >= Math.log(CLEAR_JUMP))
+  return clear.length >= MIN_CLEAR_JUMPS
 }
 
 /**
- * `out[lag]` is how well `a` matches `b` shifted `lag` steps later, for every lag from
- * `-(b.length - 1)` to `a.length - 1`, stored at `lag + b.length - 1`. Each frequency's
- * magnitude is raised to `1 - WHITENING` first.
+ * The rough pass's jumps, ready for scoring offsets:
+ * - centred on 0, so stretches with no jumps don't add to any score,
+ * - blurred, so jumps a few ms apart still overlap,
+ * - faded out at both ends. A recording starts and stops abruptly, and with the whitening, those
+ *   edges would otherwise line up between the files as if they were shared sounds.
  */
-function crossCorrelate(a: Float64Array, b: Float64Array): Float64Array {
-  const n = 2 ** Math.ceil(Math.log2(a.length + b.length))
-  // The FFT works in place, on buffers only this function sees.
-  const aRe = new Float64Array(n)
-  const aIm = new Float64Array(n)
-  const bRe = new Float64Array(n)
-  const bIm = new Float64Array(n)
-  aRe.set(a)
-  bRe.set(b)
-  fft(aRe, aIm, false)
-  fft(bRe, bIm, false)
-  // Multiply a by b's complex conjugate, then even out the magnitudes.
-  for (let i = 0; i < n; i++) {
-    const re = aRe[i] * bRe[i] + aIm[i] * bIm[i]
-    const im = aIm[i] * bRe[i] - aRe[i] * bIm[i]
-    const scale = (re * re + im * im) ** (WHITENING / 2) || 1
-    aRe[i] = re / scale
-    aIm[i] = im / scale
-  }
-  fft(aRe, aIm, true)
-  return Float64Array.from(
-    { length: a.length + b.length - 1 },
-    (_, i) => aRe[(i - (b.length - 1) + n) % n],
+function roughPattern(jumps: Float64Array): Float64Array {
+  return fadeEdges(
+    blur(centred(jumps), BLUR_MS / ROUGH.stepMs),
+    FADE_EDGES_MS / ROUGH.stepMs,
   )
 }
 
-/** How many steps `a` and `b` share when `b` is shifted `lag` steps later. */
-function overlap(a: Float64Array, b: Float64Array, lag: number) {
-  return Math.min(a.length, lag + b.length) - Math.max(0, lag)
+/** How well the patterns line up at every offset where the files overlap enough. Higher is better. */
+function scoreEveryOffset(
+  video: Float64Array,
+  audio: Float64Array,
+): Candidate[] {
+  const scores = crossCorrelate(video, audio, WHITENING)
+  const minOverlap = Math.min(
+    MIN_OVERLAP_MS / ROUGH.stepMs,
+    video.length,
+    audio.length,
+  )
+  return Array.from(scores).flatMap((score, i) => {
+    // `crossCorrelate` keeps the score for an offset of `lag` steps at `lag + audio.length - 1`.
+    const lag = i - (audio.length - 1)
+    return overlap(video, audio, lag) < minOverlap
+      ? []
+      : [{ offsetMs: lag * ROUGH.stepMs, score }]
+  })
 }
 
-/** The sum of `a` times `b` over the part they share at `lag`. */
-function dot(a: Float64Array, b: Float64Array, lag: number) {
-  let sum = 0
-  for (let i = Math.max(0, lag); i < Math.min(a.length, lag + b.length); i++) {
-    sum += a[i] * b[i - lag]
-  }
-  return sum
-}
-
-/** The Pearson correlation of `a` and `b` over the part they share at `lag`. */
-function agreement(a: Float64Array, b: Float64Array, lag: number) {
-  const start = Math.max(0, lag)
-  const end = Math.min(a.length, lag + b.length)
-  let sumA = 0
-  let sumB = 0
-  for (let i = start; i < end; i++) {
-    sumA += a[i]
-    sumB += b[i - lag]
-  }
-  const meanA = sumA / (end - start)
-  const meanB = sumB / (end - start)
-  let covariance = 0
-  let varianceA = 0
-  let varianceB = 0
-  for (let i = start; i < end; i++) {
-    const deviationA = a[i] - meanA
-    const deviationB = b[i - lag] - meanB
-    covariance += deviationA * deviationB
-    varianceA += deviationA * deviationA
-    varianceB += deviationB * deviationB
-  }
-  return varianceA > 0 && varianceB > 0
-    ? covariance / Math.sqrt(varianceA * varianceB)
-    : 0
+/** The best-scoring candidate (the earliest, on a tie), or undefined when there are none. */
+function bestOf(candidates: Candidate[]) {
+  return candidates.reduce<Candidate | undefined>(
+    (best, candidate) =>
+      !best || candidate.score > best.score ? candidate : best,
+    undefined,
+  )
 }
 
 /**
- * The index below `count` with the highest score (the first, on a tie) and that score. The index
- * is -1, and the score -Infinity, when no score beats -Infinity.
+ * The best offset, or null unless it clearly wins: it must score above 0, and well above the best
+ * offset further away. Music with a steady beat lines up about as well at every bar, so it
+ * doesn't pass.
  */
-function highest(count: number, scoreAt: (i: number) => number) {
-  let index = -1
-  let score = -Infinity
-  for (let i = 0; i < count; i++) {
-    const candidate = scoreAt(i)
-    if (candidate > score) {
-      index = i
-      score = candidate
-    }
+function clearWinner(candidates: Candidate[]): number | null {
+  const best = bestOf(candidates)
+  if (!best || best.score <= 0) {
+    return null
   }
-  return { index, score }
+  const rival = bestOf(
+    candidates.filter(
+      ({ offsetMs }) => Math.abs(offsetMs - best.offsetMs) > RIVAL_GAP_MS,
+    ),
+  )
+  const rivalScore = Math.max(0, rival?.score ?? 0)
+  return best.score >= rivalScore * WINNER_MARGIN ? best.offsetMs : null
 }
 
 /**
- * Finds where the audio file lines up with the video's own sound, by matching where each gets
- * suddenly louder (claps, hits, consonants). The sounds needn't be the same: someone playing
- * along to the track in headphones shares only its timing, and that's enough when the music
- * doesn't just repeat. Compares the whole files, ignoring trims. Returns the sync offset in ms
- * (see `syncOffsetOf`), or null unless one match clearly beats every other.
+ * Whether the patterns rise and fall together at `offsetMs`. A score is a sum, so a few huge
+ * jumps could win on their own; this checks the rest agrees too.
+ */
+function jumpsAgree(
+  video: Float64Array,
+  audio: Float64Array,
+  offsetMs: number,
+) {
+  return correlation(video, audio, offsetMs / ROUGH.stepMs) >= MIN_AGREEMENT
+}
+
+/** The offset within `PRECISE_SEARCH_MS` of `roughOffsetMs` where the jumps line up best, to the ms. */
+function refine(
+  videoLoudness: Float64Array,
+  audioLoudness: Float64Array,
+  roughOffsetMs: number,
+): number {
+  const video = centred(loudnessJumps(videoLoudness, PRECISE))
+  const audio = centred(loudnessJumps(audioLoudness, PRECISE))
+  // With 1 ms steps, an offset in ms is also one in steps.
+  const candidates = Array.from(
+    { length: PRECISE_SEARCH_MS * 2 + 1 },
+    (_, i) => {
+      const offsetMs = roughOffsetMs - PRECISE_SEARCH_MS + i
+      return { offsetMs, score: dotProduct(video, audio, offsetMs) }
+    },
+  )
+  return bestOf(candidates)?.offsetMs ?? roughOffsetMs
+}
+
+/**
+ * Finds the sync offset in ms (see `syncOffsetOf`) that lines the audio file up with the video's
+ * own sound, or null unless one offset clearly wins. Compares the whole files, ignoring trims.
  */
 function findSync(video: Sound, audio: Sound): number | null {
-  const videoEnergy = energyPerMs(video)
-  const audioEnergy = energyPerMs(audio)
+  // 1. How loud each file is, millisecond by millisecond.
+  const videoLoudness = loudnessPerMs(video)
+  const audioLoudness = loudnessPerMs(audio)
 
-  // First pass: every possible offset, at 10 ms steps.
-  const coarseVideo = onsets(videoEnergy, COARSE_HOP_MS, COARSE_WINDOW_MS)
-  const coarseAudio = onsets(audioEnergy, COARSE_HOP_MS, COARSE_WINDOW_MS)
-  if (coarseVideo.rises < MIN_RISES || coarseAudio.rises < MIN_RISES) {
-    return null
-  }
-  const videoOnsets = taper(blur(coarseVideo.values, SMOOTH_MS / COARSE_HOP_MS))
-  const audioOnsets = taper(blur(coarseAudio.values, SMOOTH_MS / COARSE_HOP_MS))
-  const scores = crossCorrelate(videoOnsets, audioOnsets)
-  const minOverlap = Math.min(
-    MIN_OVERLAP_MS / COARSE_HOP_MS,
-    videoOnsets.length,
-    audioOnsets.length,
-  )
-  // Score i is for the audio file starting i - shift steps after the video.
-  const shift = audioOnsets.length - 1
-  // A match where the clips barely overlap doesn't count, as the best or as a rival.
-  function scoreAt(i: number) {
-    return overlap(videoOnsets, audioOnsets, i - shift) < minOverlap
-      ? -Infinity
-      : scores[i]
-  }
-  const best = highest(scores.length, scoreAt)
-  if (best.index < 0 || best.score <= 0) {
-    return null
-  }
-  const gap = RIVAL_GAP_MS / COARSE_HOP_MS
-  const rival = highest(scores.length, (i) =>
-    Math.abs(i - best.index) > gap ? scoreAt(i) : -Infinity,
-  )
-  const coarseLag = best.index - shift
-  if (
-    best.score < Math.max(0, rival.score) * MIN_PEAK_RATIO ||
-    agreement(videoOnsets, audioOnsets, coarseLag) < MIN_AGREEMENT
-  ) {
+  // 2. Where each suddenly gets louder.
+  const videoJumps = loudnessJumps(videoLoudness, ROUGH)
+  const audioJumps = loudnessJumps(audioLoudness, ROUGH)
+  if (!hasEnoughJumps(videoJumps) || !hasEnoughJumps(audioJumps)) {
     return null
   }
 
-  // Second pass: 1 ms steps, around the first pass's match.
-  const fineVideo = onsets(videoEnergy, FINE_HOP_MS, FINE_WINDOW_MS).values
-  const fineAudio = onsets(audioEnergy, FINE_HOP_MS, FINE_WINDOW_MS).values
-  const firstLag = coarseLag * COARSE_HOP_MS - FINE_SEARCH_MS
-  const fine = highest(FINE_SEARCH_MS * 2 + 1, (step) =>
-    dot(fineVideo, fineAudio, firstLag + step),
-  )
-  return firstLag + fine.index
+  // 3. How well the jumps line up at every offset.
+  const videoPattern = roughPattern(videoJumps)
+  const audioPattern = roughPattern(audioJumps)
+  const candidates = scoreEveryOffset(videoPattern, audioPattern)
+
+  // 4. The best offset, if it clearly wins.
+  const best = clearWinner(candidates)
+  if (best === null || !jumpsAgree(videoPattern, audioPattern, best)) {
+    return null
+  }
+
+  // 5. The rough pass works in 10 ms steps; look again, to the ms, around its answer.
+  return refine(videoLoudness, audioLoudness, best)
 }
 
 /** Matches the clips by their sound (see `findSync`); null when either has none, or nothing matched. */
