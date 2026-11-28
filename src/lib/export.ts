@@ -4,37 +4,6 @@ import { scheduleClips } from './playback'
 const SAMPLE_RATE = 48000
 
 /**
- * Loads the parts of Mediabunny the export uses. Destructuring the dynamic import, rather than
- * keeping the whole module, lets the bundler leave the rest of Mediabunny out of the chunk.
- */
-async function loadMediabunny() {
-  const {
-    ALL_FORMATS,
-    AudioBufferSource,
-    BlobSource,
-    BufferTarget,
-    Conversion,
-    Input,
-    Mp4OutputFormat,
-    Output,
-    Quality,
-    getFirstEncodableAudioCodec,
-  } = await import('mediabunny')
-  return {
-    ALL_FORMATS,
-    AudioBufferSource,
-    BlobSource,
-    BufferTarget,
-    Conversion,
-    Input,
-    Mp4OutputFormat,
-    Output,
-    Quality,
-    getFirstEncodableAudioCodec,
-  }
-}
-
-/**
  * Renders what you hear from timeline time `start` for `duration` seconds, using the same
  * clip placement as live playback. Gaps are silent.
  */
@@ -73,8 +42,21 @@ async function exportSynced(
 ): Promise<Blob> {
   const { trim } = video
 
-  const mb = await loadMediabunny()
-  const audioCodec = await mb.getFirstEncodableAudioCodec(['aac', 'opus'], {
+  // Destructuring the dynamic import, rather than keeping the whole module, lets the bundler
+  // leave the rest of Mediabunny out of the chunk.
+  const {
+    ALL_FORMATS,
+    AudioBufferSource,
+    BlobSource,
+    BufferTarget,
+    Conversion,
+    Input,
+    Mp4OutputFormat,
+    Output,
+    Quality,
+    getFirstEncodableAudioCodec,
+  } = await import('mediabunny')
+  const audioCodec = await getFirstEncodableAudioCodec(['aac', 'opus'], {
     numberOfChannels: 2,
     sampleRate: SAMPLE_RATE,
   })
@@ -82,20 +64,20 @@ async function exportSynced(
     throw new Error('This browser can’t encode audio for export.')
   }
 
-  const input = new mb.Input({
-    source: new mb.BlobSource(video.file),
-    formats: mb.ALL_FORMATS,
+  const input = new Input({
+    source: new BlobSource(video.file),
+    formats: ALL_FORMATS,
   })
   try {
-    const target = new mb.BufferTarget()
-    const output = new mb.Output({
-      format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }),
+    const target = new BufferTarget()
+    const output = new Output({
+      format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
       target,
     })
     const [conversion, mix] = await Promise.all([
       // The conversion copies the video and handles cuts that don't land on a keyframe,
       // keeping the exact start and end. Our own mixed audio track is added next to it.
-      mb.Conversion.init({
+      Conversion.init({
         input,
         output,
         composable: true,
@@ -114,9 +96,9 @@ async function exportSynced(
       throw new Error(`The video stream can’t be written to MP4 (${reason}).`)
     }
     // Mediabunny cancels the encoder's priming delay itself, so the mix starts at 0.
-    const audioSource = new mb.AudioBufferSource({
+    const audioSource = new AudioBufferSource({
       codec: audioCodec,
-      quality: new mb.Quality('high'),
+      quality: new Quality('high'),
     })
     output.addAudioTrack(audioSource)
     await output.start()
@@ -144,6 +126,7 @@ export async function saveExport(clips: Clips, gains: Volumes) {
   downloadBlob(blob, `${name}-synced.mp4`)
 }
 
+/** Downloads `blob` as a file called `name`. */
 function downloadBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
